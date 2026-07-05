@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Stellantis">
+    
+    <title>Stellantis | Logistički Portal</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; color: #111111; margin: 0; padding: 0; }
+        #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1a3263; }
+        .login-card { background: #ffffff; padding: 40px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); width: 100%; max-width: 400px; }
+        .login-logo { font-weight: 700; font-size: 24px; letter-spacing: 6px; text-transform: uppercase; text-align: center; margin-bottom: 30px; color: #1a3263; }
+        .login-btn { background: #1a3263; color: #fff; border-radius: 8px; font-weight: 500; padding: 12px; border: none; width: 100%; cursor: pointer; transition: background 0.2s; }
+        .login-btn:hover { background: #12244a; }
+        #mainPortal { display: none; }
+        .custom-container { max-width: 1360px; margin: 0 auto; padding: 0 15px; width: 100%; }
+        .header-clean { background-color: #ffffff; padding: 25px 0; border-bottom: 1px solid #eaeaea; position: relative; }
+        .brand-logo { font-weight: 700; font-size: 26px; letter-spacing: 7px; color: #1a3263; text-transform: uppercase; text-align: center; width: 100%; }
+        .logout-wrapper { position: absolute; right: 30px; top: 50%; transform: translateY(-50%); }
+        .nav-clean-tabs { margin-top: 25px; display: flex; justify-content: center; align-items: center; gap: 15px; position: relative; }
+        .nav-tab-item { display: inline-block; background: #ffffff; border: 1px solid #e5e5e5; padding: 12px 28px; border-radius: 30px; font-weight: 500; color: #555555 !important; text-decoration: none !important; transition: all 0.2s; cursor: pointer; line-height: 1.2; }
+        .nav-tab-item:hover { background: #1a3263; color: #ffffff !important; border-color: #1a3263; }
+        .dropdown { position: relative; display: inline-block; padding-bottom: 15px; margin-bottom: -15px; }
+        .dropdown:hover .nav-tab-item { background: #1a3263; color: #ffffff !important; border-color: #1a3263; }
+        .dropdown-menu { display: none; position: absolute; background-color: #ffffff; min-width: 260px; box-shadow: 0px 8px 24px rgba(0,0,0,0.12); border-radius: 12px; border: 1px solid #eaeaea; z-index: 1000; margin-top: 5px; padding: 8px 0; left: 50%; transform: translateX(-50%); }
+        .dropdown-menu::before { content: ''; position: absolute; top: -20px; left: 0; width: 100%; height: 20px; background: transparent; }
+        .dropdown:hover .dropdown-menu { display: block; }
+        .dropdown-item { color: #333333 !important; padding: 10px 20px; text-decoration: none !important; display: block; font-size: 14px; font-weight: 500; transition: background 0.2s; }
+        .dropdown-item:hover { background-color: #f1f5f9; color: #1a3263 !important; }
+        .slider-section { margin-top: 35px; }
+        .slider-wrapper { background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid #eaeaea; position: relative; height: 620px; }
+        .custom-slider-inner { display: flex; width: 300%; height: 100%; transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .custom-slide { width: 33.3333%; height: 100%; }
+        .custom-slide img { width: 100%; height: 100%; object-fit: cover; }
+        .content-section { margin-top: 40px; }
+        .section-heading { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #1a3263; display: flex; align-items: center; justify-content: space-between; }
+        .clean-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 12px; padding: 25px; }
+        .clean-card .form-group { margin-bottom: 18px; display: block; width: 100%; }
+        .clean-card label { display: block !important; width: 100% !important; text-align: left !important; margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #4a5568; text-transform: uppercase; }
+        .clean-card .form-control, .clean-card select, .clean-card textarea { display: block !important; width: 100% !important; height: auto; padding: 10px 14px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        #adminPanelBox { display: none; }
+        .btn-stellantis { background: #1a3263; color: #fff; font-weight: 600; transition: background 0.2s; }
+        .btn-stellantis:hover { background: #12244a; color: #fff; }
+        .announcement-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden; margin-bottom: 20px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.01); }
+        .announcement-img { height: 190px; object-fit: cover; width: 100%; cursor: zoom-in; transition: opacity 0.2s; }
+        .announcement-img:hover { opacity: 0.9; }
+        .announcement-body { padding: 20px; }
+        .post-meta-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; padding-top: 12px; border-top: 1px solid #f1f1f1; }
+        .meta-tag { font-size: 11px; font-weight: 500; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .meta-tag-date { background: #fdf2f8; color: #db2777; }
+        .meta-tag-shift { background: #fef3c7; color: #d97706; }
+        .meta-tag-leader { background: #e0f2fe; color: #0284c7; }
+        .delete-btn { position: absolute; top: 10px; right: 10px; background: #dc3545; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; z-index: 99; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .delete-btn:hover { background: #bd2130; }
+        .user-action-section { margin-top: 15px; padding: 12px; border-top: 1px solid #eee; background: #f8f9fa; border-radius: 8px; }
+        .edit-fields { display: none; margin-top: 10px; }
+        .btn-zavrseno { background: #28a745; color: #fff; width: 100%; border: none; padding: 8px; border-radius: 6px; font-weight: 600; font-size: 13px; margin-top: 10px; cursor: pointer; }
+        .btn-zavrseno:disabled { background: #ccc; cursor: not-allowed; }
+        .image-lightbox-overlay { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(26, 50, 99, 0.95); align-items: center; justify-content: center; cursor: zoom-out; opacity: 0; transition: opacity 0.3s ease; }
+        .image-lightbox-overlay.active { display: flex; opacity: 1; }
+        .lightbox-img { max-width: 90%; max-height: 90%; border-radius: 8px; transform: scale(0.95); transition: transform 0.3s ease; }
+        .image-lightbox-overlay.active .lightbox-img { transform: scale(1); }
+        .loading-spinner { text-align: center; width: 100%; padding: 30px; font-size: 16px; color: #666; }
+        .global-loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 10000; align-items: center; justify-content: center; font-weight: 600; color: #1a3263; font-size: 18px; }
+        footer { margin-top: 60px; padding: 25px 0; border-border-top: 1px solid #eaeaea; text-align: center; font-size: 13px; color: #888; }
+        .komentar-prikaz { background: #e0f2f1; padding: 10px; border-radius: 8px; font-size: 13px; margin-top: 10px; color: #00695c; border-left: 4px solid #00695c; }
+        .badge-zavrseno { background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-left: 10px; }
+        .badge-nije-zavrseno { background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-left: 10px; }
+        .btn-refresh { font-size: 12px; padding: 5px 15px; cursor: pointer; }
+
+        @media (max-width: 768px) {
+            .nav-clean-tabs { flex-wrap: wrap; gap: 8px; }
+            .slider-wrapper { height: 250px !important; }
+            .login-card { margin: 15px; }
+            .brand-logo { font-size: 20px; letter-spacing: 3px; }
+            .logout-wrapper { position: relative; top: 0; right: 0; transform: none; margin-top: 10px; }
+            .custom-container { padding: 0 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay" class="global-loading-overlay">Molim, sačekajte...</div>
+
+    <div id="imageLightbox" class="image-lightbox-overlay" onclick="closeZoom()">
+        <img id="lightboxImg" class="lightbox-img" src="" alt="Zumirana slika">
+    </div>
+
+    <div id="loginScreen">
+        <div class="login-card">
+            <div class="login-logo">Stellantis</div>
+            <p class="text-muted small mt-4 text-center">Unesite šifru za pristup sistemu</p>
+            <div class="form-group mb-3">
+                <input type="password" id="accessPassword" class="form-control text-center" placeholder="••••••••" style="height: 45px; letter-spacing: 3px;">
+                <div id="loginError" class="text-danger small text-center mt-2" style="display: none;">Pogrešna šifra ili nalog nije aktivan!</div>
+            </div>
+            <button onclick="checkAuth()" class="login-btn mt-2">PRISTUPI PORTALU</button>
+            <div class="text-center mt-3" style="font-size: 11px; color: #777;">
+                Aplikaciju razvio: <strong>Dušan Kostić</strong>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainPortal">
+        <header class="header-clean">
+            <div class="brand-logo">Stellantis</div>
+            <div class="logout-wrapper"><button onclick="location.reload()" class="btn btn-sm btn-outline-danger">Odjava</button></div>
+        </header>
+
+        <div class="custom-container">
+            <nav class="nav-clean-tabs">
+                <a href="#sekcijaSadrzaj" class="nav-tab-item">Gemba</a>
+                <div class="dropdown" id="navTransport">
+                    <a class="nav-tab-item">Transport ▾</a>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="magacin-prijem.html" target="_blank">Utovar-Istovar</a>
+                        <a class="dropdown-item" href="truck-login.html" target="_blank">Najava i praćenje kamiona</a>
+                    </div>
+                </div>
+                <a href="https://logimind.net" target="_blank" class="nav-tab-item" id="navStillServis">STILL-Servis</a>
+                <a href="https://shiftup-my.sharepoint.com/:x:/r/personal/ta75382_stellantis_com/_layouts/15/Doc.aspx?sourcedoc=%7B23DC8C6F-8241-41ED-AF7E-4CF14363167A%7D&file=2026%20Time%20sheet%20planning.xlsx&action=default&mobileredirect=true&DefaultItemOpen=1" target="_blank" id="navTimeSheet" class="nav-tab-item">Time Sheet Planning</a>
+                <a href="zaposleni.html" target="_blank" class="nav-tab-item" id="navZaposleni">Zaposleni</a>
+                <a href="#" target="_blank" class="nav-tab-item" id="navETS" style="display: none;">ETS</a>
+            </nav>
+
+            <section class="slider-section">
+                <div class="slider-wrapper">
+                    <div class="custom-slider-inner" id="scrollerInner">
+                        <div class="custom-slide"><img src="Slike/fiat-grande-panda.jpg" alt="Fiat Grande Panda"></div>
+                        <div class="custom-slide"><img src="Slike/Grande-Panda-kokpit-1024x571.jpg" alt="Grande Panda Kokpit"></div>
+                        <div class="custom-slide"><img src="Slike/Citroen C3 Aircross 2111.jpg" alt="Citroen C3 Aircross"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="content-section" id="sekcijaSadrzaj">
+                <div class="row">
+                    <div class="col-lg-4 mb-4" id="adminPanelBox">
+                        <h3 class="section-heading text-danger">🛠️ Unos nove objave</h3>
+                        <div class="clean-card" style="border-top: 3px solid #dc3545;">
+                            <form id="secureAdminForm">
+                                <div class="form-group"><label>Naslov</label><input type="text" id="newTitle" class="form-control" required></div>
+                                <div class="form-group"><label>Mesto</label><input type="text" id="newLocation" class="form-control" required></div>
+                                <div class="form-group"><label>Datum</label><input type="date" id="newDate" class="form-control" required></div>
+                                <div class="form-group"><label>Smena</label>
+                                    <select id="newShift" class="form-control" required>
+                                        <option value="I Smena">I Smena</option>
+                                        <option value="II Smena">II Smena</option>
+                                        <option value="III Smena">III Smena</option>
+                                    </select>
+                                </div>
+                                <div class="form-group"><label>Team Leader</label><input type="text" id="newLeader" class="form-control" required></div>
+                                <div class="form-group"><label>Tekst obaveštenja</label><textarea id="newText" class="form-control" rows="4" required></textarea></div>
+                                <div class="form-group"><label>Slika</label><input type="file" id="newFile" class="form-control-file" accept="image/*" required></div>
+                                <button type="submit" id="submitBtn" class="btn btn-stellantis btn-block mt-4" style="height: 45px;">Objavi na sistemu</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="col-lg" id="feedColumn">
+                        <h3 class="section-heading">📢 Slike sa Gembe <button class="btn btn-sm btn-outline-secondary btn-refresh" onclick="ucitajSveObjaveSaGoogleTabele()">Osveži objave</button></h3>
+                        <div class="row" id="portalFeed">
+                            <div class="loading-spinner">Učitavanje podataka...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <footer>
+                <div>&copy; 2026 Stellantis Supply Chain Portal. Sistem administrira: <strong>Dušan Kostić</strong></div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js"></script>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9dmnfozKUQplxXWzfxUx5YIGyGOJqwuhvQ1uQxejE37NgTSbdHrJryYZ2HCK-Rn-o/exec";
+        document.getElementById('newDate').valueAsDate = new Date();
+        document.getElementById('accessPassword').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAuth(); });
+
+        let loggedUser = "";
+        let userRole = "";
+
+        function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
+
+        function checkAuth() {
+            loggedUser = document.getElementById('accessPassword').value.trim();
+            showLoading(true);
+            
+            fetch(GOOGLE_SCRIPT_URL + "?akcija=proveriKorisnika&sifra=" + encodeURIComponent(loggedUser))
+                .then(res => res.json())
+                .then(data => {
+                    showLoading(false);
+                    if (data.status === "OK") {
+                        userRole = data.uloga;
+                        
+                        localStorage.setItem('userRole', userRole);
+                        localStorage.setItem('currentUser', loggedUser); 
+                        
+                        document.getElementById('loginScreen').style.display = "none";
+                        document.getElementById('mainPortal').style.display = "block";
+                        document.getElementById('adminPanelBox').style.display = (userRole === 'MASTER' || userRole === 'ADMIN') ? "block" : "none";
+                        
+                        const isGuest = (userRole === 'GUEST');
+                        const isMasterAdmin = (userRole === 'MASTER' || userRole === 'ADMIN');
+                        
+                        document.getElementById('navTransport').style.display = isGuest ? 'none' : 'inline-block';
+                        document.getElementById('navTimeSheet').style.display = isGuest ? 'none' : 'inline-block';
+                        document.getElementById('navStillServis').style.display = isGuest ? 'none' : 'inline-block';
+                        document.getElementById('navZaposleni').style.display = isMasterAdmin ? 'inline-block' : 'none';
+                        document.getElementById('navETS').style.display = isMasterAdmin ? 'inline-block' : 'none';
+                        
+                        ucitajSveObjaveSaGoogleTabele();
+                        setInterval(ucitajSveObjaveSaGoogleTabele, 10000);
+                    } else {
+                        document.getElementById('loginError').style.display = "block";
+                        document.getElementById('loginError').innerText = "Pogrešna šifra ili nalog nije aktivan!";
+                    }
+                })
+                .catch(err => {
+                    console.error("Greška:", err);
+                    showLoading(false);
+                    document.getElementById('loginError').style.display = "block";
+                    document.getElementById('loginError').innerText = "Greška pri povezivanju sa bazom.";
+                });
+        }
+
+        function ucitajSveObjaveSaGoogleTabele() {
+            const feed = document.getElementById('portalFeed');
+            fetch(GOOGLE_SCRIPT_URL)
+                .then(res => res.json())
+                .then(objave => {
+                    feed.innerHTML = '';
+                    objave.forEach(objava => {
+                        if(objava.id === "id" || !objava.id) return;
+                        
+                        const autorObjave = objava.autorObjave;
+                        const autorKomentara = objava.autorKomentara;
+                        
+                        const mozeBrisanje = (userRole === 'MASTER' || (userRole === 'ADMIN' && autorObjave === loggedUser));
+                        const mozeKomentarisanje = (userRole !== 'GUEST') && (userRole === 'MASTER' || userRole === 'ADMIN' || !autorKomentara || autorKomentara === loggedUser);
+                        
+                        const d = new Date(objava.datum);
+                        const fDate = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}.`;
+                        
+                        const imaKomentar = (objava.komentar && objava.komentar.trim() !== "");
+                        const imaDokaz = (objava.dokaz && objava.dokaz.trim() !== "");
+                        
+                        const jeZavrseno = (imaKomentar && imaDokaz);
+                        const statusBadge = jeZavrseno ? 
+                            '<span class="badge-zavrseno">ZAVRŠENO</span>' : 
+                            '<span class="badge-nije-zavrseno">NIJE ZAVRŠENO</span>';
+                        
+                        const komentarPrikaz = imaKomentar ? `<div class="komentar-prikaz"><strong>Komentar:</strong> ${objava.komentar}</div>` : '';
+                        
+                        const cardHTML = `
+                            <div class="col-md-6 mb-3"><div class="announcement-card">
+                                ${mozeBrisanje ? `<button class="delete-btn" onclick="obrisiObjavu('${objava.id}')">Obriši</button>` : ''}
+                                <img src="${objava.slika}" class="announcement-img" onclick="zoomImage(this)">
+                                <div class="announcement-body">
+                                    <h5 class="font-weight-bold">${objava.naslov} ${statusBadge}</h5>
+                                    <p class="text-muted small">${objava.tekst}</p>
+                                    ${imaDokaz ? `<img src="${objava.dokaz}" class="announcement-img mt-2" style="height:100px" onclick="zoomImage(this)">` : ''}
+                                    ${komentarPrikaz}
+                                    
+                                    ${mozeKomentarisanje ? `
+                                    <div class="user-action-section">
+                                        <button class="btn btn-sm btn-outline-primary w-100" onclick="document.getElementById('edit-${objava.id}').style.display='block'; this.style.display='none'">
+                                            ${(imaKomentar || imaDokaz) ? 'Izmeni podatke' : 'Dodaj komentar i sliku'}
+                                        </button>
+                                        <div id="edit-${objava.id}" class="edit-fields">
+                                            <input type="file" id="file-${objava.id}" class="form-control-file mt-2" accept="image/*">
+                                            <textarea id="kom-${objava.id}" class="form-control mt-2" placeholder="Unesite komentar...">${objava.komentar || ''}</textarea>
+                                            <button id="btn-${objava.id}" class="btn btn-zavrseno" onclick="zavrsiObjavu('${objava.id}')">SAČUVAJ IZMENE</button>
+                                        </div>
+                                    </div>` : ''}
+                                    
+                                    <div class="post-meta-container">
+                                        <span class="meta-tag">📍 ${objava.mesto}</span>
+                                        <span class="meta-tag meta-tag-date">📅 ${fDate}</span>
+                                        <span class="meta-tag meta-tag-shift">⏱️ ${objava.smena}</span>
+                                        <span class="meta-tag meta-tag-leader">👤 ${objava.leader}</span>
+                                    </div>
+                                </div>
+                            </div></div>`;
+                        feed.insertAdjacentHTML('beforeend', cardHTML);
+                    });
+                })
+                .catch(err => {
+                    console.error("Greška pri učitavanju:", err);
+                    feed.innerHTML = '<div class="text-danger">Greška pri učitavanju podataka. Proverite konzolu (F12).</div>';
+                });
+        }
+
+        function zavrsiObjavu(id) {
+            const fileInput = document.getElementById('file-' + id);
+            const komentar = document.getElementById('kom-' + id).value;
+            const btn = document.getElementById('btn-' + id);
+            
+            btn.disabled = true;
+            btn.innerText = "KOMPRESUJEM...";
+            showLoading(true);
+
+            if (fileInput.files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 400; 
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        const dataURL = canvas.toDataURL('image/jpeg', 0.4);
+                        posaljiIzmenu(id, dataURL, komentar);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                posaljiIzmenu(id, "", komentar);
+            }
+        }
+
+        function posaljiIzmenu(id, dataURL, komentar) {
+            const payload = { 
+                akcija: "izmeni", 
+                id: id, 
+                dokaz: dataURL, 
+                komentar: komentar, 
+                user: loggedUser 
+            };
+            
+            fetch(GOOGLE_SCRIPT_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify(payload)
+            });
+            
+            setTimeout(() => {
+                alert("Izmena poslata!");
+                showLoading(false);
+                ucitajSveObjaveSaGoogleTabele();
+            }, 2000);
+        }
+
+        function obrisiObjavu(id) { 
+            if(confirm("Obriši i arhiviraj?")) { 
+                showLoading(true); 
+                fetch(GOOGLE_SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    body: JSON.stringify({ akcija: "obrisi", id: id, user: loggedUser }) 
+                });
+                
+                setTimeout(() => {
+                    ucitajSveObjaveSaGoogleTabele(); 
+                    showLoading(false); 
+                }, 2000);
+            } 
+        }
+        
+        document.getElementById('secureAdminForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            showLoading(true);
+            const file = document.getElementById('newFile').files[0];
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 400; 
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const dataURL = canvas.toDataURL('image/jpeg', 0.4);
+                    
+                    fetch(GOOGLE_SCRIPT_URL, { 
+                        method: 'POST', 
+                        mode: 'no-cors', 
+                        body: JSON.stringify({ akcija: "dodaj", id: Date.now().toString(), user: loggedUser, naslov: document.getElementById('newTitle').value, mesto: document.getElementById('newLocation').value, datum: document.getElementById('newDate').value, smena: document.getElementById('newShift').value, leader: document.getElementById('newLeader').value, tekst: document.getElementById('newText').value, slika: dataURL }) 
+                    })
+                    .then(() => {
+                        setTimeout(() => {
+                            ucitajSveObjaveSaGoogleTabele();
+                            showLoading(false);
+                            document.getElementById('secureAdminForm').reset();
+                        }, 2000);
+                    });
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function zoomImage(i) { document.getElementById('lightboxImg').src = i.src; document.getElementById('imageLightbox').classList.add('active'); }
+        function closeZoom() { document.getElementById('imageLightbox').classList.remove('active'); }
+    </script>
+</body>
+</html>

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem za Praćenje Utovara i Istovara</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 24px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        header p {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .card-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #1e3c72;
+            border-bottom: 2px solid #eef2f5;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .group-tl label { color: #d48806; }
+        .group-ts label { color: #389e0d; }
+        .group-dk label { color: #096dd9; }
+        .group-km label { color: #0050b3; }
+        .group-ddt label { color: #d46b08; }
+        .group-ui label { color: #531dab; }
+        .group-p label { color: #237804; }
+        .group-tr label { color: #08979c; }
+
+        .form-group input, .form-group select {
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background-color: #fcfcfc;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+            outline: none;
+            background-color: #fff;
+        }
+
+        .actions-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #eef2f5;
+        }
+
+        .btn {
+            padding: 11px 22px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary { background-color: #1e3c72; color: white; }
+        .btn-primary:hover { background-color: #152b52; }
+        .btn-success { background-color: #2e7d32; color: white; }
+        .btn-success:hover { background-color: #1b5e20; }
+        .btn-danger { background-color: #d32f2f; color: white; }
+        .btn-danger:hover { background-color: #c62828; }
+        .btn-warning { background-color: #e26b0a; color: white; }
+        .btn-warning:hover { background-color: #b85406; }
+
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            background: white;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+            min-width: 1100px;
+        }
+
+        .data-table th.mega-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 8px;
+            text-transform: uppercase;
+            color: white;
+            border: 1px solid #bbb;
+        }
+
+        .bg-main-title { background-color: #ffff00; color: black !important; }
+        .bg-tl { background-color: #ffc000; }
+        .bg-ts { background-color: #00b050; color: white; }
+        .bg-dk { background-color: #0070c0; color: white; }
+        .bg-km { background-color: #002060; color: white; }
+        .bg-ddt { background-color: #e26b0a; color: white; }
+        .bg-ui { background-color: #7030a0; color: white; }
+        .bg-p { background-color: #548235; color: white; }
+        .bg-tr { background-color: #375623; color: white; }
+
+        .data-table th.sub-header {
+            background-color: #d9d9d9;
+            color: #333;
+            font-weight: 600;
+            padding: 10px;
+            border: 1px solid #bbb;
+        }
+
+        .data-table td {
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            color: #444;
+        }
+
+        .data-table tbody tr:nth-child(even) { background-color: #f8fafc; }
+        .data-table tbody tr:hover { background-color: #f1f5f9; }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-istovar { background-color: #e8daff; color: #531dab; }
+        .badge-utovar { background-color: #e6f7ff; color: #0050b3; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-style: italic;
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 0 5px;
+        }
+        .delete-btn { color: #ff4d4f; }
+        .delete-btn:hover { color: #cf1322; }
+        .edit-btn { color: #1890ff; }
+        .edit-btn:hover { color: #096dd9; }
+
+        .danger-zone {
+            margin-top: 30px;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.85);
+            z-index: 10;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #1e3c72;
+            font-size: 18px;
+            border-radius: 8px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>LOGISTIKA: Utovar / Istovar</h1>
+        <p>Unos i praćenje utovara-istovara</p>
+    </header>
+        
+    <div class="card" id="formCard">
+        <div class="loading-overlay" id="loadingOverlay">Učitavanje podataka sa Google Sheets...</div>
+        <div class="card-title" id="formCardTitle">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
+            <span id="formTitleText">Novi Unos Podataka</span>
+        </div>
+        
+        <form id="logisticsForm">
+            <div class="form-grid">
+                <div class="form-group group-tl">
+                    <label>Ime (Team Leader)</label>
+                    <input type="text" id="ime" required placeholder="Npr. Petar">
+                </div>
+                <div class="form-group group-tl">
+                    <label>Prezime (Team Leader)</label>
+                    <input type="text" id="prezime" required placeholder="Npr. Petrovic">
+                </div>
+
+                <div class="form-group group-ts">
+                    <label>Datum</label>
+                    <input type="date" id="datum" required>
+                </div>
+                <div class="form-group group-ts">
+                    <label>Vreme</label>
+                    <input type="time" id="vreme" required>
+                </div>
+
+                <div class="form-group group-dk">
+                    <label>Naziv Kompanije</label>
+                    <input type="text" id="kompanija" required placeholder="Npr. Sigit, Algontec">
+                </div>
+
+                <div class="form-group group-km">
+                    <label>Tablice Kamiona</label>
+                    <input type="text" id="tablice" required placeholder="Npr. KG 366 MD">
+                </div>
+
+                <div class="form-group group-ddt">
+                    <label>Broj DDT-a</label>
+                    <input type="text" id="ddt" required placeholder="Npr. 19336866">
+                </div>
+
+                <div class="form-group group-ui">
+                    <label>Tip Operacije</label>
+                    <select id="operacija" required>
+                        <option value="Istovar">Istovar</option>
+                        <option value="Utovar">Utovar</option>
+                    </select>
+                </div>
+
+                <div class="form-group group-p">
+                    <label>Broj Paleta (Opciono)</label>
+                    <input type="number" id="palete" min="0" placeholder="Npr. 32">
+                </div>
+
+                <div class="form-group group-tr">
+                    <label>Tip Robe</label>
+                    <input type="text" id="tipRobe" placeholder="Opciono (Npr. Komponente)">
+                </div>
+            </div>
+
+            <div class="actions-bar">
+                <button type="button" id="cancelEditBtn" class="btn btn-danger" style="display:none;" onclick="cancelEdit()">Otkaži Izmenu</button>
+                <button type="button" id="resetBtn" class="btn btn-danger" onclick="clearForm()">Resetuj Polja</button>
+                <button type="submit" id="submitBtn" class="btn btn-primary">Sačuvaj u Bazu</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-title" style="justify-content: space-between; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 2h-4v3h4V4zm0 4h-4v3h4V8zm0 4h-4v3h3a1 1 0 0 0 1-1v-2zm-5 3v-3H6v3h4zm-5 0v-3H1v2a1 1 0 0 0 1 1h3zm-4-4h4V8H1v3zm0-4h4V4H1v3zm5-3v3h4V4H6zm0 4v3h4V8H6z"/></svg>
+                Zajednička Evidencija (Google Sheets)
+            </div>
+            <button class="btn btn-success" onclick="exportToExcel()">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right:5px;"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2zM4.5 3A1.5 1.5 0 0 1 6 4.5v1a1.5 1.5 0 0 1-1.5 1.5h-1A1.5 1.5 0 0 1 2 5.5v-1A1.5 1.5 0 0 1 3.5 3h1zM3 4.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/></svg>
+                Izvezi u Excel (.xlsx)
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table" id="logisticsTable">
+                <thead>
+                    <tr>
+                        <th colspan="12" class="mega-header bg-main-title">UTOVAR / ISTOVAR</th>
+                    </tr>
+                    <tr>
+                        <th colspan="2" class="mega-header bg-tl">TEAM LEADER</th>
+                        <th colspan="2" class="mega-header bg-ts">TIMESTAMP</th>
+                        <th class="mega-header bg-dk">DOBAVLJAC/KUPAC</th>
+                        <th class="mega-header bg-km">KAMION</th>
+                        <th class="mega-header bg-ddt">DDT</th>
+                        <th class="mega-header bg-ui">UTOVAR/ISTOVAR</th>
+                        <th class="mega-header bg-p">PALETE</th>
+                        <th class="mega-header bg-tr">TIP ROBE</th>
+                        <th colspan="2" style="background: #333; color: white;" class="mega-header">AKCIJE</th>
+                    </tr>
+                    <tr>
+                        <th class="sub-header">Ime</th>
+                        <th class="sub-header">Prezime</th>
+                        <th class="sub-header">Datum</th>
+                        <th class="sub-header">Vreme</th>
+                        <th class="sub-header">Naziv kompanije</th>
+                        <th class="sub-header">Tablice</th>
+                        <th class="sub-header">Broj DDT-a</th>
+                        <th class="sub-header">Utovar/Istovar</th>
+                        <th class="sub-header">Broj paleta</th>
+                        <th class="sub-header">Tip robe</th>
+                        <th class="sub-header" style="text-align: center;">Izmeni</th>
+                        <th class="sub-header" style="text-align: center;">Briši</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="danger-zone">
+            <button class="btn btn-warning" onclick="clearEntireDatabase()">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right:5px;"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                Obriši celu Google Sheets tabelu
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsPviGg32zxhFiV-bLIg0U-6QKMROcqcfExq_n4aJQSOFAwvOYCpUWeSRkpgNHIqjw/exec";
+
+    let database = [];
+    let editIndex = null; 
+
+    function showLoading(text) {
+        const overlay = document.getElementById('loadingOverlay');
+        overlay.innerText = text;
+        overlay.style.display = 'flex';
+    }
+
+    let loadingTimeout;
+    function showLoadingWithTimeout(text) {
+        showLoading(text);
+        clearTimeout(loadingTimeout);
+        loadingTimeout = setTimeout(() => {
+            hideLoading();
+        }, 8000); 
+    }
+
+    function hideLoading() {
+        clearTimeout(loadingTimeout);
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    function loadDataFromSheets() {
+        if(!SCRIPT_URL) return;
+        
+        showLoading("Učitavanje podataka sa Google Sheets...");
+        fetch(SCRIPT_URL)
+            .then(res => res.json())
+            .then(data => {
+                database = data.reverse(); 
+                renderTable();
+                hideLoading();
+            })
+            .catch(err => {
+                console.error("Greška prilikom mrežnog zahteva:", err);
+                hideLoading();
+            });
+    }
+
+    // Pretvara u čitljiv DD/MM/YYYY format
+    function formatDate(dateStr) {
+        if(!dateStr) return '-';
+        try {
+            // Ako već ima kosu crtu i podseća na naš format, vrati kako jeste
+            if(String(dateStr).includes('/') && !String(dateStr).includes('T')) return dateStr;
+            
+            const d = new Date(dateStr);
+            if(isNaN(d.getTime())) return dateStr;
+            
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        } catch(e) {
+            return dateStr;
+        }
+    }
+
+    // Pretvara u čitljiv 12-časovni format sa AM/PM (npr. 5:56 PM)
+    function formatTime(timeStr) {
+        if(!timeStr) return '-';
+        try {
+            let hours, minutes;
+            
+            // Rešavanje ISO stringova koji sadrže 'T' (kao na slici)
+            if(String(timeStr).includes('T')) {
+                const timePart = String(timeStr).split('T')[1];
+                const parts = timePart.split(':');
+                hours = parseInt(parts[0], 10);
+                minutes = parseInt(parts[1], 10);
+            } else if(String(timeStr).includes(':')) {
+                const parts = String(timeStr).split(':');
+                hours = parseInt(parts[0], 10);
+                minutes = parseInt(parts[1], 10);
+            } else {
+                return timeStr;
+            }
+
+            if(!isNaN(hours) && !isNaN(minutes)) {
+                // Konverzija u AM/PM format
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12; // ako je 0, postavi na 12
+                const minStr = String(minutes).padStart(2, '0');
+                
+                return `${hours}:${minStr} ${ampm}`;
+            }
+            return timeStr;
+        } catch(e) {
+            return timeStr;
+        }
+    }
+
+    function setNow() {
+        if (editIndex !== null) return; 
+        const now = new Date();
+        document.getElementById('datum').value = now.toISOString().split('T')[0];
+        document.getElementById('vreme').value = now.toTimeString().slice(0,5);
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        if(!database || database.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Tabela je trenutno prazna.</td></tr>`;
+            return;
+        }
+
+        database.forEach((row, index) => {
+            try {
+                const tr = document.createElement('tr');
+                const badgeClass = String(row['Utovar/Istovar'] || '').toLowerCase() === 'istovar' ? 'badge-istovar' : 'badge-utovar';
+
+                let paletePrikaz = (row['Broj paleta'] === "" || row['Broj paleta'] === undefined || row['Broj paleta'] === null) ? "-" : row['Broj paleta'];
+
+                tr.innerHTML = `
+                    <td><b>${row['Ime'] || '-'}</b></td>
+                    <td><b>${row['Prezime'] || '-'}</td>
+                    <td>${formatDate(row['Datum'])}</td>
+                    <td>${formatTime(row['Vreme'])}</td>
+                    <td>${row['Naziv kompanije'] || '-'}</td>
+                    <td><code style="font-size:12px; font-weight:bold; background:#eee; padding:2px 6px; border-radius:4px;">${row['Tablice'] || '-'}</code></td>
+                    <td>${row['Broj DDT-a'] || '-'}</td>
+                    <td><span class="badge ${badgeClass}">${row['Utovar/Istovar'] || 'Istovar'}</span></td>
+                    <td style="text-align: right; font-weight: bold; padding-right: 20px;">${paletePrikaz}</td>
+                    <td>${row['Tip robe'] || '-'}</td>
+                    <td style="text-align:center;"><button type="button" class="action-btn edit-btn" onclick="startEdit(${index})">✏️</button></td>
+                    <td style="text-align:center;"><button type="button" class="action-btn delete-btn" onclick="deleteRow(${index})">✕</button></td>
+                `;
+                tbody.appendChild(tr);
+            } catch(err) {
+                console.error("Greška pri renderovanju pojedinačnog reda:", err);
+            }
+        });
+    }
+
+    function startEdit(index) {
+        editIndex = index;
+        const record = database[index];
+
+        document.getElementById('ime').value = record['Ime'] || '';
+        document.getElementById('prezime').value = record['Prezime'] || '';
+        
+        if(record['Datum']) {
+            try {
+                if(String(record['Datum']).includes('/')) {
+                    const p = record['Datum'].split('/');
+                    if(p.length === 3) {
+                        document.getElementById('datum').value = `${p[2]}-${p[1]}-${p[0]}`;
+                    }
+                } else {
+                    const d = new Date(record['Datum']);
+                    if(!isNaN(d.getTime())) {
+                        document.getElementById('datum').value = d.toISOString().split('T')[0];
+                    }
+                }
+            } catch(e){}
+        }
+        
+        // Vraćanje vremena u input polje (mora biti u 24h formatu hh:mm)
+        if(record['Vreme']) {
+            try {
+                let tStr = String(record['Vreme']);
+                if(tStr.includes('T')) {
+                    document.getElementById('vreme').value = tStr.split('T')[1].slice(0,5);
+                } else if(tStr.includes('AM') || tStr.includes('PM')) {
+                    // Ako je u bazi već sačuvano kao AM/PM, konvertujemo nazad za input polje
+                    const parts = tStr.split(' ');
+                    const timeParts = parts[0].split(':');
+                    let hrs = parseInt(timeParts[0], 10);
+                    const mins = timeParts[1];
+                    const ampm = parts[1];
+                    if(ampm === 'PM' && hrs < 12) hrs += 12;
+                    if(ampm === 'AM' && hrs === 12) hrs = 0;
+                    document.getElementById('vreme').value = `${String(hrs).padStart(2, '0')}:${mins}`;
+                } else {
+                    document.getElementById('vreme').value = tStr.slice(0,5);
+                }
+            } catch(e){}
+        }
+        
+        document.getElementById('kompanija').value = record['Naziv kompanije'] || '';
+        document.getElementById('tablice').value = record['Tablice'] || '';
+        document.getElementById('ddt').value = record['Broj DDT-a'] || '';
+        document.getElementById('operacija').value = record['Utovar/Istovar'] || 'Istovar';
+        document.getElementById('palete').value = record['Broj paleta'] !== undefined ? record['Broj paleta'] : '';
+        document.getElementById('tipRobe').value = record['Tip robe'] || '';
+
+        document.getElementById('formTitleText').innerText = "Izmena Postojećih Podataka na Google Sheets";
+        document.getElementById('submitBtn').innerText = "Ažuriraj Podatke";
+        document.getElementById('submitBtn').className = "btn btn-warning";
+        document.getElementById('cancelEditBtn').style.display = "inline-flex";
+        document.getElementById('resetBtn').style.display = "none";
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        editIndex = null;
+        document.getElementById('logisticsForm').reset();
+        document.getElementById('formTitleText').innerText = "Novi Unos Podataka";
+        document.getElementById('submitBtn').innerText = "Sačuvaj u Baju";
+        document.getElementById('submitBtn').className = "btn btn-primary";
+        document.getElementById('cancelEditBtn').style.display = "none";
+        document.getElementById('resetBtn').style.display = "inline-flex";
+        setNow();
+    }
+
+    document.getElementById('logisticsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const record = {
+            "Ime": document.getElementById('ime').value,
+            "Prezime": document.getElementById('prezime').value,
+            "Datum": document.getElementById('datum').value,
+            "Vreme": document.getElementById('vreme').value,
+            "Naziv kompanije": document.getElementById('kompanija').value,
+            "Tablice": document.getElementById('tablice').value,
+            "Broj DDT-a": document.getElementById('ddt').value,
+            "Utovar/Istovar": document.getElementById('operacija').value,
+            "Broj paleta": document.getElementById('palete').value, 
+            "Tip robe": document.getElementById('tipRobe').value
+        };
+
+        if (editIndex !== null) {
+            record.index = (database.length - 1) - editIndex;
+            showLoadingWithTimeout("Ažuriranje podataka u tabeli...");
+        } else {
+            showLoadingWithTimeout("Upisivanje novog reda u Google Sheets...");
+        }
+
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(record)
+        })
+        .then(res => res.json())
+        .then(res => {
+            cancelEdit();
+            loadDataFromSheets(); 
+        })
+        .catch(err => {
+            cancelEdit();
+            loadDataFromSheets();
+        });
+    });
+
+    function deleteRow(index) {
+        if(confirm('Da li ste sigurni da želite da obrišete ovaj red iz Google Sheets tabele?')) {
+            const realSheetIndex = (database.length - 1) - index;
+            showLoadingWithTimeout("Brisanje reda...");
+            
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'delete', index: realSheetIndex })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if(editIndex === index) cancelEdit();
+                loadDataFromSheets();
+            })
+            .catch(err => {
+                loadDataFromSheets();
+            });
+        }
+    }
+
+    function clearEntireDatabase() {
+        if(confirm('UPOZORENJE: Da li ste potpuno sigurni da želite da ISPRAZNITE CELU Google Sheets tabelu? Ova akcija briše sve podatke zauvek.')) {
+            showLoadingWithTimeout("Čišćenje cele tabele...");
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'clearAll' })
+            })
+            .then(res => res.json())
+            .then(res => {
+                cancelEdit();
+                loadDataFromSheets();
+            })
+            .catch(err => {
+                loadDataFromSheets();
+            });
+        }
+    }
+
+    function clearForm() {
+        document.getElementById('logisticsForm').reset();
+        setNow();
+    }
+
+    function exportToExcel() {
+        const header1 = ["UTOVAR / ISTOVAR", "", "", "", "", "", "", "", "", ""];
+        const header2 = ["TEAM LEADER", "", "TIMESTAMP", "", "DOBAVLJAC/KUPAC", "KAMION", "DDT", "UTOVAR/ISTOVAR", "PALETE", "TIP ROBE"];
+        const header3 = ["Ime", "Prezime", "Datum", "Vreme", "Naziv kompanije", "Tablice", "Broj DDT-a", "Utovar/Istovar", "Broj paleta", "Tip robe"];
+        
+        const sortedDatabase = [...database].reverse();
+        const rows = sortedDatabase.map(r => [
+            r['Ime'], r['Prezime'], formatDate(r['Datum']), formatTime(r['Vreme']), r['Naziv kompanije'], r['Tablice'], r['Broj DDT-a'], r['Utovar/Istovar'], r['Broj paleta'] !== "" ? parseInt(r['Broj paleta']) : "-", r['Tip robe']
+        ]);
+
+        const workbookData = [header1, header2, header3, ...rows];
+        const worksheet = XLSX.utils.aoa_to_sheet(workbookData);
+        
+        worksheet['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } }, 
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }, 
+            { s: { r: 1, c: 2 }, e: { r: 1, c: 3 } }  
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Utovar-Istovar");
+        XLSX.writeFile(workbook, `Logistika_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
+
+    setNow();
+    loadDataFromSheets();
+</script>
+
+</body>
+</html>

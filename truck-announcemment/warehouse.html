@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magacin - Stellantis Logistics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --zf-blue: #00549f; --zf-dark: #002e5d; --border-color: #e2e8f0;
+            --bg: #f8fafc; --success-green: #10b981; --success-bg: #f0fdf4;
+            --text-main: #1e293b; --text-muted: #64748b; --container-width: 1250px;
+            --warning-amber: #f59e0b;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; }
+        header { background: white; border-bottom: 1px solid var(--border-color); height: 90px; display: flex; justify-content: center; position: sticky; top: 0; z-index: 100; }
+        .header-content { width: var(--container-width); max-width: 100%; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
+        .zf-logo-square { background: var(--zf-blue); color: white; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; border-radius: 4px; font-size: 22px; }
+        .header-title-wrapper h1 { margin: 0; font-size: 22px; text-transform: uppercase; font-weight: 800; color: var(--zf-dark); letter-spacing: -0.02em; }
+        .page-description { font-size: 13px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+        .btn-logout { background: white; border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; color: #be123c; }
+        .container { width: var(--container-width); max-width: 100%; margin: 30px auto; padding: 0 20px; box-sizing: border-box; flex: 1; }
+        .section-header-flex { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; margin-bottom: 15px; }
+        .section-title { font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px; text-transform: uppercase; color: var(--zf-dark); }
+        .refresh-btn { cursor: pointer; font-size: 20px; border: none; background: none; padding: 5px; outline: none; }
+        .refresh-btn i { color: #94a3b8; transition: color 0.2s; }
+        .refresh-btn:hover i, .refresh-btn.active i { color: var(--zf-blue); }
+        .refresh-btn.active i { animation: spin 0.8s linear; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .ramp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 35px; }
+        .ramp-card { background: white; border: 1px solid #cbd5e1; border-style: dashed; border-radius: 6px; padding: 12px; min-height: 250px; display: flex; flex-direction: column; }
+        .ramp-card.occupied { border: 2px solid var(--success-green); background: var(--success-bg); border-style: solid; }
+        .ramp-top { display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: 800; font-size: 13px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 8px; }
+        .company-name { font-size: 16px; font-weight: 700; color: #334155; display: block; }
+        .plate-number { font-size: 20px; font-weight: 800; color: var(--zf-blue); margin-bottom: 10px; display: block; }
+        .info-list { display: flex; flex-direction: column; gap: 5px; }
+        .info-item { display: flex; align-items: center; font-size: 13.5px; }
+        .info-item i { width: 22px; color: var(--zf-blue); margin-right: 6px; text-align: center; }
+        .info-value { color: var(--text-main); font-weight: 600; }
+        #waitingContainer { height: 500px; overflow-y: auto; padding: 15px; background: #f1f5f9; border: 2px solid var(--border-color); border-radius: 8px; }
+        .waiting-card { background: white; border: 1px solid var(--border-color); padding: 15px 20px; border-radius: 8px; display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center; }
+        
+        /* Akcije na desnoj strani za listu čekanja */
+        .waiting-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+        .comment-link { background: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-color); cursor: pointer; }
+        .comment-link:hover { background: #e2e8f0; }
+
+        .ramp-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 15px; }
+        .btn-start-unload { background: var(--warning-amber); color: white; border: none; flex: 1; padding: 12px 5px; border-radius: 4px; font-weight: 800; cursor: pointer; font-size: 12px; height: 45px; }
+        .btn-unload { background: var(--success-green); color: white; border: none; flex: 1; padding: 12px 5px; border-radius: 4px; font-weight: 800; cursor: pointer; font-size: 12px; height: 45px; }
+        .btn-start-unload:disabled, .btn-unload:disabled { background: #e2e8f0 !important; color: #94a3b8 !important; cursor: not-allowed; border: 1px solid var(--border-color); }
+        .btn-assign { background: var(--zf-blue); color: white; border: none; padding: 12px 25px; border-radius: 6px; font-weight: 800; cursor: pointer; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(2px); }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 450px; position: relative; box-sizing: border-box; }
+        .ramp-selection-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+        .ramp-btn { background: var(--zf-blue); color: white; border: none; padding: 15px 10px; font-weight: 800; cursor: pointer; border-radius: 6px; }
+        footer { width: 100%; text-align: center; padding: 20px 0; font-size: 12px; color: var(--text-muted); border-top: 1px solid #f1f5f9; background: white; margin-top: auto; }
+        footer strong { color: var(--zf-blue); font-weight: 700; }
+        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 20px; color: var(--text-muted); cursor: pointer; border: none; background: none; padding: 5px; }
+        #palletInput { width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 6px; font-size: 24px; text-align: center; margin: 20px 0; box-sizing: border-box; display: block; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="zf-logo-square"><i class="fas fa-warehouse"></i></div>
+                <div class="header-title-wrapper">
+                    <h1>MAGACIN</h1>
+                    <div class="page-description">Operativni panel rampi</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Odjava</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="section-title" style="margin-bottom: 20px;"><i class="fas fa-truck-loading" style="color:var(--zf-blue)"></i> Status Rampi</div>
+        <div id="rampsContainer" class="ramp-grid"></div>
+
+        <div class="section-header-flex">
+            <div class="section-title">
+                <i class="far fa-clock" style="color:var(--zf-blue)"></i> Kamioni na čekanju 
+                <span id="waitingCount" style="background:#ffedd5; color:#9a3412; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:10px;">0</span>
+            </div>
+            <button class="refresh-btn" onclick="handleRefresh(this)"><i class="fas fa-sync-alt"></i></button>
+        </div>
+        <div id="waitingContainer"></div>
+    </div>
+
+    <div id="rampModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModals()"><i class="fas fa-times"></i></button>
+            <h2 style="margin:0; font-size:18px; color:var(--zf-blue); font-weight: 800;">IZABERITE RAMPU</h2>
+            <div id="modalRampGrid" class="ramp-selection-grid"></div>
+            <button onclick="closeModals()" style="margin-top:25px; width:100%; padding:10px; border:none; background:#f1f5f9; cursor:pointer; border-radius:6px;">Odustani</button>
+        </div>
+    </div>
+
+    <div id="palletModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModals()"><i class="fas fa-times"></i></button>
+            <h2 style="margin:0; font-size:18px; color:var(--zf-blue); font-weight: 800;">UNESITE BROJ PALETA</h2>
+            <p id="palletTruckInfo" style="font-size: 13px; color: var(--text-muted); margin-top: 5px;"></p>
+            <input type="number" id="palletInput" placeholder="Unesite broj paleta ( min 1 )" min="1" oninput="validatePallets()">
+            <button id="finalizeBtn" class="btn-unload" style="flex:none; width:100%" onclick="finalizeUnload()" disabled>POTVRDI I POŠALJI NA KAPIJU</button>
+        </div>
+    </div>
+
+    <footer>
+        Aplikaciju razvio <strong>Dušan Kostić</strong> &copy; 2026. Ver 1.2
+    </footer>
+
+    <script>
+        (function() {
+            const user = sessionStorage.getItem('stellantis_user_logged');
+            if (!user) { window.location.replace('truck-login.html'); }
+        })();
+
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDGTRVTD7VOpD3oyDNGajSeGiKa3xRo30hdDDIEFtMyRxd-MrIs47G8TVf1RzzwvTEQg/exec";
+        const rampList = ["RAMPA 1", "RAMPA 2", "RAMPA 3", "RAMPA 4", "TEHNIČKA RAMPA", "ROLO RAMPA"];
+        let currentTruckId = null;
+        let cachedData = [];
+
+        function formatDateTime(dateStr, timeStr) {
+            if (!dateStr || dateStr === "/") return "/";
+            return `${dateStr} | ${timeStr}`;
+        }
+
+        async function render() {
+            try {
+                const res = await fetch(SCRIPT_URL + "?action=getData&t=" + Date.now());
+                const data = await res.json();
+                cachedData = data;
+                const rContainer = document.getElementById('rampsContainer');
+                const wContainer = document.getElementById('waitingContainer');
+                if(!rContainer || !wContainer) return;
+                rContainer.innerHTML = ''; wContainer.innerHTML = '';
+                let wCount = 0;
+
+                rampList.forEach(name => {
+                    const t = data.find(x => x.Rampa === name && (x.Status === 'NA RAMPI' || x.Status === 'NA ISTOVARU'));
+                    const card = document.createElement('div');
+                    card.className = `ramp-card ${t ? 'occupied' : ''}`;
+                    if(t) {
+                        const isStarted = t.Status === 'NA ISTOVARU';
+                        card.innerHTML = `
+                            <div class="ramp-top"><span>${name}</span><span style="color:${isStarted ? '#f59e0b' : 'var(--success-green)'}">${t.Status}</span></div>
+                            <div class="info-container">
+                                <span class="company-name">${t.Kompanija}</span>
+                                <span class="plate-number">${t.Tablice}</span>
+                                <div class="info-list">
+                                    <div class="info-item"><i class="fas fa-truck"></i> <span class="info-value">${t.Vozilo || '/'}</span></div>
+                                    <div class="info-item"><i class="fas fa-boxes"></i> <span class="info-value">${t.Roba || '/'}</span></div>
+                                    <div class="info-item"><i class="fas fa-phone-alt"></i> <span class="info-value">${t.Telefon || '/'}</span></div>
+                                    <div class="info-item" style="margin-top:5px; padding-top:5px; border-top:1px solid rgba(0,0,0,0.05)">
+                                        <i class="far fa-clock" style="color:var(--zf-blue)"></i> 
+                                        <span class="info-value" style="color:var(--zf-blue)">Postavljen: ${formatDateTime(t.Datum_Rampa, t.Vreme_Rampa)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ramp-actions">
+                                <button class="btn-start-unload" onclick="startUnload(${t.ID}, this)" ${isStarted ? 'disabled' : ''}>
+                                    ${isStarted ? '<i class="fas fa-check-circle"></i> ZAPOČETO' : 'ZAPOČNI ISTOVAR'}
+                                </button>
+                                <button class="btn-unload" onclick="openPalletModal(${t.ID}, '${t.Tablice}', '${t.Kompanija}')" ${!isStarted ? 'disabled' : ''}>
+                                    ZAVRŠI ISTOVAR
+                                </button>
+                            </div>`;
+                    } else {
+                        card.innerHTML = `<div class="ramp-top">${name} <span>SLOBODNO</span></div><div style="margin:auto; color:#cbd5e1; text-align:center;">Dostupno</div>`;
+                    }
+                    rContainer.appendChild(card);
+                });
+
+                data.filter(x => x.Status === 'NA ČEKANJU').forEach(t => {
+                    wCount++;
+                    const card = document.createElement('div');
+                    card.className = 'waiting-card';
+                    
+                    // Provera za komentar: ako postoji, pravi se HTML za dugme
+                    const commentBtnHtml = (t.Komentar && t.Komentar.trim() !== "") 
+                        ? `<div class="comment-link" onclick="alert('Komentar: ' + '${t.Komentar.replace(/'/g, "\\'")}');">
+                             <i class="fas fa-comment-dots"></i> PROČITAJ KOMENTAR
+                           </div>` 
+                        : "";
+
+                    card.innerHTML = `
+                        <div class="info-container">
+                            <span class="company-name">${t.Kompanija}</span>
+                            <span class="plate-number">${t.Tablice}</span>
+                            <div class="info-list">
+                                <div class="info-item"><i class="fas fa-truck"></i> <span class="info-value">${t.Vozilo || '/'}</span></div>
+                                <div class="info-item"><i class="fas fa-boxes"></i> <span class="info-value">${t.Roba || '/'}</span></div>
+                                <div class="info-item"><i class="fas fa-phone-alt"></i> <span class="info-value">${t.Telefon || '/'}</span></div>
+                                <div class="info-item"><i class="far fa-clock" style="color:var(--zf-blue)"></i> <span class="info-value">Prijavljen: ${formatDateTime(t.Datum, t.Vreme)}</span></div>
+                            </div>
+                        </div>
+                        <div class="waiting-actions">
+                            <button class="btn-assign" onclick="openRampModal(${t.ID})">DODELI RAMPU</button>
+                            ${commentBtnHtml}
+                        </div>`;
+                    wContainer.appendChild(card);
+                });
+                document.getElementById('waitingCount').textContent = wCount;
+            } catch(e) { console.error("Greška:", e); }
+        }
+
+        async function startUnload(id, btn) {
+            if(!confirm("Započni istovar?")) return;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ action: 'start_unload', id: id })
+            });
+            setTimeout(render, 1200);
+        }
+
+        async function openRampModal(id) {
+            currentTruckId = id;
+            const truck = cachedData.find(x => x.ID === id);
+            const isKombi = truck && truck.Vozilo === 'Kombi';
+            const grid = document.getElementById('modalRampGrid');
+            grid.innerHTML = ''; 
+            rampList.forEach(name => {
+                const isOccupied = cachedData.some(t => t.Rampa === name && (t.Status === 'NA RAMPI' || t.Status === 'NA ISTOVARU'));
+                let canClick = (isKombi) ? ((name === "TEHNIČKA RAMPA" || name === "ROLO RAMPA") && !isOccupied) : (name !== "ROLO RAMPA" && !isOccupied);
+                const btn = document.createElement('button');
+                btn.className = 'ramp-btn';
+                btn.innerHTML = name;
+                if(canClick) {
+                    btn.onclick = async () => {
+                        const now = new Date();
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        await fetch(SCRIPT_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            body: JSON.stringify({ 
+                                action: 'update', 
+                                id: id, 
+                                rampa: name, 
+                                status: 'NA RAMPI', 
+                                dateRampa: now.toLocaleDateString('de-DE'), 
+                                timeRampa: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) 
+                            })
+                        });
+                        closeModals(); render();
+                    };
+                } else { 
+                    btn.disabled = true; btn.style.background = "#e2e8f0"; btn.style.color = "#94a3b8"; btn.style.cursor = "not-allowed";
+                }
+                grid.appendChild(btn);
+            });
+            document.getElementById('rampModal').style.display = 'flex';
+        }
+
+        function openPalletModal(id, plate, company) {
+            currentTruckId = id;
+            document.getElementById('palletInput').value = '';
+            document.getElementById('palletTruckInfo').textContent = `${plate} | ${company}`;
+            document.getElementById('finalizeBtn').disabled = true;
+            document.getElementById('palletModal').style.display = 'flex';
+        }
+
+        async function finalizeUnload() {
+            const pallets = document.getElementById('palletInput').value;
+            if(!pallets || pallets < 1) return;
+            const btn = document.getElementById('finalizeBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SLANJE...';
+            const now = new Date();
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ 
+                    action: 'update', 
+                    id: currentTruckId, 
+                    pallets: pallets, 
+                    status: 'SPREMAN ZA IZLAZ', 
+                    Datum_Izlaz: now.toLocaleDateString('de-DE'),
+                    Vreme_Izlaz: now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+                })
+            });
+            closeModals(); render();
+            btn.innerHTML = 'POTVRDI I POŠALJI NA KAPIJU';
+        }
+
+        function validatePallets() {
+            const val = document.getElementById('palletInput').value;
+            const btn = document.getElementById('finalizeBtn');
+            if(val < 0) { document.getElementById('palletInput').value = ''; }
+            btn.disabled = (!val || val <= 0);
+        }
+
+        function handleRefresh(btn) { btn.classList.add('active'); render(); setTimeout(() => btn.classList.remove('active'), 800); }
+        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
+        function handleLogout() { if(confirm("Odjava?")) { sessionStorage.removeItem('stellantis_user_logged'); window.location.href = 'truck-login.html'; } }
+
+        render();
+        setInterval(render, 15000);
+    </script>
+</body>
+</html>
