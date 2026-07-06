@@ -308,10 +308,11 @@
             const btn = document.getElementById('btn-' + id);
             
             btn.disabled = true;
-            btn.innerText = "KOMPRESUJEM...";
+            btn.innerText = "OBRAĐUJEM...";
             showLoading(true);
 
-            if (fileInput.files.length > 0) {
+            // Provera da li je korisnik izabrao novi fajl
+            if (fileInput.files && fileInput.files.length > 0) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
@@ -330,6 +331,7 @@
                 };
                 reader.readAsDataURL(fileInput.files[0]);
             } else {
+                // Ako nije izabrao novi fajl, šalje postojeći komentar (ili samo ažurira komentar)
                 posaljiIzmenu(id, "", komentar);
             }
         }
@@ -347,13 +349,19 @@
                 method: 'POST', 
                 mode: 'no-cors', 
                 body: JSON.stringify(payload)
-            });
-            
-            setTimeout(() => {
-                alert("Izmena poslata!");
+            })
+            .then(() => {
+                setTimeout(() => {
+                    alert("Izmena poslata!");
+                    showLoading(false);
+                    ucitajSveObjaveSaGoogleTabele();
+                }, 1000);
+            })
+            .catch(err => {
+                console.error(err);
                 showLoading(false);
-                ucitajSveObjaveSaGoogleTabele();
-            }, 2000);
+                alert("Greška pri slanju.");
+            });
         }
 
         function obrisiObjavu(id) { 
