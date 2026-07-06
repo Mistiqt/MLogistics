@@ -29,7 +29,7 @@
         .nav-tab-item { display: inline-block; background: #ffffff; border: 1px solid #e5e5e5; padding: 12px 28px; border-radius: 30px; font-weight: 500; color: #555555 !important; text-decoration: none !important; transition: all 0.2s; cursor: pointer; line-height: 1.2; }
         .nav-tab-item:hover { background: #1a3263; color: #ffffff !important; border-color: #1a3263; }
         .dropdown { position: relative; display: inline-block; }
-        .dropdown-menu { display: none; position: absolute; background-color: #ffffff; min-width: 260px; box-shadow: 0px 8px 24px rgba(0,0,0,0.12); border-radius: 12px; border: 1px solid #eaeaea; z-index: 1050; left: 50%; transform: translateX(-50%); padding: 8px 0; margin-top: 5px; }
+        .dropdown-menu { display: none; position: absolute; background-color: #ffffff; min-width: 260px; box-shadow: 0px 8px 24px rgba(0,0,0,0.12); border-radius: 12px; border: 1px solid #eaeaea; z-index: 1050; left: 50%; transform: translateX(-50%); padding: 8px 0; top: 100%; margin-top: 0px; }
         .dropdown:hover .dropdown-menu { display: block; }
         .dropdown-item { color: #333333 !important; padding: 12px 20px; text-decoration: none !important; display: block; font-size: 14px; font-weight: 500; transition: background 0.2s; cursor: pointer; }
         .dropdown-item:hover { background-color: #f1f5f9; color: #1a3263 !important; }
@@ -50,7 +50,6 @@
         .announcement-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden; margin-bottom: 20px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.01); }
         .announcement-img { height: 190px; object-fit: cover; width: 100%; cursor: zoom-in; transition: opacity 0.2s; }
         .announcement-img:hover { opacity: 0.9; }
-        .announcement-body { padding: 20px; }
         .post-meta-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; padding-top: 12px; border-top: 1px solid #f1f1f1; }
         .meta-tag { font-size: 11px; font-weight: 500; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
         .meta-tag-date { background: #fdf2f8; color: #db2777; }
@@ -73,7 +72,6 @@
         .badge-zavrseno { background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-left: 10px; }
         .badge-nije-zavrseno { background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-left: 10px; }
         .btn-refresh { font-size: 12px; padding: 5px 15px; cursor: pointer; }
-
         @media (max-width: 768px) {
             .nav-clean-tabs { flex-wrap: wrap; gap: 8px; }
             .slider-wrapper { height: 250px !important; }
@@ -85,9 +83,7 @@
     </style>
 </head>
 <body>
-
     <div id="loadingOverlay" class="global-loading-overlay">Molim, sačekajte...</div>
-
     <div id="imageLightbox" class="image-lightbox-overlay" onclick="closeZoom()">
         <img id="lightboxImg" class="lightbox-img" src="" alt="Zumirana slika">
     </div>
@@ -162,7 +158,6 @@
                             </form>
                         </div>
                     </div>
-
                     <div class="col-lg" id="feedColumn">
                         <h3 class="section-heading">📢 Slike sa Gembe <button class="btn btn-sm btn-outline-secondary btn-refresh" onclick="ucitajSveObjaveSaGoogleTabele()">Osveži objave</button></h3>
                         <div class="row" id="portalFeed">
