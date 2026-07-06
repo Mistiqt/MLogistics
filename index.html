@@ -30,10 +30,9 @@
         .nav-tab-item:hover { background: #1a3263; color: #ffffff !important; border-color: #1a3263; }
         .dropdown { position: relative; display: inline-block; padding-bottom: 15px; margin-bottom: -15px; }
         .dropdown:hover .nav-tab-item { background: #1a3263; color: #ffffff !important; border-color: #1a3263; }
-        .dropdown-menu { display: none; position: absolute; background-color: #ffffff; min-width: 260px; box-shadow: 0px 8px 24px rgba(0,0,0,0.12); border-radius: 12px; border: 1px solid #eaeaea; z-index: 1000; margin-top: 5px; padding: 8px 0; left: 50%; transform: translateX(-50%); }
-        .dropdown-menu::before { content: ''; position: absolute; top: -20px; left: 0; width: 100%; height: 20px; background: transparent; }
+        .dropdown-menu { display: none; position: absolute; background-color: #ffffff; min-width: 260px; box-shadow: 0px 8px 24px rgba(0,0,0,0.12); border-radius: 12px; border: 1px solid #eaeaea; z-index: 1050; margin-top: 5px; padding: 8px 0; left: 50%; transform: translateX(-50%); }
         .dropdown:hover .dropdown-menu { display: block; }
-        .dropdown-item { color: #333333 !important; padding: 10px 20px; text-decoration: none !important; display: block; font-size: 14px; font-weight: 500; transition: background 0.2s; }
+        .dropdown-item { color: #333333 !important; padding: 12px 20px; text-decoration: none !important; display: block; font-size: 14px; font-weight: 500; transition: background 0.2s; cursor: pointer; pointer-events: auto; }
         .dropdown-item:hover { background-color: #f1f5f9; color: #1a3263 !important; }
         .slider-section { margin-top: 35px; }
         .slider-wrapper { background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid #eaeaea; position: relative; height: 620px; }
@@ -70,7 +69,7 @@
         .image-lightbox-overlay.active .lightbox-img { transform: scale(1); }
         .loading-spinner { text-align: center; width: 100%; padding: 30px; font-size: 16px; color: #666; }
         .global-loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 10000; align-items: center; justify-content: center; font-weight: 600; color: #1a3263; font-size: 18px; }
-        footer { margin-top: 60px; padding: 25px 0; border-border-top: 1px solid #eaeaea; text-align: center; font-size: 13px; color: #888; }
+        footer { margin-top: 60px; padding: 25px 0; border-top: 1px solid #eaeaea; text-align: center; font-size: 13px; color: #888; }
         .komentar-prikaz { background: #e0f2f1; padding: 10px; border-radius: 8px; font-size: 13px; margin-top: 10px; color: #00695c; border-left: 4px solid #00695c; }
         .badge-zavrseno { background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-left: 10px; }
         .badge-nije-zavrseno { background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-left: 10px; }
@@ -203,7 +202,6 @@
                     showLoading(false);
                     if (data.status === "OK") {
                         userRole = data.uloga;
-                        
                         localStorage.setItem('userRole', userRole);
                         localStorage.setItem('currentUser', loggedUser); 
                         
@@ -243,24 +241,16 @@
                     feed.innerHTML = '';
                     objave.forEach(objava => {
                         if(objava.id === "id" || !objava.id) return;
-                        
                         const autorObjave = objava.autorObjave;
                         const autorKomentara = objava.autorKomentara;
-                        
                         const mozeBrisanje = (userRole === 'MASTER' || (userRole === 'ADMIN' && autorObjave === loggedUser));
                         const mozeKomentarisanje = (userRole !== 'GUEST') && (userRole === 'MASTER' || userRole === 'ADMIN' || !autorKomentara || autorKomentara === loggedUser);
-                        
                         const d = new Date(objava.datum);
                         const fDate = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}.`;
-                        
                         const imaKomentar = (objava.komentar && objava.komentar.trim() !== "");
                         const imaDokaz = (objava.dokaz && objava.dokaz.trim() !== "");
-                        
                         const jeZavrseno = (imaKomentar && imaDokaz);
-                        const statusBadge = jeZavrseno ? 
-                            '<span class="badge-zavrseno">ZAVRŠENO</span>' : 
-                            '<span class="badge-nije-zavrseno">NIJE ZAVRŠENO</span>';
-                        
+                        const statusBadge = jeZavrseno ? '<span class="badge-zavrseno">ZAVRŠENO</span>' : '<span class="badge-nije-zavrseno">NIJE ZAVRŠENO</span>';
                         const komentarPrikaz = imaKomentar ? `<div class="komentar-prikaz"><strong>Komentar:</strong> ${objava.komentar}</div>` : '';
                         
                         const cardHTML = `
@@ -272,7 +262,6 @@
                                     <p class="text-muted small">${objava.tekst}</p>
                                     ${imaDokaz ? `<img src="${objava.dokaz}" class="announcement-img mt-2" style="height:100px" onclick="zoomImage(this)">` : ''}
                                     ${komentarPrikaz}
-                                    
                                     ${mozeKomentarisanje ? `
                                     <div class="user-action-section">
                                         <button class="btn btn-sm btn-outline-primary w-100" onclick="document.getElementById('edit-${objava.id}').style.display='block'; this.style.display='none'">
@@ -284,7 +273,6 @@
                                             <button id="btn-${objava.id}" class="btn btn-zavrseno" onclick="zavrsiObjavu('${objava.id}')">SAČUVAJ IZMENE</button>
                                         </div>
                                     </div>` : ''}
-                                    
                                     <div class="post-meta-container">
                                         <span class="meta-tag">📍 ${objava.mesto}</span>
                                         <span class="meta-tag meta-tag-date">📅 ${fDate}</span>
@@ -298,7 +286,7 @@
                 })
                 .catch(err => {
                     console.error("Greška pri učitavanju:", err);
-                    feed.innerHTML = '<div class="text-danger">Greška pri učitavanju podataka. Proverite konzolu (F12).</div>';
+                    feed.innerHTML = '<div class="text-danger">Greška pri učitavanju podataka.</div>';
                 });
         }
 
@@ -306,12 +294,9 @@
             const fileInput = document.getElementById('file-' + id);
             const komentar = document.getElementById('kom-' + id).value;
             const btn = document.getElementById('btn-' + id);
-            
             btn.disabled = true;
             btn.innerText = "OBRAĐUJEM...";
             showLoading(true);
-
-            // Provera da li je korisnik izabrao novi fajl
             if (fileInput.files && fileInput.files.length > 0) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -331,52 +316,27 @@
                 };
                 reader.readAsDataURL(fileInput.files[0]);
             } else {
-                // Ako nije izabrao novi fajl, šalje postojeći komentar (ili samo ažurira komentar)
                 posaljiIzmenu(id, "", komentar);
             }
         }
 
         function posaljiIzmenu(id, dataURL, komentar) {
-            const payload = { 
-                akcija: "izmeni", 
-                id: id, 
-                dokaz: dataURL, 
-                komentar: komentar, 
-                user: loggedUser 
-            };
-            
-            fetch(GOOGLE_SCRIPT_URL, { 
-                method: 'POST', 
-                mode: 'no-cors', 
-                body: JSON.stringify(payload)
-            })
+            const payload = { akcija: "izmeni", id: id, dokaz: dataURL, komentar: komentar, user: loggedUser };
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
             .then(() => {
                 setTimeout(() => {
                     alert("Izmena poslata!");
                     showLoading(false);
                     ucitajSveObjaveSaGoogleTabele();
                 }, 1000);
-            })
-            .catch(err => {
-                console.error(err);
-                showLoading(false);
-                alert("Greška pri slanju.");
-            });
+            }).catch(err => { console.error(err); showLoading(false); alert("Greška pri slanju."); });
         }
 
         function obrisiObjavu(id) { 
             if(confirm("Obriši i arhiviraj?")) { 
                 showLoading(true); 
-                fetch(GOOGLE_SCRIPT_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    body: JSON.stringify({ akcija: "obrisi", id: id, user: loggedUser }) 
-                });
-                
-                setTimeout(() => {
-                    ucitajSveObjaveSaGoogleTabele(); 
-                    showLoading(false); 
-                }, 2000);
+                fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ akcija: "obrisi", id: id, user: loggedUser }) });
+                setTimeout(() => { ucitajSveObjaveSaGoogleTabele(); showLoading(false); }, 2000);
             } 
         }
         
@@ -396,18 +356,11 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     const dataURL = canvas.toDataURL('image/jpeg', 0.4);
-                    
                     fetch(GOOGLE_SCRIPT_URL, { 
-                        method: 'POST', 
-                        mode: 'no-cors', 
+                        method: 'POST', mode: 'no-cors', 
                         body: JSON.stringify({ akcija: "dodaj", id: Date.now().toString(), user: loggedUser, naslov: document.getElementById('newTitle').value, mesto: document.getElementById('newLocation').value, datum: document.getElementById('newDate').value, smena: document.getElementById('newShift').value, leader: document.getElementById('newLeader').value, tekst: document.getElementById('newText').value, slika: dataURL }) 
-                    })
-                    .then(() => {
-                        setTimeout(() => {
-                            ucitajSveObjaveSaGoogleTabele();
-                            showLoading(false);
-                            document.getElementById('secureAdminForm').reset();
-                        }, 2000);
+                    }).then(() => {
+                        setTimeout(() => { ucitajSveObjaveSaGoogleTabele(); showLoading(false); document.getElementById('secureAdminForm').reset(); }, 2000);
                     });
                 };
                 img.src = ev.target.result;
