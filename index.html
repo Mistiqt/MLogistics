@@ -210,6 +210,8 @@
                         document.getElementById('navTimeSheet').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navStillServis').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navZaposleni').style.display = isMasterAdmin ? 'inline-block' : 'none';
+                        
+                        // OVO JE KLJUČNO: ETS se prikazuje samo ako je korisnik Master/Admin
                         document.getElementById('navETS').style.display = isMasterAdmin ? 'inline-block' : 'none';
                         
                         ucitajSveObjaveSaGoogleTabele();
