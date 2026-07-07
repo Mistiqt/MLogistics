@@ -159,7 +159,7 @@
                         </div>
                     </div>
                     <div class="col-lg" id="feedColumn">
-                        <h3 class="section-heading">📢 Slike sa Gembe <button class="btn btn-sm btn-outline-secondary btn-refresh" onclick="ucitajSveObjaveSaGoogleTabele()">Osveži objave</button></h3>
+                        <h3 class="section-heading">📢 Slike sa Gembe <button class="btn btn-sm btn-outline-secondary btn-refresh" onclick="ucitajSveObjaveSaGoogleTabele(true)">Osveži objave</button></h3>
                         <div class="row" id="portalFeed">
                             <div class="loading-spinner">Učitavanje podataka...</div>
                         </div>
@@ -183,6 +183,7 @@
 
         let loggedUser = "";
         let userRole = "";
+        let isEditing = ""; // Pamti ID objave koja se trenutno menja
 
         function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
 
@@ -215,7 +216,12 @@
                         document.getElementById('navETS').style.display = isMasterAdmin ? 'inline-block' : 'none';
                         
                         ucitajSveObjaveSaGoogleTabele();
-                        setInterval(ucitajSveObjaveSaGoogleTabele, 10000);
+                        setInterval(() => {
+                            // Ako korisnik trenutno unosi sliku ili komentar, stopiraj auto-refresh
+                            if(!isEditing) {
+                                ucitajSveObjaveSaGoogleTabele();
+                            }
+                        }, 10000);
                     } else {
                         document.getElementById('loginError').style.display = "block";
                         document.getElementById('loginError').innerText = "Pogrešna šifra ili nalog nije aktivan!";
@@ -229,11 +235,16 @@
                 });
         }
 
-        function ucitajSveObjaveSaGoogleTabele() {
+        function ucitajSveObjaveSaGoogleTabele(isManual = false) {
+            // Ako je ručno osvežavanje kliknuto, dozvoli reset izmene
+            if(isManual) isEditing = "";
+            if(isEditing) return; 
+
             const feed = document.getElementById('portalFeed');
             fetch(GOOGLE_SCRIPT_URL)
                 .then(res => res.json())
                 .then(objave => {
+                    if(isEditing) return; // Dupla provera u slučaju asinhronog odziva
                     feed.innerHTML = '';
                     objave.forEach(objava => {
                         if(objava.id === "id" || !objava.id) return;
@@ -249,6 +260,9 @@
                         const statusBadge = jeZavrseno ? '<span class="badge-zavrseno">ZAVRŠENO</span>' : '<span class="badge-nije-zavrseno">NIJE ZAVRŠENO</span>';
                         const komentarPrikaz = imaKomentar ? `<div class="komentar-prikaz"><strong>Komentar:</strong> ${objava.komentar}</div>` : '';
                         
+                        const prikaziFormu = (isEditing === objava.id) ? 'style="display:block;"' : '';
+                        const sakrijDugme = (isEditing === objava.id) ? 'style="display:none;"' : '';
+
                         const cardHTML = `
                             <div class="col-md-6 mb-3"><div class="announcement-card">
                                 ${mozeBrisanje ? `<button class="delete-btn" onclick="obrisiObjavu('${objava.id}')">Obriši</button>` : ''}
@@ -260,10 +274,10 @@
                                     ${komentarPrikaz}
                                     ${mozeKomentarisanje ? `
                                     <div class="user-action-section">
-                                        <button class="btn btn-sm btn-outline-primary w-100" onclick="document.getElementById('edit-${objava.id}').style.display='block'; this.style.display='none'">
+                                        <button class="btn btn-sm btn-outline-primary w-100" ${sakrijDugme} onclick="isEditing='${objava.id}'; document.getElementById('edit-${objava.id}').style.display='block'; this.style.display='none'">
                                             ${(imaKomentar || imaDokaz) ? 'Izmeni podatke' : 'Dodaj komentar i sliku'}
                                         </button>
-                                        <div id="edit-${objava.id}" class="edit-fields">
+                                        <div id="edit-${objava.id}" class="edit-fields" ${prikaziFormu}>
                                             <input type="file" id="file-${objava.id}" class="form-control-file mt-2" accept="image/*">
                                             <textarea id="kom-${objava.id}" class="form-control mt-2" placeholder="Unesite komentar...">${objava.komentar || ''}</textarea>
                                             <button id="btn-${objava.id}" class="btn btn-zavrseno" onclick="zavrsiObjavu('${objava.id}')">SAČUVAJ IZMENE</button>
@@ -323,6 +337,7 @@
                 setTimeout(() => {
                     alert("Izmena poslata!");
                     showLoading(false);
+                    isEditing = ""; // Resetuj mod izmene nakon uspešnog slanja
                     ucitajSveObjaveSaGoogleTabele();
                 }, 1000);
             }).catch(err => { console.error(err); showLoading(false); alert("Greška pri slanju."); });
@@ -332,7 +347,7 @@
             if(confirm("Obriši i arhiviraj?")) { 
                 showLoading(true); 
                 fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ akcija: "obrisi", id: id, user: loggedUser }) });
-                setTimeout(() => { ucitajSveObjaveSaGoogleTabele(); showLoading(false); }, 2000);
+                setTimeout(() => { isEditing = ""; ucitajSveObjaveSaGoogleTabele(); showLoading(false); }, 2000);
             } 
         }
         
