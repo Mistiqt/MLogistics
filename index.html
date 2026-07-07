@@ -61,6 +61,7 @@
         .edit-fields { display: none; margin-top: 10px; }
         .btn-zavrseno { background: #28a745; color: #fff; width: 100%; border: none; padding: 8px; border-radius: 6px; font-weight: 600; font-size: 13px; margin-top: 10px; cursor: pointer; }
         .btn-zavrseno:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-obrisi-sliku { background: #6c757d; color: #fff; width: 100%; border: none; padding: 8px; border-radius: 6px; font-weight: 600; font-size: 13px; margin-top: 5px; cursor: pointer; }
         .image-lightbox-overlay { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(26, 50, 99, 0.95); align-items: center; justify-content: center; cursor: zoom-out; opacity: 0; transition: opacity 0.3s ease; }
         .image-lightbox-overlay.active { display: flex; opacity: 1; }
         .lightbox-img { max-width: 90%; max-height: 90%; border-radius: 8px; transform: scale(0.95); transition: transform 0.3s ease; }
@@ -183,7 +184,7 @@
 
         let loggedUser = "";
         let userRole = "";
-        let isEditing = ""; // Pamti ID objave koja se trenutno menja
+        let isEditing = ""; 
 
         function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
 
@@ -211,13 +212,10 @@
                         document.getElementById('navTimeSheet').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navStillServis').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navZaposleni').style.display = isMasterAdmin ? 'inline-block' : 'none';
-                        
-                        // OVO JE KLJUČNO: ETS se prikazuje samo ako je korisnik Master/Admin
                         document.getElementById('navETS').style.display = isMasterAdmin ? 'inline-block' : 'none';
                         
                         ucitajSveObjaveSaGoogleTabele();
                         setInterval(() => {
-                            // Ako korisnik trenutno unosi sliku ili komentar, stopiraj auto-refresh
                             if(!isEditing) {
                                 ucitajSveObjaveSaGoogleTabele();
                             }
@@ -236,7 +234,6 @@
         }
 
         function ucitajSveObjaveSaGoogleTabele(isManual = false) {
-            // Ako je ručno osvežavanje kliknuto, dozvoli reset izmene
             if(isManual) isEditing = "";
             if(isEditing) return; 
 
@@ -244,7 +241,7 @@
             fetch(GOOGLE_SCRIPT_URL)
                 .then(res => res.json())
                 .then(objave => {
-                    if(isEditing) return; // Dupla provera u slučaju asinhronog odziva
+                    if(isEditing) return; 
                     feed.innerHTML = '';
                     objave.forEach(objava => {
                         if(objava.id === "id" || !objava.id) return;
@@ -280,6 +277,7 @@
                                         <div id="edit-${objava.id}" class="edit-fields" ${prikaziFormu}>
                                             <input type="file" id="file-${objava.id}" class="form-control-file mt-2" accept="image/*">
                                             <textarea id="kom-${objava.id}" class="form-control mt-2" placeholder="Unesite komentar...">${objava.komentar || ''}</textarea>
+                                            ${imaDokaz ? `<button class="btn btn-obrisi-sliku" onclick="obrisiDokaz('${objava.id}')">Obriši sliku dokaza</button>` : ''}
                                             <button id="btn-${objava.id}" class="btn btn-zavrseno" onclick="zavrsiObjavu('${objava.id}')">SAČUVAJ IZMENE</button>
                                         </div>
                                     </div>` : ''}
@@ -300,14 +298,23 @@
                 });
         }
 
-        function zavrsiObjavu(id) {
+        function obrisiDokaz(id) {
+            if(confirm("Da li želite da obrišete sliku dokaza?")) {
+                zavrsiObjavu(id, true);
+            }
+        }
+
+        function zavrsiObjavu(id, brisiSliku = false) {
             const fileInput = document.getElementById('file-' + id);
             const komentar = document.getElementById('kom-' + id).value;
             const btn = document.getElementById('btn-' + id);
             btn.disabled = true;
             btn.innerText = "OBRAĐUJEM...";
             showLoading(true);
-            if (fileInput.files && fileInput.files.length > 0) {
+            
+            if (brisiSliku) {
+                posaljiIzmenu(id, "DELETE", komentar);
+            } else if (fileInput.files && fileInput.files.length > 0) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
@@ -337,7 +344,7 @@
                 setTimeout(() => {
                     alert("Izmena poslata!");
                     showLoading(false);
-                    isEditing = ""; // Resetuj mod izmene nakon uspešnog slanja
+                    isEditing = ""; 
                     ucitajSveObjaveSaGoogleTabele();
                 }, 1000);
             }).catch(err => { console.error(err); showLoading(false); alert("Greška pri slanju."); });
