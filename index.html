@@ -178,6 +178,22 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js"></script>
 
     <script>
+        // --- LOGIKA ZA SLIDER ---
+        let currentIndex = 0;
+        const slides = document.querySelectorAll('.custom-slide');
+        const scroller = document.getElementById('scrollerInner');
+
+        function nextSlide() {
+            currentIndex++;
+            if (currentIndex >= slides.length) {
+                currentIndex = 0; // Vraća na početak
+            }
+            // Pomera slider (33.33% po slici jer ih ima 3)
+            scroller.style.transform = `translateX(-${currentIndex * 33.3333}%)`;
+        }
+        setInterval(nextSlide, 7000); // Promena na svakih 7 sekundi
+        // ------------------------
+
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9dmnfozKUQplxXWzfxUx5YIGyGOJqwuhvQ1uQxejE37NgTSbdHrJryYZ2HCK-Rn-o/exec";
         document.getElementById('newDate').valueAsDate = new Date();
         document.getElementById('accessPassword').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAuth(); });
