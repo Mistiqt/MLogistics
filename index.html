@@ -178,21 +178,16 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js"></script>
 
     <script>
-        // --- LOGIKA ZA SLIDER ---
         let currentIndex = 0;
         const slides = document.querySelectorAll('.custom-slide');
         const scroller = document.getElementById('scrollerInner');
 
         function nextSlide() {
             currentIndex++;
-            if (currentIndex >= slides.length) {
-                currentIndex = 0; // Vraća na početak
-            }
-            // Pomera slider (33.33% po slici jer ih ima 3)
+            if (currentIndex >= slides.length) currentIndex = 0;
             scroller.style.transform = `translateX(-${currentIndex * 33.3333}%)`;
         }
-        setInterval(nextSlide, 7000); // Promena na svakih 7 sekundi
-        // ------------------------
+        setInterval(nextSlide, 7000);
 
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9dmnfozKUQplxXWzfxUx5YIGyGOJqwuhvQ1uQxejE37NgTSbdHrJryYZ2HCK-Rn-o/exec";
         document.getElementById('newDate').valueAsDate = new Date();
@@ -231,22 +226,12 @@
                         document.getElementById('navETS').style.display = isMasterAdmin ? 'inline-block' : 'none';
                         
                         ucitajSveObjaveSaGoogleTabele();
-                        setInterval(() => {
-                            if(!isEditing) {
-                                ucitajSveObjaveSaGoogleTabele();
-                            }
-                        }, 10000);
+                        setInterval(() => { if(!isEditing) ucitajSveObjaveSaGoogleTabele(); }, 10000);
                     } else {
                         document.getElementById('loginError').style.display = "block";
-                        document.getElementById('loginError').innerText = "Pogrešna šifra ili nalog nije aktivan!";
                     }
                 })
-                .catch(err => {
-                    console.error("Greška:", err);
-                    showLoading(false);
-                    document.getElementById('loginError').style.display = "block";
-                    document.getElementById('loginError').innerText = "Greška pri povezivanju sa bazom.";
-                });
+                .catch(err => { showLoading(false); document.getElementById('loginError').style.display = "block"; });
         }
 
         function ucitajSveObjaveSaGoogleTabele(isManual = false) {
@@ -262,35 +247,30 @@
                     objave.forEach(objava => {
                         if(objava.id === "id" || !objava.id) return;
                         const autorObjave = objava.autorObjave;
-                        const autorKomentara = objava.autorKomentara;
                         const mozeBrisanje = (userRole === 'MASTER' || (userRole === 'ADMIN' && autorObjave === loggedUser));
-                        const mozeKomentarisanje = (userRole !== 'GUEST') && (userRole === 'MASTER' || userRole === 'ADMIN' || !autorKomentara || autorKomentara === loggedUser);
+                        const mozeKomentarisanje = (userRole !== 'GUEST') && (userRole === 'MASTER' || userRole === 'ADMIN' || !objava.autorKomentara || objava.autorKomentara === loggedUser);
                         const d = new Date(objava.datum);
                         const fDate = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}.`;
                         const imaKomentar = (objava.komentar && objava.komentar.trim() !== "");
                         const imaDokaz = (objava.dokaz && objava.dokaz.trim() !== "");
                         const jeZavrseno = (imaKomentar && imaDokaz);
                         const statusBadge = jeZavrseno ? '<span class="badge-zavrseno">ZAVRŠENO</span>' : '<span class="badge-nije-zavrseno">NIJE ZAVRŠENO</span>';
-                        const komentarPrikaz = imaKomentar ? `<div class="komentar-prikaz"><strong>Komentar:</strong> ${objava.komentar}</div>` : '';
                         
-                        const prikaziFormu = (isEditing === objava.id) ? 'style="display:block;"' : '';
-                        const sakrijDugme = (isEditing === objava.id) ? 'style="display:none;"' : '';
-
                         const cardHTML = `
                             <div class="col-md-6 mb-3"><div class="announcement-card">
                                 ${mozeBrisanje ? `<button class="delete-btn" onclick="obrisiObjavu('${objava.id}')">Obriši</button>` : ''}
                                 <img src="${objava.slika}" class="announcement-img" onclick="zoomImage(this)">
-                                <div class="announcement-body">
+                                <div class="announcement-body p-3">
                                     <h5 class="font-weight-bold">${objava.naslov} ${statusBadge}</h5>
                                     <p class="text-muted small">${objava.tekst}</p>
                                     ${imaDokaz ? `<img src="${objava.dokaz}" class="announcement-img mt-2" style="height:100px" onclick="zoomImage(this)">` : ''}
-                                    ${komentarPrikaz}
+                                    ${imaKomentar ? `<div class="komentar-prikaz"><strong>Komentar:</strong> ${objava.komentar}</div>` : ''}
                                     ${mozeKomentarisanje ? `
                                     <div class="user-action-section">
-                                        <button class="btn btn-sm btn-outline-primary w-100" ${sakrijDugme} onclick="isEditing='${objava.id}'; document.getElementById('edit-${objava.id}').style.display='block'; this.style.display='none'">
+                                        <button class="btn btn-sm btn-outline-primary w-100" onclick="isEditing='${objava.id}'; document.getElementById('edit-${objava.id}').style.display='block'; this.style.display='none'">
                                             ${(imaKomentar || imaDokaz) ? 'Izmeni podatke' : 'Dodaj komentar i sliku'}
                                         </button>
-                                        <div id="edit-${objava.id}" class="edit-fields" ${prikaziFormu}>
+                                        <div id="edit-${objava.id}" class="edit-fields">
                                             <input type="file" id="file-${objava.id}" class="form-control-file mt-2" accept="image/*">
                                             <textarea id="kom-${objava.id}" class="form-control mt-2" placeholder="Unesite komentar...">${objava.komentar || ''}</textarea>
                                             ${imaDokaz ? `<button class="btn btn-obrisi-sliku" onclick="obrisiDokaz('${objava.id}')">Obriši sliku dokaza</button>` : ''}
@@ -307,10 +287,6 @@
                             </div></div>`;
                         feed.insertAdjacentHTML('beforeend', cardHTML);
                     });
-                })
-                .catch(err => {
-                    console.error("Greška pri učitavanju:", err);
-                    feed.innerHTML = '<div class="text-danger">Greška pri učitavanju podataka.</div>';
                 });
         }
 
@@ -328,6 +304,7 @@
             btn.innerText = "OBRAĐUJEM...";
             showLoading(true);
             
+            // Ako brišemo, šaljemo ključnu reč "DELETE" u polje dokaz
             if (brisiSliku) {
                 posaljiIzmenu(id, "DELETE", komentar);
             } else if (fileInput.files && fileInput.files.length > 0) {
@@ -336,14 +313,11 @@
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 400; 
-                        const scaleSize = MAX_WIDTH / img.width;
-                        canvas.width = MAX_WIDTH;
+                        const scaleSize = 400 / img.width;
+                        canvas.width = 400;
                         canvas.height = img.height * scaleSize;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        const dataURL = canvas.toDataURL('image/jpeg', 0.4);
-                        posaljiIzmenu(id, dataURL, komentar);
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                        posaljiIzmenu(id, canvas.toDataURL('image/jpeg', 0.4), komentar);
                     };
                     img.src = e.target.result;
                 };
@@ -357,13 +331,11 @@
             const payload = { akcija: "izmeni", id: id, dokaz: dataURL, komentar: komentar, user: loggedUser };
             fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
             .then(() => {
-                setTimeout(() => {
-                    alert("Izmena poslata!");
-                    showLoading(false);
-                    isEditing = ""; 
-                    ucitajSveObjaveSaGoogleTabele();
-                }, 1000);
-            }).catch(err => { console.error(err); showLoading(false); alert("Greška pri slanju."); });
+                alert("Izmena poslata!");
+                showLoading(false);
+                isEditing = ""; 
+                ucitajSveObjaveSaGoogleTabele();
+            }).catch(err => { showLoading(false); alert("Greška pri slanju."); });
         }
 
         function obrisiObjavu(id) { 
@@ -377,29 +349,25 @@
         document.getElementById('secureAdminForm').addEventListener('submit', function(e) {
             e.preventDefault();
             showLoading(true);
-            const file = document.getElementById('newFile').files[0];
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 400; 
-                    const scaleSize = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH;
+                    const scaleSize = 400 / img.width;
+                    canvas.width = 400;
                     canvas.height = img.height * scaleSize;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const dataURL = canvas.toDataURL('image/jpeg', 0.4);
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                     fetch(GOOGLE_SCRIPT_URL, { 
                         method: 'POST', mode: 'no-cors', 
-                        body: JSON.stringify({ akcija: "dodaj", id: Date.now().toString(), user: loggedUser, naslov: document.getElementById('newTitle').value, mesto: document.getElementById('newLocation').value, datum: document.getElementById('newDate').value, smena: document.getElementById('newShift').value, leader: document.getElementById('newLeader').value, tekst: document.getElementById('newText').value, slika: dataURL }) 
+                        body: JSON.stringify({ akcija: "dodaj", id: Date.now().toString(), user: loggedUser, naslov: document.getElementById('newTitle').value, mesto: document.getElementById('newLocation').value, datum: document.getElementById('newDate').value, smena: document.getElementById('newShift').value, leader: document.getElementById('newLeader').value, tekst: document.getElementById('newText').value, slika: canvas.toDataURL('image/jpeg', 0.4) }) 
                     }).then(() => {
                         setTimeout(() => { ucitajSveObjaveSaGoogleTabele(); showLoading(false); document.getElementById('secureAdminForm').reset(); }, 2000);
                     });
                 };
                 img.src = ev.target.result;
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(document.getElementById('newFile').files[0]);
         });
 
         function zoomImage(i) { document.getElementById('lightboxImg').src = i.src; document.getElementById('imageLightbox').classList.add('active'); }
