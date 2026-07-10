@@ -199,6 +199,25 @@
 
         function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
 
+        // Pomoćna funkcija za agresivno smanjivanje slika
+        function resizeImage(file, callback) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 600; 
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    callback(canvas.toDataURL('image/jpeg', 0.1));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         function checkAuth() {
             loggedUser = document.getElementById('accessPassword').value.trim();
             showLoading(true);
@@ -307,20 +326,9 @@
             if (brisiSliku) {
                 posaljiIzmenu(id, "DELETE", komentar);
             } else if (fileInput.files && fileInput.files.length > 0) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const scaleSize = 400 / img.width;
-                        canvas.width = 400;
-                        canvas.height = img.height * scaleSize;
-                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                        posaljiIzmenu(id, canvas.toDataURL('image/jpeg', 0.4), komentar);
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(fileInput.files[0]);
+                resizeImage(fileInput.files[0], (dataURL) => {
+                    posaljiIzmenu(id, dataURL, komentar);
+                });
             } else {
                 posaljiIzmenu(id, "", komentar);
             }
@@ -328,7 +336,8 @@
 
         function posaljiIzmenu(id, dataURL, komentar) {
             const payload = { akcija: "izmeni", id: id, dokaz: dataURL, komentar: komentar, user: loggedUser };
-            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
+            .then(res => res.json())
             .then(() => {
                 alert("Izmena poslata!");
                 showLoading(false);
@@ -340,33 +349,34 @@
         function obrisiObjavu(id) { 
             if(confirm("Obriši i arhiviraj?")) { 
                 showLoading(true); 
-                fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ akcija: "obrisi", id: id, user: loggedUser }) });
-                setTimeout(() => { isEditing = ""; ucitajSveObjaveSaGoogleTabele(); showLoading(false); }, 2000);
+                fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ akcija: "obrisi", id: id, user: loggedUser }) })
+                .then(() => { setTimeout(() => { isEditing = ""; ucitajSveObjaveSaGoogleTabele(); showLoading(false); }, 2000); });
             } 
         }
         
         document.getElementById('secureAdminForm').addEventListener('submit', function(e) {
             e.preventDefault();
             showLoading(true);
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const scaleSize = 400 / img.width;
-                    canvas.width = 400;
-                    canvas.height = img.height * scaleSize;
-                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                    fetch(GOOGLE_SCRIPT_URL, { 
-                        method: 'POST', mode: 'no-cors', 
-                        body: JSON.stringify({ akcija: "dodaj", id: Date.now().toString(), user: loggedUser, naslov: document.getElementById('newTitle').value, mesto: document.getElementById('newLocation').value, datum: document.getElementById('newDate').value, smena: document.getElementById('newShift').value, leader: document.getElementById('newLeader').value, tekst: document.getElementById('newText').value, slika: canvas.toDataURL('image/jpeg', 0.4) }) 
-                    }).then(() => {
-                        setTimeout(() => { ucitajSveObjaveSaGoogleTabele(); showLoading(false); document.getElementById('secureAdminForm').reset(); }, 2000);
-                    });
-                };
-                img.src = ev.target.result;
-            };
-            reader.readAsDataURL(document.getElementById('newFile').files[0]);
+            const fileInput = document.getElementById('newFile');
+            resizeImage(fileInput.files[0], (dataURL) => {
+                fetch(GOOGLE_SCRIPT_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ 
+                        akcija: "dodaj", 
+                        id: Date.now().toString(), 
+                        user: loggedUser, 
+                        naslov: document.getElementById('newTitle').value, 
+                        mesto: document.getElementById('newLocation').value, 
+                        datum: document.getElementById('newDate').value, 
+                        smena: document.getElementById('newShift').value, 
+                        leader: document.getElementById('newLeader').value, 
+                        tekst: document.getElementById('newText').value, 
+                        slika: dataURL 
+                    }) 
+                }).then(() => {
+                    setTimeout(() => { ucitajSveObjaveSaGoogleTabele(); showLoading(false); document.getElementById('secureAdminForm').reset(); }, 2000);
+                });
+            });
         });
 
         function zoomImage(i) { document.getElementById('lightboxImg').src = i.src; document.getElementById('imageLightbox').classList.add('active'); }
