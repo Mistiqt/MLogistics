@@ -107,7 +107,7 @@
     <div id="mainPortal">
         <header class="header-clean">
             <div class="brand-logo">Stellantis</div>
-            <div class="logout-wrapper"><button onclick="location.reload()" class="btn btn-sm btn-outline-danger">Odjava</button></div>
+            <div class="logout-wrapper"><button onclick="logout()" class="btn btn-sm btn-outline-danger">Odjava</button></div>
         </header>
 
         <div class="custom-container">
@@ -197,7 +197,33 @@
         let userRole = "";
         let isEditing = ""; 
 
+        // LOGIKA ZA AUTOMATSKU ODJAVU
+        let timeoutTimer;
+        const IDLE_TIME_LIMIT = 5 * 60 * 1000; // 5 minuta
+
+        function startIdleTimer() {
+            clearTimeout(timeoutTimer);
+            timeoutTimer = setTimeout(logout, IDLE_TIME_LIMIT);
+        }
+        ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(evt => document.addEventListener(evt, startIdleTimer, true));
+
+        function logout() {
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('currentUser');
+            sessionStorage.removeItem('isLoggedIn');
+            location.reload();
+        }
+
         function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
+
+        // Provera sesije pri učitavanju
+        window.onload = () => {
+            if(sessionStorage.getItem('isLoggedIn') === 'true') {
+                userRole = localStorage.getItem('userRole');
+                loggedUser = localStorage.getItem('currentUser');
+                initPortal();
+            }
+        };
 
         function checkAuth() {
             loggedUser = document.getElementById('accessPassword').value.trim();
@@ -211,27 +237,32 @@
                         userRole = data.uloga;
                         localStorage.setItem('userRole', userRole);
                         localStorage.setItem('currentUser', loggedUser); 
-                        
-                        document.getElementById('loginScreen').style.display = "none";
-                        document.getElementById('mainPortal').style.display = "block";
-                        document.getElementById('adminPanelBox').style.display = (userRole === 'MASTER' || userRole === 'ADMIN') ? "block" : "none";
-                        
-                        const isGuest = (userRole === 'GUEST');
-                        const isMasterAdmin = (userRole === 'MASTER' || userRole === 'ADMIN');
-                        
-                        document.getElementById('navTransport').style.display = isGuest ? 'none' : 'inline-block';
-                        document.getElementById('navTimeSheet').style.display = isGuest ? 'none' : 'inline-block';
-                        document.getElementById('navStillServis').style.display = isGuest ? 'none' : 'inline-block';
-                        document.getElementById('navZaposleni').style.display = isMasterAdmin ? 'inline-block' : 'none';
-                        document.getElementById('navETS').style.display = isMasterAdmin ? 'inline-block' : 'none';
-                        
-                        ucitajSveObjaveSaGoogleTabele();
-                        setInterval(() => { if(!isEditing) ucitajSveObjaveSaGoogleTabele(); }, 10000);
+                        sessionStorage.setItem('isLoggedIn', 'true');
+                        initPortal();
                     } else {
                         document.getElementById('loginError').style.display = "block";
                     }
                 })
                 .catch(err => { showLoading(false); document.getElementById('loginError').style.display = "block"; });
+        }
+
+        function initPortal() {
+            document.getElementById('loginScreen').style.display = "none";
+            document.getElementById('mainPortal').style.display = "block";
+            document.getElementById('adminPanelBox').style.display = (userRole === 'MASTER' || userRole === 'ADMIN') ? "block" : "none";
+            
+            const isGuest = (userRole === 'GUEST');
+            const isMasterAdmin = (userRole === 'MASTER' || userRole === 'ADMIN');
+            
+            document.getElementById('navTransport').style.display = isGuest ? 'none' : 'inline-block';
+            document.getElementById('navTimeSheet').style.display = isGuest ? 'none' : 'inline-block';
+            document.getElementById('navStillServis').style.display = isGuest ? 'none' : 'inline-block';
+            document.getElementById('navZaposleni').style.display = isMasterAdmin ? 'inline-block' : 'none';
+            document.getElementById('navETS').style.display = isMasterAdmin ? 'inline-block' : 'none';
+            
+            startIdleTimer();
+            ucitajSveObjaveSaGoogleTabele();
+            setInterval(() => { if(!isEditing) ucitajSveObjaveSaGoogleTabele(); }, 10000);
         }
 
         function ucitajSveObjaveSaGoogleTabele(isManual = false) {
@@ -304,7 +335,6 @@
             btn.innerText = "OBRAĐUJEM...";
             showLoading(true);
             
-            // Ako brišemo, šaljemo ključnu reč "DELETE" u polje dokaz
             if (brisiSliku) {
                 posaljiIzmenu(id, "DELETE", komentar);
             } else if (fileInput.files && fileInput.files.length > 0) {
