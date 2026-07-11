@@ -203,7 +203,6 @@
         const scroller = document.getElementById('scrollerInner');
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9dmnfozKUQplxXWzfxUx5YIGyGOJqwuhvQ1uQxejE37NgTSbdHrJryYZ2HCK-Rn-o/exec";
         
-        // --- LOGIKA ZA NEAKTIVNOST (30 min) ---
         let idleTime = 0;
         function resetIdleTimer() { idleTime = 0; }
         window.onload = () => {
@@ -212,9 +211,8 @@
             setInterval(() => {
                 idleTime++;
                 if (idleTime > 30) logout();
-            }, 60000); // Provera svake minute
+            }, 60000);
             
-            // Automatski login ako postoji sesija
             const savedSifra = localStorage.getItem('sifra');
             if(savedSifra) {
                 document.getElementById('accessPassword').value = savedSifra;
@@ -253,7 +251,8 @@
         }
 
         function povecajBrojac(tip) {
-            if (loggedUser === "Ringeraja1122!") {
+            // MASTER i ADMIN mogu menjati vrednost rucno
+            if (userRole === "MASTER" || userRole === "ADMIN") {
                 let novaVrednost = prompt("Unesite novu vrednost za " + tip + ":");
                 if (novaVrednost !== null) {
                     showLoading(true);
@@ -264,7 +263,9 @@
                     .then(res => res.json())
                     .then(() => { ucitajBrojace(); showLoading(false); });
                 }
-            } else {
+            } 
+            // Ostali (TEAMLEADER i dr) mogu samo +1
+            else if (userRole === "TEAMLEADER") {
                 if(confirm("Povećati "+tip+" za 1?")) {
                     showLoading(true);
                     fetch(GOOGLE_SCRIPT_URL, { 
@@ -278,6 +279,8 @@
                         showLoading(false);
                     });
                 }
+            } else {
+                alert("Nemate ovlašćenje za izmenu brojača.");
             }
         }
 
@@ -310,14 +313,13 @@
                     if (data.status === "OK") {
                         loggedUser = inputVal;
                         userRole = data.uloga;
-                        localStorage.setItem('sifra', loggedUser); // Čuva sesiju
+                        localStorage.setItem('sifra', loggedUser); 
                         
                         document.getElementById('loginScreen').style.display = "none";
                         document.getElementById('mainPortal').style.display = "block";
                         document.getElementById('adminPanelBox').style.display = (userRole === 'MASTER' || userRole === 'ADMIN') ? "block" : "none";
                         
-                        // Prikaz dugmadi za brojače
-                        const canModify = (userRole === 'MASTER' || userRole === 'ADMIN' || userRole === 'TEAM_LEADER');
+                        const canModify = (userRole === 'MASTER' || userRole === 'ADMIN' || userRole === 'TEAMLEADER');
                         document.getElementById('btn-next-proforma').style.display = canModify ? 'block' : 'none';
                         document.getElementById('btn-next-cmr').style.display = canModify ? 'block' : 'none';
                         
