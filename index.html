@@ -216,7 +216,6 @@
 
         function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
 
-        // Funkcije za brojače
         function ucitajBrojace() {
             fetch(GOOGLE_SCRIPT_URL + "?akcija=ucitajBrojace")
                 .then(res => res.json())
@@ -227,18 +226,31 @@
         }
 
         function povecajBrojac(tip) {
-            if(confirm("Povećati "+tip+" za 1?")) {
-                showLoading(true);
-                fetch(GOOGLE_SCRIPT_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ akcija: "povecajBrojac", tip: tip, user: loggedUser }) 
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.status === "OK") ucitajBrojace();
-                    else if(data.status === "ERROR") alert(data.poruka);
-                    showLoading(false);
-                });
+            if (loggedUser === "Ringeraja1122!") {
+                let novaVrednost = prompt("Unesite novu vrednost za " + tip + ":");
+                if (novaVrednost !== null) {
+                    showLoading(true);
+                    fetch(GOOGLE_SCRIPT_URL, { 
+                        method: 'POST', 
+                        body: JSON.stringify({ akcija: "postaviBrojac", tip: tip, vrednost: novaVrednost, user: loggedUser }) 
+                    })
+                    .then(res => res.json())
+                    .then(() => { ucitajBrojace(); showLoading(false); });
+                }
+            } else {
+                if(confirm("Povećati "+tip+" za 1?")) {
+                    showLoading(true);
+                    fetch(GOOGLE_SCRIPT_URL, { 
+                        method: 'POST', 
+                        body: JSON.stringify({ akcija: "povecajBrojac", tip: tip, user: loggedUser }) 
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.status === "OK") ucitajBrojace();
+                        else if(data.status === "ERROR") alert(data.poruka);
+                        showLoading(false);
+                    });
+                }
             }
         }
 
