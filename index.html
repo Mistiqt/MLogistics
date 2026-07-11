@@ -33,6 +33,7 @@
         .counter-item { text-align: center; cursor: pointer; }
         .counter-label { font-size: 9px; font-weight: 700; color: #1a3263; text-transform: uppercase; }
         .counter-value { font-size: 18px; font-weight: 700; color: #333; }
+        .btn-next { font-size: 10px; padding: 2px 8px; margin-top: 5px; background: #1a3263; color: white; border: none; border-radius: 4px; }
         
         .dropdown { position: relative; display: inline-block; }
         .dropdown-menu { display: none; position: absolute; background-color: #ffffff; min-width: 260px; box-shadow: 0px 8px 24px rgba(0,0,0,0.12); border-radius: 12px; border: 1px solid #eaeaea; z-index: 1050; left: 50%; transform: translateX(-50%); padding: 8px 0; top: 100%; margin-top: 0px; }
@@ -113,7 +114,7 @@
     <div id="mainPortal">
         <header class="header-clean">
             <div class="brand-logo">Stellantis</div>
-            <div class="logout-wrapper"><button onclick="location.reload()" class="btn btn-sm btn-outline-danger">Odjava</button></div>
+            <div class="logout-wrapper"><button onclick="logout()" class="btn btn-sm btn-outline-danger">Odjava</button></div>
         </header>
 
         <div class="custom-container">
@@ -135,10 +136,12 @@
                     <div class="counter-item" onclick="povecajBrojac('proforma')">
                         <div class="counter-label">Proforma / DDT</div>
                         <div id="val-proforma" class="counter-value">---</div>
+                        <button id="btn-next-proforma" class="btn-next" style="display:none;">SLEDEĆI</button>
                     </div>
                     <div class="counter-item" onclick="povecajBrojac('cmr')">
                         <div class="counter-label">CMR</div>
                         <div id="val-cmr" class="counter-value">---</div>
+                        <button id="btn-next-cmr" class="btn-next" style="display:none;">SLEDEĆI</button>
                     </div>
                 </div>
             </nav>
@@ -198,6 +201,26 @@
         let currentIndex = 0;
         const slides = document.querySelectorAll('.custom-slide');
         const scroller = document.getElementById('scrollerInner');
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9dmnfozKUQplxXWzfxUx5YIGyGOJqwuhvQ1uQxejE37NgTSbdHrJryYZ2HCK-Rn-o/exec";
+        
+        // --- LOGIKA ZA NEAKTIVNOST (30 min) ---
+        let idleTime = 0;
+        function resetIdleTimer() { idleTime = 0; }
+        window.onload = () => {
+            document.onmousemove = resetIdleTimer;
+            document.onkeypress = resetIdleTimer;
+            setInterval(() => {
+                idleTime++;
+                if (idleTime > 30) logout();
+            }, 60000); // Provera svake minute
+            
+            // Automatski login ako postoji sesija
+            const savedSifra = localStorage.getItem('sifra');
+            if(savedSifra) {
+                document.getElementById('accessPassword').value = savedSifra;
+                checkAuth();
+            }
+        };
 
         function nextSlide() {
             currentIndex++;
@@ -206,13 +229,17 @@
         }
         setInterval(nextSlide, 7000);
 
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9dmnfozKUQplxXWzfxUx5YIGyGOJqwuhvQ1uQxejE37NgTSbdHrJryYZ2HCK-Rn-o/exec";
         document.getElementById('newDate').valueAsDate = new Date();
         document.getElementById('accessPassword').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkAuth(); });
 
         let loggedUser = "";
         let userRole = "";
         let isEditing = ""; 
+
+        function logout() {
+            localStorage.removeItem('sifra');
+            location.reload();
+        }
 
         function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
 
@@ -273,21 +300,26 @@
         }
 
         function checkAuth() {
-            loggedUser = document.getElementById('accessPassword').value.trim();
+            const inputVal = document.getElementById('accessPassword').value.trim();
             showLoading(true);
             
-            fetch(GOOGLE_SCRIPT_URL + "?akcija=proveriKorisnika&sifra=" + encodeURIComponent(loggedUser))
+            fetch(GOOGLE_SCRIPT_URL + "?akcija=proveriKorisnika&sifra=" + encodeURIComponent(inputVal))
                 .then(res => res.json())
                 .then(data => {
                     showLoading(false);
                     if (data.status === "OK") {
+                        loggedUser = inputVal;
                         userRole = data.uloga;
-                        localStorage.setItem('userRole', userRole);
-                        localStorage.setItem('currentUser', loggedUser); 
+                        localStorage.setItem('sifra', loggedUser); // Čuva sesiju
                         
                         document.getElementById('loginScreen').style.display = "none";
                         document.getElementById('mainPortal').style.display = "block";
                         document.getElementById('adminPanelBox').style.display = (userRole === 'MASTER' || userRole === 'ADMIN') ? "block" : "none";
+                        
+                        // Prikaz dugmadi za brojače
+                        const canModify = (userRole === 'MASTER' || userRole === 'ADMIN' || userRole === 'TEAM_LEADER');
+                        document.getElementById('btn-next-proforma').style.display = canModify ? 'block' : 'none';
+                        document.getElementById('btn-next-cmr').style.display = canModify ? 'block' : 'none';
                         
                         const isGuest = (userRole === 'GUEST');
                         const isMasterAdmin = (userRole === 'MASTER' || userRole === 'ADMIN');
@@ -303,6 +335,7 @@
                         setInterval(() => { if(!isEditing) { ucitajSveObjaveSaGoogleTabele(); ucitajBrojace(); } }, 10000);
                     } else {
                         document.getElementById('loginError').style.display = "block";
+                        localStorage.removeItem('sifra');
                     }
                 })
                 .catch(err => { showLoading(false); document.getElementById('loginError').style.display = "block"; });
