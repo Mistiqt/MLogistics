@@ -25,9 +25,15 @@
         .header-clean { background-color: #ffffff; padding: 25px 0; border-bottom: 1px solid #eaeaea; position: relative; }
         .brand-logo { font-weight: 700; font-size: 26px; letter-spacing: 7px; color: #1a3263; text-transform: uppercase; text-align: center; width: 100%; }
         .logout-wrapper { position: absolute; right: 30px; top: 50%; transform: translateY(-50%); }
-        .nav-clean-tabs { margin-top: 25px; display: flex; justify-content: center; align-items: center; gap: 15px; position: relative; }
+        .nav-clean-tabs { margin-top: 25px; display: flex; justify-content: center; align-items: center; gap: 15px; position: relative; flex-wrap: wrap; }
         .nav-tab-item { display: inline-block; background: #ffffff; border: 1px solid #e5e5e5; padding: 12px 28px; border-radius: 30px; font-weight: 500; color: #555555 !important; text-decoration: none !important; transition: all 0.2s; cursor: pointer; line-height: 1.2; }
         .nav-tab-item:hover { background: #1a3263; color: #ffffff !important; border-color: #1a3263; }
+        /* Stil za brojače */
+        .counter-box { background: #fff; border: 1px solid #e5e5e5; padding: 10px 20px; border-radius: 30px; display: flex; gap: 20px; align-items: center; }
+        .counter-item { text-align: center; cursor: pointer; }
+        .counter-label { font-size: 9px; font-weight: 700; color: #1a3263; text-transform: uppercase; }
+        .counter-value { font-size: 18px; font-weight: 700; color: #333; }
+        
         .dropdown { position: relative; display: inline-block; }
         .dropdown-menu { display: none; position: absolute; background-color: #ffffff; min-width: 260px; box-shadow: 0px 8px 24px rgba(0,0,0,0.12); border-radius: 12px; border: 1px solid #eaeaea; z-index: 1050; left: 50%; transform: translateX(-50%); padding: 8px 0; top: 100%; margin-top: 0px; }
         .dropdown:hover .dropdown-menu { display: block; }
@@ -124,6 +130,17 @@
                 <a href="https://shiftup-my.sharepoint.com/:x:/r/personal/ta75382_stellantis_com/_layouts/15/Doc.aspx?sourcedoc=%7B23DC8C6F-8241-41ED-AF7E-4CF14363167A%7D&file=2026%20Time%20sheet%20planning.xlsx&action=default&mobileredirect=true&DefaultItemOpen=1" target="_blank" id="navTimeSheet" class="nav-tab-item">Time Sheet Planning</a>
                 <a href="zaposleni.html" target="_blank" class="nav-tab-item" id="navZaposleni">Zaposleni</a>
                 <a href="https://202.37.103.104:9091/stdauth/login?logoutNew=true" target="_blank" class="nav-tab-item" id="navETS" style="display: none;">ETS</a>
+                
+                <div class="counter-box">
+                    <div class="counter-item" onclick="povecajBrojac('proforma')">
+                        <div class="counter-label">Proforma / DDT</div>
+                        <div id="val-proforma" class="counter-value">---</div>
+                    </div>
+                    <div class="counter-item" onclick="povecajBrojac('cmr')">
+                        <div class="counter-label">CMR</div>
+                        <div id="val-cmr" class="counter-value">---</div>
+                    </div>
+                </div>
             </nav>
 
             <section class="slider-section">
@@ -199,7 +216,32 @@
 
         function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
 
-        // Pomoćna funkcija za agresivno smanjivanje slika
+        // Funkcije za brojače
+        function ucitajBrojace() {
+            fetch(GOOGLE_SCRIPT_URL + "?akcija=ucitajBrojace")
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('val-proforma').innerText = data.proforma;
+                    document.getElementById('val-cmr').innerText = data.cmr;
+                });
+        }
+
+        function povecajBrojac(tip) {
+            if(confirm("Povećati "+tip+" za 1?")) {
+                showLoading(true);
+                fetch(GOOGLE_SCRIPT_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ akcija: "povecajBrojac", tip: tip, user: loggedUser }) 
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === "OK") ucitajBrojace();
+                    else if(data.status === "ERROR") alert(data.poruka);
+                    showLoading(false);
+                });
+            }
+        }
+
         function resizeImage(file, callback) {
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -244,8 +286,9 @@
                         document.getElementById('navZaposleni').style.display = isMasterAdmin ? 'inline-block' : 'none';
                         document.getElementById('navETS').style.display = isMasterAdmin ? 'inline-block' : 'none';
                         
+                        ucitajBrojace();
                         ucitajSveObjaveSaGoogleTabele();
-                        setInterval(() => { if(!isEditing) ucitajSveObjaveSaGoogleTabele(); }, 10000);
+                        setInterval(() => { if(!isEditing) { ucitajSveObjaveSaGoogleTabele(); ucitajBrojace(); } }, 10000);
                     } else {
                         document.getElementById('loginError').style.display = "block";
                     }
@@ -258,7 +301,7 @@
             if(isEditing) return; 
 
             const feed = document.getElementById('portalFeed');
-            fetch(GOOGLE_SCRIPT_URL)
+            fetch(GOOGLE_SCRIPT_URL + "?akcija=ucitajObjave")
                 .then(res => res.json())
                 .then(objave => {
                     if(isEditing) return; 
