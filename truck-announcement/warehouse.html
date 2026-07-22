@@ -119,7 +119,7 @@
         })();
 
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDGTRVTD7VOpD3oyDNGajSeGiKa3xRo30hdDDIEFtMyRxd-MrIs47G8TVf1RzzwvTEQg/exec";
-        const rampList = ["RAMPA 1", "RAMPA 2", "RAMPA 3", "RAMPA 4", "TEHNIČKA RAMPA", "ROLO RAMPA"];
+        const rampList = ["RAMPA 1", "RAMPA 2", "RAMPA 3", "RAMPA 4", "SPOLJNA RAMPA 1", "SPOLJNA RAMPA 2"];
         let currentTruckId = null;
         let cachedData = [];
 
@@ -227,7 +227,7 @@
             grid.innerHTML = ''; 
             rampList.forEach(name => {
                 const isOccupied = cachedData.some(t => t.Rampa === name && (t.Status === 'NA RAMPI' || t.Status === 'NA ISTOVARU'));
-                let canClick = (isKombi) ? ((name === "TEHNIČKA RAMPA" || name === "ROLO RAMPA") && !isOccupied) : (name !== "ROLO RAMPA" && !isOccupied);
+                let canClick = (isKombi) ? ((name === "SPOLJA RAMPA 2" || name === "SPOLJNA RAMPA 1") && !isOccupied) : (name !== "SPOLJNA RAMPA 1" && !isOccupied);
                 const btn = document.createElement('button');
                 btn.className = 'ramp-btn';
                 btn.innerHTML = name;
