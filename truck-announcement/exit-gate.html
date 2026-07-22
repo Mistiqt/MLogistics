@@ -11,7 +11,7 @@
             const loggedUser = sessionStorage.getItem('stellantis_user_logged');
             if (!loggedUser || loggedUser !== 'izlaz@stellantis.com') {
                 document.documentElement.style.display = 'none';
-                window.location.replace('login.html');
+                window.location.replace('truck-login.html');
             }
         })();
     </script>
@@ -307,7 +307,7 @@
         function handleLogout() { 
             if(confirm("Odjava?")) {
                 sessionStorage.clear();
-                window.location.replace('login.html'); 
+                window.location.replace('truck-login.html'); 
             }
         }
 
