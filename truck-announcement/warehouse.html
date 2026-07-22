@@ -115,7 +115,7 @@
     <script>
         (function() {
             const user = sessionStorage.getItem('stellantis_user_logged');
-            if (!user) { window.location.replace('login.html'); }
+            if (!user) { window.location.replace('truck-login.html'); }
         })();
 
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDGTRVTD7VOpD3oyDNGajSeGiKa3xRo30hdDDIEFtMyRxd-MrIs47G8TVf1RzzwvTEQg/exec";
@@ -298,7 +298,7 @@
 
         function handleRefresh(btn) { btn.classList.add('active'); render(); setTimeout(() => btn.classList.remove('active'), 800); }
         function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
-        function handleLogout() { if(confirm("Odjava?")) { sessionStorage.removeItem('stellantis_user_logged'); window.location.href = 'login.html'; } }
+        function handleLogout() { if(confirm("Odjava?")) { sessionStorage.removeItem('stellantis_user_logged'); window.location.href = 'truck-login.html'; } }
 
         render();
         setInterval(render, 15000);
