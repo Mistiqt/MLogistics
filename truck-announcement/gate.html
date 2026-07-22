@@ -427,7 +427,7 @@
         (function() {
             const user = sessionStorage.getItem('stellantis_user_logged');
             if (!user) {
-                window.location.replace('login.html');
+                window.location.replace('truck-login.html');
             }
         })();
 
@@ -610,7 +610,7 @@
         function handleLogout() { 
             if(confirm("Odjava?")) {
                 sessionStorage.removeItem('stellantis_user_logged');
-                window.location.href = 'login.html'; 
+                window.location.href = 'truck-login.html'; 
             }
         }
 
