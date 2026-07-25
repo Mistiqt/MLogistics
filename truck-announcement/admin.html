@@ -26,7 +26,7 @@
     <style>
         :root {
             --zf-blue: #00549f; --zf-dark: #002e5d; --border: #e2e8f0; --bg: #f8fafc;
-            --text-main: #1e293b; --text-muted: #64748b; --container-width: 1250px;
+            --text-main: #1e293b; --text-muted: #64748b; --container-width: 1350px;
             --excel-green: #10b981; --excel-green-hover: #059669; --logout-red: #be123c;
             --stats-purple: #8b5cf6;
         }
@@ -71,7 +71,7 @@
         .main-card { background: white; width: 100%; max-width: var(--container-width); margin: 0 auto 20px; border-radius: 8px; border: 1px solid var(--border); padding: 20px; box-sizing: border-box; }
         .table-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; flex-wrap: wrap; gap: 10px; }
         .table-scroll-wrapper { max-height: 500px; overflow-x: auto; overflow-y: auto; margin-top: 10px; border: 1px solid #f1f5f9; border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
         th { text-align: left; padding: 12px; background: #f8fafc; font-size: 10px; color: var(--text-muted); text-transform: uppercase; border-bottom: 2px solid var(--border); font-weight: 800; position: sticky; top: 0; z-index: 5; white-space: nowrap; }
         td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; white-space: nowrap; }
         
@@ -183,7 +183,7 @@
                 <input type="text" id="filter-plate" placeholder="npr. BG-123..." oninput="renderTruckTable()">
             </div>
             <div class="filter-group">
-                <label><i class="far fa-calendar-alt"></i> Datum Ulaza</label>
+                <label><i class="far fa-calendar-alt"></i> Datum Najave</label>
                 <input type="date" id="filter-date" onchange="renderTruckTable()">
             </div>
             <div class="filter-group">
@@ -201,15 +201,17 @@
                 <thead>
                     <tr>
                         <th style="width:100px;">Tablica</th>
-                        <th style="width:140px;">Firma</th>
-                        <th style="width:100px;">Vozilo</th>
-                        <th style="width:100px;">Roba</th>
-                        <th style="width:60px; text-align:center;">Palete</th>
+                        <th style="width:130px;">Firma</th>
+                        <th style="width:90px;">Vozilo</th>
+                        <th style="width:90px;">Roba</th>
+                        <th style="width:50px; text-align:center;">Palete</th>
+                        <th style="width:80px; text-align:center;">Rampa</th>
                         <th style="width:110px;">Status</th>
-                        <th style="width:140px;">Vreme Najave</th>
-                        <th style="width:100px;">Početak Ist.</th>
-                        <th style="width:100px;">Završen Ist.</th>
-                        <th style="width:100px;">Izlaz</th>
+                        <th style="width:130px;">Vreme Najave</th>
+                        <th style="width:130px;">Vreme Rampe</th>
+                        <th style="width:130px;">Početak Ist.</th>
+                        <th style="width:130px;">Završen Ist.</th>
+                        <th style="width:130px;">Izlaz</th>
                         <th style="width:50px; text-align:center;">Nap.</th>
                     </tr>
                 </thead>
@@ -293,9 +295,8 @@
             if (!rawTime || rawTime === "-" || rawTime === "") return "-";
 
             let datePart = "";
-            let timePart = "";
+            let tStr = String(rawTime);
 
-            // 1. Pokušaj da uzmemo specifičan datum datog koraka ako postoji
             let candidateDate = specificDate || defaultDate;
 
             if (candidateDate && candidateDate !== "-" && candidateDate !== "") {
@@ -317,8 +318,6 @@
                 }
             }
 
-            // 2. Ako u samom rawTime stringu već postoji datum ili ISO zapis
-            let tStr = String(rawTime);
             if (tStr.includes('T')) {
                 const parts = tStr.split('T');
                 const dObj = new Date(tStr);
@@ -334,7 +333,7 @@
                 datePart = parts[0].trim();
                 tStr = parts[1] ? parts[1].trim() : "";
             } else if (tStr.length > 5) {
-                tStr = tStr.substring(0, 5); // npr. "14:30:00" -> "14:30"
+                tStr = tStr.substring(0, 5);
             }
 
             if (!datePart) {
@@ -371,11 +370,11 @@
         }
 
         function isGapGreaterThanTwoDays(t) {
-            const dNajave = t.Datum || "";
-            const vNajave = t.Vreme || "";
-            const pocIst = t.Vreme_Start || t.R || "";
-            const zavIst = t.Vreme_Izlaz || t.P || "";
-            const izlReal = t.Izlaz || t.L || "";
+            const dNajave = t.Datum_Najave || t.Datum || "";
+            const vNajave = t.Vreme_Najave || t.Vreme || "";
+            const pocIst = t.Vreme_Start || "";
+            const zavIst = t.Vreme_Zavrsetka || "";
+            const izlReal = t.Vreme_Izlaz || "";
 
             const dtNajava = parseToDateObj(dNajave, vNajave);
             const dtPocetak = (pocIst && pocIst !== "-") ? parseToDateObj(t.Datum_Start || dNajave, pocIst) : null;
@@ -429,7 +428,7 @@
                 
                 let mDate = true;
                 if (dateInput) {
-                    let rowDateRaw = String(t.Datum || "");
+                    let rowDateRaw = String(t.Datum_Najave || t.Datum || "");
                     let formattedRowDate = "";
                     if (rowDateRaw.includes('.')) {
                         let parts = rowDateRaw.split('.');
@@ -469,18 +468,22 @@
                                status.includes("RAMP") ? 'status-ramp' : 
                                status.includes("ISTOVAR") ? 'status-unloaded' : 'status-exited';
 
-                    // Uzimanje tačnih vrednosti iz baze za svaki korak pojedinačno
-                    const datumNajave = t.Datum || "";
-                    const vremeNajave = t.Vreme || "";
+                    // Definisanje novih mapiranih kolona sa hronološkim prefiksima
+                    const datumNajave = t.Datum_Najave || t.Datum || "";
+                    const vremeNajave = t.Vreme_Najave || t.Vreme || "";
                     
-                    const datumStart = t.Datum_Start || t.Q || datumNajave;
-                    const vremeStart = t.Vreme_Start || t.R || ""; 
+                    const rampaOznaka = t.Rampa || "-";
+                    const datumRampa = t.Datum_Rampa || "";
+                    const vremeRampa = t.Vreme_Rampa || "";
+
+                    const datumStart = t.Datum_Start || datumNajave;
+                    const vremeStart = t.Vreme_Start || ""; 
                     
-                    const datumZavrsetka = t.Datum_Zavrsetka || t.Datum_Start || datumNajave;
-                    const vremeZavrsetka = t.Vreme_Izlaz || t.P || ""; 
+                    const datumZavrsetka = t.Datum_Zavrsetka || datumNajave;
+                    const vremeZavrsetka = t.Vreme_Zavrsetka || ""; 
                     
-                    const datumIzlaz = t.Datum_Izlaz || t.O || datumNajave;
-                    const vremeIzlazRealni = t.Izlaz || t.L || ""; 
+                    const datumIzlaz = t.Datum_Izlaz || datumNajave;
+                    const vremeIzlazRealni = t.Vreme_Izlaz || ""; 
 
                     if (vremeNajave && vremeIzlazRealni && vremeIzlazRealni !== "-") {
                         const diff = getDiffMin(vremeNajave, vremeIzlazRealni);
@@ -504,8 +507,10 @@
                         <td>${t.Vozilo || '-'}</td>
                         <td>${t.Roba || '-'}</td>
                         <td style="text-align:center; font-weight:700; color:var(--zf-blue);">${t.Palete || '-'}</td>
+                        <td style="text-align:center; font-weight:700;">${rampaOznaka}</td>
                         <td><span class="badge ${sCls}">${t.Status || '-'}</span></td>
                         <td>${formatStepDateTime(datumNajave, datumNajave, vremeNajave)}</td>
+                        <td>${formatStepDateTime(datumRampa, datumNajave, vremeRampa)}</td>
                         <td>${formatStepDateTime(datumStart, datumNajave, vremeStart)}</td>
                         <td>${formatStepDateTime(datumZavrsetka, datumNajave, vremeZavrsetka)}</td>
                         <td>${formatStepDateTime(datumIzlaz, datumNajave, vremeIzlazRealni)}</td>
@@ -589,22 +594,24 @@
             if(cachedTrucks.length === 0) return alert("Nema podataka za izvoz.");
 
             let csv = "\uFEFFsep=;\r\n";
-            csv += "Tablica;Firma;Vozilo;Roba;Palete;Status;Vreme Najave;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
+            csv += "Tablica;Firma;Vozilo;Roba;Palete;Rampa;Status;Vreme Najave;Vreme Rampe;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
             
             cachedTrucks.forEach(t => { 
-                const datumNaj = t.Datum || "";
-                const datumStart = t.Datum_Start || t.Q || datumNaj;
-                const datumZavrsetka = t.Datum_Zavrsetka || t.Datum_Start || datumNaj;
-                const datumIzlaz = t.Datum_Izlaz || t.O || datumNaj;
+                const datumNaj = t.Datum_Najave || t.Datum || "";
+                const datumRampa = t.Datum_Rampa || "";
+                const datumStart = t.Datum_Start || datumNaj;
+                const datumZavrsetka = t.Datum_Zavrsetka || datumNaj;
+                const datumIzlaz = t.Datum_Izlaz || datumNaj;
 
-                const vremeNajaveSpojeno = formatStepDateTime(datumNaj, datumNaj, t.Vreme);
-                const pocIst = formatStepDateTime(datumStart, datumNaj, t.Vreme_Start || t.R || "");
-                const zavIst = formatStepDateTime(datumZavrsetka, datumNaj, t.Vreme_Izlaz || t.P || "");
-                const izl = formatStepDateTime(datumIzlaz, datumNaj, t.Izlaz || t.L || "");
+                const vremeNajaveSpojeno = formatStepDateTime(datumNaj, datumNaj, t.Vreme_Najave || t.Vreme);
+                const vremeRampaSpojeno = formatStepDateTime(datumRampa, datumNaj, t.Vreme_Rampa);
+                const pocIst = formatStepDateTime(datumStart, datumNaj, t.Vreme_Start);
+                const zavIst = formatStepDateTime(datumZavrsetka, datumNaj, t.Vreme_Zavrsetka);
+                const izl = formatStepDateTime(datumIzlaz, datumNaj, t.Vreme_Izlaz);
                 
                 const kom = (t.Komentar || "-").replace(/;/g, ' ').replace(/"/g, '""'); 
                 
-                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${vremeNajaveSpojeno}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
+                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Rampa || '-'}";"${t.Status || '-'}";"${vremeNajaveSpojeno}";"${vremeRampaSpojeno}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -616,7 +623,7 @@
             link.click();
 
             setTimeout(async () => {
-                if(confirm("Podaci su izvezeni. Da li želite da obrišete arhivu (Samo status ZAVRŠENO)?")) {
+                if(confirm("Podaci su izvezeni. Da li želite da obrišete arhivu (Samo status ZAVRŠENO/IZAŠAO)?")) {
                     try {
                         await fetch(SCRIPT_URL, { 
                             method: 'POST', 
