@@ -74,8 +74,8 @@
         .table-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; flex-wrap: wrap; gap: 10px; }
         .table-scroll-wrapper { max-height: 500px; overflow-x: auto; overflow-y: auto; margin-top: 10px; border: 1px solid #f1f5f9; border-radius: 4px; }
         table { width: 100%; border-collapse: collapse; min-width: 900px; }
-        th { text-align: left; padding: 12px; background: #f8fafc; font-size: 10px; color: var(--text-muted); text-transform: uppercase; border-bottom: 2px solid var(--border); font-weight: 800; position: sticky; top: 0; z-index: 5; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+        th { text-align: left; padding: 12px; background: #f8fafc; font-size: 10px; color: var(--text-muted); text-transform: uppercase; border-bottom: 2px solid var(--border); font-weight: 800; position: sticky; top: 0; z-index: 5; white-space: nowrap; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; white-space: nowrap; }
         
         tr.row-highlight-red { background-color: #fee2e2 !important; }
         tr.row-highlight-red td { color: #991b1b; }
@@ -586,7 +586,7 @@
                 const vremeNajaveSpojeno = formatToNumericDate(t.Vreme, datumNaj);
                 const kom = (t.Komentar || "-").replace(/;/g, ' ').replace(/"/g, '""'); 
                 
-                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${vremeNajaveSpojeno}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
+                csv += `"${t.Tablica || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${vremeNajaveSpojeno}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
