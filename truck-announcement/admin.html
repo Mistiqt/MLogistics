@@ -1,7 +1,4 @@
-# Let's rewrite admin.html to remove the "Datum Najave" column entirely while keeping the comparison logic (using hidden announcement date or internal reference), 
-# coloring fields red if the difference is > 2 days, and keeping the filter.
-
-html_content = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="sr">
 <head>
     <meta charset="UTF-8">
@@ -33,7 +30,7 @@ html_content = """<!DOCTYPE html>
             --zf-blue: #00549f; --zf-dark: #002e5d; --border: #e2e8f0; --bg: #f8fafc;
             --text-main: #1e293b; --text-muted: #64748b; --container-width: 1250px;
             --excel-green: #10b981; --excel-green-hover: #059669; --logout-red: #be123c;
-            --stats-purple: #8b5cf6; --alert-red: #dc2626; --alert-bg: #fee2e2;
+            --stats-purple: #8b5cf6;
         }
 
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; color: var(--text-main); -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
@@ -48,8 +45,8 @@ html_content = """<!DOCTYPE html>
         .filter-row { display: flex; gap: 15px; margin-top: 15px; padding: 15px; background: #f1f5f9; border-radius: 6px; align-items: flex-end; flex-wrap: wrap; }
         .filter-group { display: flex; flex-direction: column; gap: 5px; }
         .filter-group label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-        .filter-group input, .filter-group select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: inherit; outline: none; background: white; }
-        .filter-group input:focus, .filter-group select:focus { border-color: var(--zf-blue); box-shadow: 0 0 0 2px rgba(0,84,159,0.1); }
+        .filter-group input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: inherit; outline: none; }
+        .filter-group input:focus { border-color: var(--zf-blue); box-shadow: 0 0 0 2px rgba(0,84,159,0.1); }
         .btn-reset { padding: 9px 15px; font-size: 12px; background: white; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--text-muted); font-weight: 600; }
         .btn-reset:hover { background: #f8fafc; color: var(--zf-blue); }
 
@@ -90,8 +87,6 @@ html_content = """<!DOCTYPE html>
         .role-warehouse { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; } 
         .role-exit { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; } 
         .role-admin { background: #f1f5f9; color: #1e293b; border: 1px solid #e2e8f0; } 
-
-        .highlight-red { color: var(--alert-red) !important; font-weight: 700; background-color: var(--alert-bg); padding: 2px 6px; border-radius: 4px; display: inline-block; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; }
@@ -190,13 +185,6 @@ html_content = """<!DOCTYPE html>
                 <label><i class="far fa-calendar-alt"></i> Datum Ulaza</label>
                 <input type="date" id="filter-date" onchange="renderTruckTable()">
             </div>
-            <div class="filter-group">
-                <label><i class="fas fa-exclamation-triangle"></i> Kašnjenje Koraka (>2d)</label>
-                <select id="filter-delay" onchange="renderTruckTable()">
-                    <option value="">Sve</option>
-                    <option value="yes">Samo sa kašnjenjem > 2 dana</option>
-                </select>
-            </div>
             <button class="btn-reset" onclick="resetFilters()">PONIŠTI FILTERE</button>
         </div>
 
@@ -210,6 +198,8 @@ html_content = """<!DOCTYPE html>
                         <th style="width:100px;">Roba</th>
                         <th style="width:60px; text-align:center;">Palete</th>
                         <th style="width:110px;">Status</th>
+                        <th style="width:70px;">Datum Najave</th>
+                        <th style="width:70px;">Vreme Najave</th>
                         <th style="width:100px;">Početak Ist.</th>
                         <th style="width:100px;">Završen Ist.</th>
                         <th style="width:100px;">Izlaz</th>
@@ -291,57 +281,10 @@ html_content = """<!DOCTYPE html>
         let cachedTrucks = []; 
         let cachedUsers = [];  
 
-        // Ekstrahuje Date objekat iz bilo kog formata datuma/vremena (DD.MM.YYYY, YYYY-MM-DD, ili ISO string)
-        function parseDateObj(dateStr, fallbackDate = "") {
-            if (!dateStr || dateStr === "-" || dateStr === "") return null;
-            
-            let cleanStr = String(dateStr).trim();
-            if (cleanStr.includes('|')) {
-                cleanStr = cleanStr.split('|')[0].trim();
-            }
-
-            // Format DD.MM.YYYY.
-            if (/^\d{2}\.\d{2}\.\d{4}\.?$/.test(cleanStr)) {
-                const parts = cleanStr.replace(/\./g, ' ').trim().split(/\s+/);
-                if (parts.length >= 3) {
-                    const d = parseInt(parts[0], 10);
-                    const m = parseInt(parts[1], 10) - 1;
-                    const y = parseInt(parts[2], 10);
-                    const dt = new Date(y, m, d);
-                    if (!isNaN(dt.getTime())) return dt;
-                }
-            }
-
-            // ISO ili YYYY-MM-DD
-            const dObj = new Date(dateStr);
-            if (!isNaN(dObj.getTime()) && dObj.getFullYear() > 1899) {
-                return new Date(dObj.getFullYear(), dObj.getMonth(), dObj.getDate());
-            }
-
-            if (fallbackDate) {
-                return parseDateObj(fallbackDate);
-            }
-
-            return null;
-        }
-
-        // Proverava da li je razlika izmedju dva datuma veća od 2 dana (preko 48 sati / 2 kalendarska dana)
-        function hasStepDelay(announcementDateStr, stepDateStr) {
-            const dAnnounce = parseDateObj(announcementDateStr);
-            const dStep = parseDateObj(stepDateStr, announcementDateStr);
-            
-            if (!dAnnounce || !dStep) return false;
-            
-            const diffTime = dStep.getTime() - dAnnounce.getTime();
-            const diffDays = diffTime / (1000 * 60 * 60 * 24);
-            
-            return diffDays > 2;
-        }
-
-        function formatToNumericDate(dateStr, fallbackDate = "", announcementDate = "") {
+        function formatToNumericDate(dateStr, fallbackDate = "") {
             if (!dateStr || dateStr === "-" || dateStr === "") return "-";
             
-            let formatted = "-";
+            // Ako string već sadrži datum i vreme (npr. ISO format sa T ili već formatirano)
             if (dateStr.includes('T')) {
                 const dObj = new Date(dateStr);
                 if (!isNaN(dObj.getTime())) {
@@ -350,13 +293,17 @@ html_content = """<!DOCTYPE html>
                     const year = dObj.getFullYear();
                     const hours = String(dObj.getHours()).padStart(2, '0');
                     const minutes = String(dObj.getMinutes()).padStart(2, '0');
-                    formatted = `${day}.${month}.${year}. | ${hours}:${minutes}`;
+                    return `${day}.${month}.${year}. | ${hours}:${minutes}`;
                 }
-            } else if (dateStr.includes('1899-12-30T') || (!dateStr.includes('.') && dateStr.includes(':') && dateStr.length <= 5)) {
+            }
+
+            // Ako je u bazi upisano samo vreme (npr. "14:30" ili "1899-12-30T14:30:00"), dopuni datumom najave ili današnjim
+            if (dateStr.includes('1899-12-30T') || (!dateStr.includes('.') && dateStr.includes(':') && dateStr.length <= 5)) {
                 let timePart = dateStr;
                 if (dateStr.includes('T')) {
                     timePart = dateStr.split('T')[1].substring(0, 5);
                 }
+                
                 let baseDate = fallbackDate;
                 if (!baseDate || baseDate === "-") {
                     const now = new Date();
@@ -365,32 +312,22 @@ html_content = """<!DOCTYPE html>
                     const year = now.getFullYear();
                     baseDate = `${day}.${month}.${year}.`;
                 }
-                formatted = `${baseDate} | ${timePart}`;
-            } else {
-                const dObj = new Date(dateStr);
-                if (isNaN(dObj.getTime())) {
-                    formatted = dateStr;
-                } else {
-                    const day = String(dObj.getDate()).padStart(2, '0');
-                    const month = String(dObj.getMonth() + 1).padStart(2, '0');
-                    const year = dObj.getFullYear();
-                    if (dateStr.includes(':') || dateStr.includes('T')) {
-                        const hours = String(dObj.getHours()).padStart(2, '0');
-                        const minutes = String(dObj.getMinutes()).padStart(2, '0');
-                        if(year === 1899) formatted = `${fallbackDate || '-'} | ${hours}:${minutes}`;
-                        else formatted = `${day}.${month}.${year}. | ${hours}:${minutes}`;
-                    } else {
-                        formatted = `${day}.${month}.${year}.`;
-                    }
-                }
+                return `${baseDate} | ${timePart}`;
             }
 
-            // Provera da li kasni više od 2 dana u odnosu na datum najave
-            if (announcementDate && hasStepDelay(announcementDate, formatted)) {
-                return `<span class="highlight-red" title="Razlika veća od 2 dana u odnosu na datum najave!">${formatted}</span>`;
+            const dObj = new Date(dateStr);
+            if (isNaN(dObj.getTime())) return dateStr;
+            const day = String(dObj.getDate()).padStart(2, '0');
+            const month = String(dObj.getMonth() + 1).padStart(2, '0');
+            const year = dObj.getFullYear();
+            
+            if (dateStr.includes(':') || dateStr.includes('T')) {
+                const hours = String(dObj.getHours()).padStart(2, '0');
+                const minutes = String(dObj.getMinutes()).padStart(2, '0');
+                if(year === 1899) return `${fallbackDate || '-'} | ${hours}:${minutes}`;
+                return `${day}.${month}.${year}. | ${hours}:${minutes}`;
             }
-
-            return formatted;
+            return `${day}.${month}.${year}.`;
         }
 
         function getDiffMin(start, end) {
@@ -420,7 +357,6 @@ html_content = """<!DOCTYPE html>
             const tbody = document.getElementById('admin-table-body');
             const plateFilter = document.getElementById('filter-plate').value.toUpperCase();
             const dateInput = document.getElementById('filter-date').value;
-            const delayFilter = document.getElementById('filter-delay').value;
 
             tbody.innerHTML = '';
             let sumMin = 0, countDone = 0;
@@ -452,22 +388,7 @@ html_content = """<!DOCTYPE html>
 
                 const mPlate = plateValue.includes(plateFilter);
 
-                const datumNajave = t.Datum || "";
-                const pocetakIstovaraRaw = t.Vreme_Start || t.R || ""; 
-                const zavrsenIstovarRaw = t.Vreme_Izlaz || t.P || ""; 
-                const izlazRealniRaw = t.Izlaz || t.L || ""; 
-
-                // Provera da li bilo koji korak ima kašnjenje > 2 dana u odnosu na datum najave
-                const hasDelay = hasStepDelay(datumNajave, pocetakIstovaraRaw) || 
-                                 hasStepDelay(datumNajave, zavrsenIstovarRaw) || 
-                                 hasStepDelay(datumNajave, izlazRealniRaw);
-
-                let mDelay = true;
-                if (delayFilter === "yes") {
-                    mDelay = hasDelay;
-                }
-
-                if (mPlate && mDate && mDelay) {
+                if (mPlate && mDate) {
                     stats.total++;
                     const status = String(t.Status || "").toUpperCase();
                     
@@ -480,11 +401,15 @@ html_content = """<!DOCTYPE html>
                                status.includes("RAMP") ? 'status-ramp' : 
                                status.includes("ISTOVAR") ? 'status-unloaded' : 'status-exited';
 
+                    const datumNajave = t.Datum || "";
                     const vremeNajave = t.Vreme || "";
+                    const pocetakIstovara = t.Vreme_Start || t.R || ""; 
+                    const zavrsenIstovar = t.Vreme_Izlaz || t.P || ""; 
+                    const izlazRealni = t.Izlaz || t.L || ""; 
                     const komentarTekst = t.Komentar || "";
 
-                    if (vremeNajave && izlazRealniRaw && izlazRealniRaw !== "-") {
-                        const diff = getDiffMin(vremeNajave, izlazRealniRaw);
+                    if (vremeNajave && izlazRealni && izlazRealni !== "-") {
+                        const diff = getDiffMin(vremeNajave, izlazRealni);
                         if (diff !== null) { 
                             sumMin += diff; 
                             countDone++; 
@@ -493,12 +418,8 @@ html_content = """<!DOCTYPE html>
 
                     let komentarHtml = '-';
                     if(komentarTekst && komentarTekst !== "-") {
-                        komentarHtml = `<button class="action-btn btn-edit" onclick="alert('KOMENTAR:\n${komentarTekst.replace(/'/g, "\'")}')"><i class="fas fa-comment-dots"></i></button>`;
+                        komentarHtml = `<button class="action-btn btn-edit" onclick="alert('KOMENTAR:\\n${komentarTekst.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i></button>`;
                     }
-
-                    const pocetakIstovaraFormatted = formatToNumericDate(pocetakIstovaraRaw, datumNajave, datumNajave);
-                    const zavrsenIstovarFormatted = formatToNumericDate(zavrsenIstovarRaw, datumNajave, datumNajave);
-                    const izlazRealniFormatted = formatToNumericDate(izlazRealniRaw, datumNajave, datumNajave);
 
                     tbody.innerHTML += `<tr>
                         <td style="font-weight:800; color:var(--zf-blue);">${t.Tablice || '-'}</td>
@@ -507,9 +428,11 @@ html_content = """<!DOCTYPE html>
                         <td>${t.Roba || '-'}</td>
                         <td style="text-align:center; font-weight:700; color:var(--zf-blue);">${t.Palete || '-'}</td>
                         <td><span class="badge ${sCls}">${t.Status || '-'}</span></td>
-                        <td>${pocetakIstovaraFormatted}</td>
-                        <td>${zavrsenIstovarFormatted}</td>
-                        <td>${izlazRealniFormatted}</td>
+                        <td style="font-size:11px;">${datumNajave || '-'}</td>
+                        <td>${formatToNumericDate(vremeNajave, datumNajave)}</td>
+                        <td>${formatToNumericDate(pocetakIstovara, datumNajave)}</td>
+                        <td>${formatToNumericDate(zavrsenIstovar, datumNajave)}</td>
+                        <td>${formatToNumericDate(izlazRealni, datumNajave)}</td>
                         <td style="text-align:center;">${komentarHtml}</td>
                     </tr>`;
                 }
@@ -529,9 +452,6 @@ html_content = """<!DOCTYPE html>
             }
             if (plateFilter) {
                 statusText += (dateInput ? " | " : "PRIKAZ ZA ") + `TABLICE: ${plateFilter}`;
-            }
-            if (delayFilter === "yes") {
-                statusText += " | SAMO SA KAŠNJENJEM > 2 DANA";
             }
             document.getElementById('filter-status-text').innerText = statusText;
         }
@@ -590,21 +510,17 @@ html_content = """<!DOCTYPE html>
             if(cachedTrucks.length === 0) return alert("Nema podataka za izvoz.");
 
             let csv = "\uFEFFsep=;\r\n";
-            csv += "Tablica;Firma;Vozilo;Roba;Palete;Status;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
+            csv += "Tablica;Firma;Vozilo;Roba;Palete;Status;Datum;Ulaz;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
             
             cachedTrucks.forEach(t => { 
                 const datumNaj = t.Datum || "";
-                const cleanTextVal = (val) => {
-                    const res = formatToNumericDate(val, datumNaj, datumNaj);
-                    return res.replace(/<[^>]*>?/gm, '');
-                };
-
-                const pocIst = cleanTextVal(t.Vreme_Start || t.R || "");
-                const zavIst = cleanTextVal(t.Vreme_Izlaz || t.P || "");
-                const izl = cleanTextVal(t.Izlaz || t.L || "");
+                const pocIst = formatToNumericDate(t.Vreme_Start || t.R || "", datumNaj);
+                const zavIst = formatToNumericDate(t.Vreme_Izlaz || t.P || "", datumNaj);
+                const izl = formatToNumericDate(t.Izlaz || t.L || "", datumNaj);
+                const ulaz = formatToNumericDate(t.Vreme, datumNaj);
                 const kom = (t.Komentar || "-").replace(/;/g, ' ').replace(/"/g, '""'); 
                 
-                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
+                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${t.Datum || '-'}";"${ulaz}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -652,12 +568,7 @@ html_content = """<!DOCTYPE html>
             };
         }
 
-        function resetFilters() { 
-            document.getElementById('filter-plate').value = ''; 
-            document.getElementById('filter-date').value = ''; 
-            document.getElementById('filter-delay').value = ''; 
-            renderTruckTable(); 
-        }
+        function resetFilters() { document.getElementById('filter-plate').value = ''; document.getElementById('filter-date').value = ''; renderTruckTable(); }
         function manualRefresh(btn) { btn.classList.add('active'); loadAdminData(); setTimeout(() => btn.classList.remove('active'), 800); }
         function closeUserModal() { document.getElementById('userModal').style.display = 'none'; }
         function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; document.getElementById('auth-password').value = ""; }
@@ -676,7 +587,3 @@ html_content = """<!DOCTYPE html>
     </script>
 </body>
 </html>
-"""
-
-with open('admin.html', 'w', encoding='utf-8') as f:
-    f.write(html_content)
