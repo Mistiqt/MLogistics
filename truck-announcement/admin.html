@@ -198,8 +198,7 @@
                         <th style="width:100px;">Roba</th>
                         <th style="width:60px; text-align:center;">Palete</th>
                         <th style="width:110px;">Status</th>
-                        <th style="width:70px;">Datum Najave</th>
-                        <th style="width:70px;">Vreme Najave</th>
+                        <th style="width:80px;">Datum Najave</th>
                         <th style="width:100px;">Početak Ist.</th>
                         <th style="width:100px;">Završen Ist.</th>
                         <th style="width:100px;">Izlaz</th>
@@ -284,7 +283,6 @@
         function formatToNumericDate(dateStr, fallbackDate = "") {
             if (!dateStr || dateStr === "-" || dateStr === "") return "-";
             
-            // Ako string već sadrži datum i vreme (npr. ISO format sa T ili već formatirano)
             if (dateStr.includes('T')) {
                 const dObj = new Date(dateStr);
                 if (!isNaN(dObj.getTime())) {
@@ -297,7 +295,6 @@
                 }
             }
 
-            // Ako je u bazi upisano samo vreme (npr. "14:30" ili "1899-12-30T14:30:00"), dopuni datumom najave ili današnjim
             if (dateStr.includes('1899-12-30T') || (!dateStr.includes('.') && dateStr.includes(':') && dateStr.length <= 5)) {
                 let timePart = dateStr;
                 if (dateStr.includes('T')) {
@@ -429,7 +426,6 @@
                         <td style="text-align:center; font-weight:700; color:var(--zf-blue);">${t.Palete || '-'}</td>
                         <td><span class="badge ${sCls}">${t.Status || '-'}</span></td>
                         <td style="font-size:11px;">${datumNajave || '-'}</td>
-                        <td>${formatToNumericDate(vremeNajave, datumNajave)}</td>
                         <td>${formatToNumericDate(pocetakIstovara, datumNajave)}</td>
                         <td>${formatToNumericDate(zavrsenIstovar, datumNajave)}</td>
                         <td>${formatToNumericDate(izlazRealni, datumNajave)}</td>
@@ -510,17 +506,16 @@
             if(cachedTrucks.length === 0) return alert("Nema podataka za izvoz.");
 
             let csv = "\uFEFFsep=;\r\n";
-            csv += "Tablica;Firma;Vozilo;Roba;Palete;Status;Datum;Ulaz;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
+            csv += "Tablica;Firma;Vozilo;Roba;Palete;Status;Datum Najave;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
             
             cachedTrucks.forEach(t => { 
                 const datumNaj = t.Datum || "";
                 const pocIst = formatToNumericDate(t.Vreme_Start || t.R || "", datumNaj);
                 const zavIst = formatToNumericDate(t.Vreme_Izlaz || t.P || "", datumNaj);
                 const izl = formatToNumericDate(t.Izlaz || t.L || "", datumNaj);
-                const ulaz = formatToNumericDate(t.Vreme, datumNaj);
                 const kom = (t.Komentar || "-").replace(/;/g, ' ').replace(/"/g, '""'); 
                 
-                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${t.Datum || '-'}";"${ulaz}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
+                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${t.Datum || '-'}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
