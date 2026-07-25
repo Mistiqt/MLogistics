@@ -45,8 +45,8 @@
         .filter-row { display: flex; gap: 15px; margin-top: 15px; padding: 15px; background: #f1f5f9; border-radius: 6px; align-items: flex-end; flex-wrap: wrap; }
         .filter-group { display: flex; flex-direction: column; gap: 5px; }
         .filter-group label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-        .filter-group input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: inherit; outline: none; }
-        .filter-group input:focus { border-color: var(--zf-blue); box-shadow: 0 0 0 2px rgba(0,84,159,0.1); }
+        .filter-group input, .filter-group select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: inherit; outline: none; background: white; }
+        .filter-group input:focus, .filter-group select:focus { border-color: var(--zf-blue); box-shadow: 0 0 0 2px rgba(0,84,159,0.1); }
         .btn-reset { padding: 9px 15px; font-size: 12px; background: white; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--text-muted); font-weight: 600; }
         .btn-reset:hover { background: #f8fafc; color: var(--zf-blue); }
 
@@ -77,6 +77,9 @@
         th { text-align: left; padding: 12px; background: #f8fafc; font-size: 10px; color: var(--text-muted); text-transform: uppercase; border-bottom: 2px solid var(--border); font-weight: 800; position: sticky; top: 0; z-index: 5; }
         td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
         
+        tr.row-highlight-red { background-color: #fee2e2 !important; }
+        tr.row-highlight-red td { color: #991b1b; }
+
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
         .status-waiting { background: #fff3e0; color: #e65100; }
         .status-ramp { background: #dcfce7; color: #15803d; }
@@ -185,6 +188,13 @@
                 <label><i class="far fa-calendar-alt"></i> Datum Ulaza</label>
                 <input type="date" id="filter-date" onchange="renderTruckTable()">
             </div>
+            <div class="filter-group">
+                <label><i class="fas fa-exclamation-triangle"></i> Filter Razmak > 2 Dana</label>
+                <select id="filter-delay" onchange="renderTruckTable()">
+                    <option value="all">Svi zapisi</option>
+                    <option value="red">Samo > 2 dana (Crveni)</option>
+                </select>
+            </div>
             <button class="btn-reset" onclick="resetFilters()">PONIŠTI FILTERE</button>
         </div>
 
@@ -198,8 +208,7 @@
                         <th style="width:100px;">Roba</th>
                         <th style="width:60px; text-align:center;">Palete</th>
                         <th style="width:110px;">Status</th>
-                        <th style="width:70px;">Datum Najave</th>
-                        <th style="width:70px;">Vreme Najave</th>
+                        <th style="width:140px;">Vreme Najave</th>
                         <th style="width:100px;">Početak Ist.</th>
                         <th style="width:100px;">Završen Ist.</th>
                         <th style="width:100px;">Izlaz</th>
@@ -284,7 +293,6 @@
         function formatToNumericDate(dateStr, fallbackDate = "") {
             if (!dateStr || dateStr === "-" || dateStr === "") return "-";
             
-            // Ako string već sadrži datum i vreme (npr. ISO format sa T ili već formatirano)
             if (dateStr.includes('T')) {
                 const dObj = new Date(dateStr);
                 if (!isNaN(dObj.getTime())) {
@@ -297,7 +305,6 @@
                 }
             }
 
-            // Ako je u bazi upisano samo vreme (npr. "14:30" ili "1899-12-30T14:30:00"), dopuni datumom najave ili današnjim
             if (dateStr.includes('1899-12-30T') || (!dateStr.includes('.') && dateStr.includes(':') && dateStr.length <= 5)) {
                 let timePart = dateStr;
                 if (dateStr.includes('T')) {
@@ -330,6 +337,53 @@
             return `${day}.${month}.${year}.`;
         }
 
+        function parseToDateObj(dateStr, timeStr) {
+            let d = null;
+            if (dateStr) {
+                if (dateStr.includes('.')) {
+                    let parts = dateStr.split('.');
+                    if (parts.length >= 3) {
+                        d = new Date(`${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`);
+                    }
+                } else {
+                    d = new Date(dateStr);
+                }
+            }
+            if (!d || isNaN(d.getTime())) d = new Date();
+
+            if (timeStr) {
+                let timePart = timeStr;
+                if (timeStr.includes('|')) timePart = timeStr.split('|')[1].trim();
+                else if (timeStr.includes('T')) timePart = timeStr.split('T')[1].substring(0, 5);
+                const tParts = timePart.split(':');
+                if (tParts.length >= 2) {
+                    d.setHours(parseInt(tParts[0]), parseInt(tParts[1]), 0, 0);
+                }
+            }
+            return d;
+        }
+
+        function isGapGreaterThanTwoDays(t) {
+            const dNajave = t.Datum || "";
+            const vNajave = t.Vreme || "";
+            const pocIst = t.Vreme_Start || t.R || "";
+            const zavIst = t.Vreme_Izlaz || t.P || "";
+            const izlReal = t.Izlaz || t.L || "";
+
+            const dtNajava = parseToDateObj(dNajave, vNajave);
+            const dtPocetak = (pocIst && pocIst !== "-") ? parseToDateObj(dNajave, pocIst) : null;
+            const dtZavrsetak = (zavIst && zavIst !== "-") ? parseToDateObj(dNajave, zavIst) : null;
+            const dtIzlaz = (izlReal && izlReal !== "-") ? parseToDateObj(dNajave, izlReal) : null;
+
+            const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+
+            if (dtPocetak && (dtPocetak - dtNajava > TWO_DAYS_MS)) return true;
+            if (dtPocetak && dtZavrsetak && (dtZavrsetak - dtPocetak > TWO_DAYS_MS)) return true;
+            if (dtZavrsetak && dtIzlaz && (dtIzlaz - dtZavrsetak > TWO_DAYS_MS)) return true;
+
+            return false;
+        }
+
         function getDiffMin(start, end) {
             if(!start || !end || start === "-" || end === "-") return null;
             const parse = (t) => { 
@@ -357,6 +411,7 @@
             const tbody = document.getElementById('admin-table-body');
             const plateFilter = document.getElementById('filter-plate').value.toUpperCase();
             const dateInput = document.getElementById('filter-date').value;
+            const delayFilter = document.getElementById('filter-delay').value;
 
             tbody.innerHTML = '';
             let sumMin = 0, countDone = 0;
@@ -387,8 +442,14 @@
                 }
 
                 const mPlate = plateValue.includes(plateFilter);
+                const isRed = isGapGreaterThanTwoDays(t);
 
-                if (mPlate && mDate) {
+                let mDelay = true;
+                if (delayFilter === 'red') {
+                    mDelay = isRed;
+                }
+
+                if (mPlate && mDate && mDelay) {
                     stats.total++;
                     const status = String(t.Status || "").toUpperCase();
                     
@@ -402,14 +463,15 @@
                                status.includes("ISTOVAR") ? 'status-unloaded' : 'status-exited';
 
                     const datumNajave = t.Datum || "";
-                    const vremeNajave = t.Vreme || "";
+                    const vremeNajaveRaw = t.Vreme || "";
+                    const spojenVremeNajave = formatToNumericDate(vremeNajaveRaw, datumNajave);
                     const pocetakIstovara = t.Vreme_Start || t.R || ""; 
                     const zavrsenIstovar = t.Vreme_Izlaz || t.P || ""; 
                     const izlazRealni = t.Izlaz || t.L || ""; 
                     const komentarTekst = t.Komentar || "";
 
-                    if (vremeNajave && izlazRealni && izlazRealni !== "-") {
-                        const diff = getDiffMin(vremeNajave, izlazRealni);
+                    if (vremeNajaveRaw && izlazRealni && izlazRealni !== "-") {
+                        const diff = getDiffMin(vremeNajaveRaw, izlazRealni);
                         if (diff !== null) { 
                             sumMin += diff; 
                             countDone++; 
@@ -421,15 +483,16 @@
                         komentarHtml = `<button class="action-btn btn-edit" onclick="alert('KOMENTAR:\\n${komentarTekst.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i></button>`;
                     }
 
-                    tbody.innerHTML += `<tr>
+                    const rowClassAttr = isRed ? ' class="row-highlight-red"' : '';
+
+                    tbody.innerHTML += `<tr${rowClassAttr}>
                         <td style="font-weight:800; color:var(--zf-blue);">${t.Tablice || '-'}</td>
                         <td>${t.Kompanija || '-'}</td>
                         <td>${t.Vozilo || '-'}</td>
                         <td>${t.Roba || '-'}</td>
                         <td style="text-align:center; font-weight:700; color:var(--zf-blue);">${t.Palete || '-'}</td>
                         <td><span class="badge ${sCls}">${t.Status || '-'}</span></td>
-                        <td style="font-size:11px;">${datumNajave || '-'}</td>
-                        <td>${formatToNumericDate(vremeNajave, datumNajave)}</td>
+                        <td>${spojenVremeNajave}</td>
                         <td>${formatToNumericDate(pocetakIstovara, datumNajave)}</td>
                         <td>${formatToNumericDate(zavrsenIstovar, datumNajave)}</td>
                         <td>${formatToNumericDate(izlazRealni, datumNajave)}</td>
@@ -452,6 +515,9 @@
             }
             if (plateFilter) {
                 statusText += (dateInput ? " | " : "PRIKAZ ZA ") + `TABLICE: ${plateFilter}`;
+            }
+            if (delayFilter === 'red') {
+                statusText += " | SAMO > 2 DANA";
             }
             document.getElementById('filter-status-text').innerText = statusText;
         }
@@ -510,17 +576,17 @@
             if(cachedTrucks.length === 0) return alert("Nema podataka za izvoz.");
 
             let csv = "\uFEFFsep=;\r\n";
-            csv += "Tablica;Firma;Vozilo;Roba;Palete;Status;Datum;Ulaz;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
+            csv += "Tablica;Firma;Vozilo;Roba;Palete;Status;Vreme Najave;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
             
             cachedTrucks.forEach(t => { 
                 const datumNaj = t.Datum || "";
                 const pocIst = formatToNumericDate(t.Vreme_Start || t.R || "", datumNaj);
                 const zavIst = formatToNumericDate(t.Vreme_Izlaz || t.P || "", datumNaj);
                 const izl = formatToNumericDate(t.Izlaz || t.L || "", datumNaj);
-                const ulaz = formatToNumericDate(t.Vreme, datumNaj);
+                const vremeNajaveSpojeno = formatToNumericDate(t.Vreme, datumNaj);
                 const kom = (t.Komentar || "-").replace(/;/g, ' ').replace(/"/g, '""'); 
                 
-                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${t.Datum || '-'}";"${ulaz}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
+                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${vremeNajaveSpojeno}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -568,7 +634,7 @@
             };
         }
 
-        function resetFilters() { document.getElementById('filter-plate').value = ''; document.getElementById('filter-date').value = ''; renderTruckTable(); }
+        function resetFilters() { document.getElementById('filter-plate').value = ''; document.getElementById('filter-date').value = ''; document.getElementById('filter-delay').value = 'all'; renderTruckTable(); }
         function manualRefresh(btn) { btn.classList.add('active'); loadAdminData(); setTimeout(() => btn.classList.remove('active'), 800); }
         function closeUserModal() { document.getElementById('userModal').style.display = 'none'; }
         function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; document.getElementById('auth-password').value = ""; }
