@@ -290,15 +290,17 @@
         let cachedTrucks = []; 
         let cachedUsers = [];  
 
-        // PRECIZNA FUNKCIJA ZA FORMATIRANJE DATUMA I VREMENA ZA SVAKI KORAK
+        // ISPRAVLJENA I ROBUSTNA FUNKCIJA ZA FORMATIRANJE DATUMA I VREMENA
         function formatStepDateTime(specificDate, defaultDate, rawTime) {
             if (!rawTime || rawTime === "-" || rawTime === "") return "-";
 
             let datePart = "";
-            let tStr = String(rawTime);
+            let timePart = "";
+            let tStr = String(rawTime).trim();
 
             let candidateDate = specificDate || defaultDate;
 
+            // 1. Ekstrakcija datuma
             if (candidateDate && candidateDate !== "-" && candidateDate !== "") {
                 if (typeof candidateDate === 'string' && candidateDate.includes('T')) {
                     const dObj = new Date(candidateDate);
@@ -318,6 +320,7 @@
                 }
             }
 
+            // 2. Ekstrakcija i čišćenje vremena (da sprečimo da se datum upiše na mesto vremena)
             if (tStr.includes('T')) {
                 const parts = tStr.split('T');
                 const dObj = new Date(tStr);
@@ -327,20 +330,26 @@
                     const year = dObj.getFullYear();
                     datePart = `${day}.${month}.${year}.`;
                 }
-                tStr = parts[1] ? parts[1].substring(0, 5) : "";
+                timePart = parts[1] ? parts[1].substring(0, 5) : "";
             } else if (tStr.includes('|')) {
                 const parts = tStr.split('|');
                 datePart = parts[0].trim();
-                tStr = parts[1] ? parts[1].trim() : "";
-            } else if (tStr.length > 5) {
-                tStr = tStr.substring(0, 5);
+                timePart = parts[1] ? parts[1].trim().substring(0, 5) : "";
+            } else if (tStr.includes(':')) {
+                // Čisto vreme tipa "21:18"
+                timePart = tStr.substring(0, 5);
+            } else {
+                // Ako u tStr nije bilo vremena, već je možda bio datum ili nešto drugo, tretiraj ga bezbedno
+                timePart = tStr.length <= 5 ? tStr : "-";
             }
 
             if (!datePart) {
                 datePart = defaultDate || "-";
             }
 
-            return `${datePart} | ${tStr}`;
+            if (!timePart || timePart === "-") return "-";
+
+            return `${datePart} | ${timePart}`;
         }
 
         function parseToDateObj(dateStr, timeStr) {
@@ -468,7 +477,6 @@
                                status.includes("RAMP") ? 'status-ramp' : 
                                status.includes("ISTOVAR") ? 'status-unloaded' : 'status-exited';
 
-                    // Definisanje novih mapiranih kolona sa hronološkim prefiksima
                     const datumNajave = t.Datum_Najave || t.Datum || "";
                     const vremeNajave = t.Vreme_Najave || t.Vreme || "";
                     
