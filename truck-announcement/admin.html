@@ -290,36 +290,51 @@
         let cachedTrucks = []; 
         let cachedUsers = [];  
 
-        function formatToNumericDate(dateStr, timeStr) {
+        function formatToNumericDate(dateStr, fallbackDate = "") {
             if (!dateStr || dateStr === "-" || dateStr === "") return "-";
             
-            // Ako je prosleđen čist datum (npr iz kolone Datum_Start / Q)
-            let formattedDate = dateStr;
             if (dateStr.includes('T')) {
                 const dObj = new Date(dateStr);
                 if (!isNaN(dObj.getTime())) {
                     const day = String(dObj.getDate()).padStart(2, '0');
                     const month = String(dObj.getMonth() + 1).padStart(2, '0');
                     const year = dObj.getFullYear();
-                    formattedDate = `${day}.${month}.${year}.`;
+                    const hours = String(dObj.getHours()).padStart(2, '0');
+                    const minutes = String(dObj.getMinutes()).padStart(2, '0');
+                    return `${day}.${month}.${year}. | ${hours}:${minutes}`;
                 }
-            } else if (dateStr.includes('-') && dateStr.length === 10) {
-                const p = dateStr.split('-');
-                formattedDate = `${p[2]}.${p[1]}.${p[0]}.`;
             }
 
-            // Ako imamo i vreme
-            if (timeStr && timeStr !== "-" && timeStr !== "") {
-                let timePart = timeStr;
-                if (timeStr.includes('T')) {
-                    timePart = timeStr.split('T')[1].substring(0, 5);
-                } else if (timeStr.includes('|')) {
-                    timePart = timeStr.split('|')[1].trim();
+            if (dateStr.includes('1899-12-30T') || (!dateStr.includes('.') && dateStr.includes(':') && dateStr.length <= 5)) {
+                let timePart = dateStr;
+                if (dateStr.includes('T')) {
+                    timePart = dateStr.split('T')[1].substring(0, 5);
                 }
-                return `${formattedDate} | ${timePart}`;
+                
+                let baseDate = fallbackDate;
+                if (!baseDate || baseDate === "-") {
+                    const now = new Date();
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const year = now.getFullYear();
+                    baseDate = `${day}.${month}.${year}.`;
+                }
+                return `${baseDate} | ${timePart}`;
             }
 
-            return formattedDate;
+            const dObj = new Date(dateStr);
+            if (isNaN(dObj.getTime())) return dateStr;
+            const day = String(dObj.getDate()).padStart(2, '0');
+            const month = String(dObj.getMonth() + 1).padStart(2, '0');
+            const year = dObj.getFullYear();
+            
+            if (dateStr.includes(':') || dateStr.includes('T')) {
+                const hours = String(dObj.getHours()).padStart(2, '0');
+                const minutes = String(dObj.getMinutes()).padStart(2, '0');
+                if(year === 1899) return `${fallbackDate || '-'} | ${hours}:${minutes}`;
+                return `${day}.${month}.${year}. | ${hours}:${minutes}`;
+            }
+            return `${day}.${month}.${year}.`;
         }
 
         function parseToDateObj(dateStr, timeStr) {
@@ -449,12 +464,9 @@
 
                     const datumNajave = t.Datum || "";
                     const vremeNajaveRaw = t.Vreme || "";
-                    const spojenVremeNajave = formatToNumericDate(datumNajave, vremeNajaveRaw);
-                    
-                    const datumStart = t.Datum_Start || t.Q || datumNajave;
-                    const vremeStart = t.Vreme_Start || t.R || ""; 
-                    const datumIzlaz = t.Datum_Izlaz || t.O || datumNajave;
-                    const vremeIzlaz = t.Vreme_Izlaz || t.P || ""; 
+                    const spojenVremeNajave = formatToNumericDate(vremeNajaveRaw, datumNajave);
+                    const pocetakIstovara = t.Vreme_Start || t.R || ""; 
+                    const zavrsenIstovar = t.Vreme_Izlaz || t.P || ""; 
                     const izlazRealni = t.Izlaz || t.L || ""; 
                     const komentarTekst = t.Komentar || "";
 
@@ -481,9 +493,9 @@
                         <td style="text-align:center; font-weight:700; color:var(--zf-blue);">${t.Palete || '-'}</td>
                         <td><span class="badge ${sCls}">${t.Status || '-'}</span></td>
                         <td>${spojenVremeNajave}</td>
-                        <td>${formatToNumericDate(datumStart, vremeStart)}</td>
-                        <td>${formatToNumericDate(datumStart, vremeIzlaz)}</td>
-                        <td>${formatToNumericDate(datumIzlaz, izlazRealni)}</td>
+                        <td>${formatToNumericDate(pocetakIstovara, datumNajave)}</td>
+                        <td>${formatToNumericDate(zavrsenIstovar, datumNajave)}</td>
+                        <td>${formatToNumericDate(izlazRealni, datumNajave)}</td>
                         <td style="text-align:center;">${komentarHtml}</td>
                     </tr>`;
                 }
@@ -568,12 +580,10 @@
             
             cachedTrucks.forEach(t => { 
                 const datumNaj = t.Datum || "";
-                const datumStart = t.Datum_Start || t.Q || datumNaj;
-                const datumIzlaz = t.Datum_Izlaz || t.O || datumNaj;
-                const pocIst = formatToNumericDate(datumStart, t.Vreme_Start || t.R || "");
-                const zavIst = formatToNumericDate(datumStart, t.Vreme_Izlaz || t.P || "");
-                const izl = formatToNumericDate(datumIzlaz, t.Izlaz || t.L || "");
-                const vremeNajaveSpojeno = formatToNumericDate(datumNaj, t.Vreme);
+                const pocIst = formatToNumericDate(t.Vreme_Start || t.R || "", datumNaj);
+                const zavIst = formatToNumericDate(t.Vreme_Izlaz || t.P || "", datumNaj);
+                const izl = formatToNumericDate(t.Izlaz || t.L || "", datumNaj);
+                const vremeNajaveSpojeno = formatToNumericDate(t.Vreme, datumNaj);
                 const kom = (t.Komentar || "-").replace(/;/g, ' ').replace(/"/g, '""'); 
                 
                 csv += `"${t.Tablica || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${vremeNajaveSpojeno}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
