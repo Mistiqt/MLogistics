@@ -200,9 +200,9 @@
                         <th style="width:110px;">Status</th>
                         <th style="width:70px;">Datum Najave</th>
                         <th style="width:70px;">Vreme Najave</th>
-                        <th style="width:70px;">Početak Ist.</th>
-                        <th style="width:70px;">Završen Ist.</th>
-                        <th style="width:70px;">Izlaz</th>
+                        <th style="width:100px;">Početak Ist.</th>
+                        <th style="width:100px;">Završen Ist.</th>
+                        <th style="width:100px;">Izlaz</th>
                         <th style="width:50px; text-align:center;">Nap.</th>
                     </tr>
                 </thead>
@@ -281,21 +281,50 @@
         let cachedTrucks = []; 
         let cachedUsers = [];  
 
-        function formatToNumericDate(dateStr) {
+        function formatToNumericDate(dateStr, fallbackDate = "") {
             if (!dateStr || dateStr === "-" || dateStr === "") return "-";
-            if (dateStr.includes('1899-12-30T')) {
-                const parts = dateStr.split('T')[1].split(':');
-                return `${parts[0]}:${parts[1]}`;
+            
+            // Ako string već sadrži datum i vreme (npr. ISO format sa T ili već formatirano)
+            if (dateStr.includes('T')) {
+                const dObj = new Date(dateStr);
+                if (!isNaN(dObj.getTime())) {
+                    const day = String(dObj.getDate()).padStart(2, '0');
+                    const month = String(dObj.getMonth() + 1).padStart(2, '0');
+                    const year = dObj.getFullYear();
+                    const hours = String(dObj.getHours()).padStart(2, '0');
+                    const minutes = String(dObj.getMinutes()).padStart(2, '0');
+                    return `${day}.${month}.${year}. | ${hours}:${minutes}`;
+                }
             }
+
+            // Ako je u bazi upisano samo vreme (npr. "14:30" ili "1899-12-30T14:30:00"), dopuni datumom najave ili današnjim
+            if (dateStr.includes('1899-12-30T') || (!dateStr.includes('.') && dateStr.includes(':') && dateStr.length <= 5)) {
+                let timePart = dateStr;
+                if (dateStr.includes('T')) {
+                    timePart = dateStr.split('T')[1].substring(0, 5);
+                }
+                
+                let baseDate = fallbackDate;
+                if (!baseDate || baseDate === "-") {
+                    const now = new Date();
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const year = now.getFullYear();
+                    baseDate = `${day}.${month}.${year}.`;
+                }
+                return `${baseDate} | ${timePart}`;
+            }
+
             const dObj = new Date(dateStr);
             if (isNaN(dObj.getTime())) return dateStr;
             const day = String(dObj.getDate()).padStart(2, '0');
             const month = String(dObj.getMonth() + 1).padStart(2, '0');
             const year = dObj.getFullYear();
+            
             if (dateStr.includes(':') || dateStr.includes('T')) {
                 const hours = String(dObj.getHours()).padStart(2, '0');
                 const minutes = String(dObj.getMinutes()).padStart(2, '0');
-                if(year === 1899) return `${hours}:${minutes}`;
+                if(year === 1899) return `${fallbackDate || '-'} | ${hours}:${minutes}`;
                 return `${day}.${month}.${year}. | ${hours}:${minutes}`;
             }
             return `${day}.${month}.${year}.`;
@@ -369,11 +398,11 @@
                     else if (status.includes("IZAŠ") || status.includes("ZAVRŠ")) stats.exited++;
 
                     const sCls = status.includes("ČEKA") ? 'status-waiting' : 
-                                 status.includes("RAMP") ? 'status-ramp' : 
-                                 status.includes("ISTOVAR") ? 'status-unloaded' : 'status-exited';
+                               status.includes("RAMP") ? 'status-ramp' : 
+                               status.includes("ISTOVAR") ? 'status-unloaded' : 'status-exited';
 
-                    const datumNajave = t.Datum;
-                    const vremeNajave = t.Vreme;
+                    const datumNajave = t.Datum || "";
+                    const vremeNajave = t.Vreme || "";
                     const pocetakIstovara = t.Vreme_Start || t.R || ""; 
                     const zavrsenIstovar = t.Vreme_Izlaz || t.P || ""; 
                     const izlazRealni = t.Izlaz || t.L || ""; 
@@ -387,7 +416,6 @@
                         }
                     }
 
-                    // Dugme za komentar ako postoji
                     let komentarHtml = '-';
                     if(komentarTekst && komentarTekst !== "-") {
                         komentarHtml = `<button class="action-btn btn-edit" onclick="alert('KOMENTAR:\\n${komentarTekst.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i></button>`;
@@ -401,10 +429,10 @@
                         <td style="text-align:center; font-weight:700; color:var(--zf-blue);">${t.Palete || '-'}</td>
                         <td><span class="badge ${sCls}">${t.Status || '-'}</span></td>
                         <td style="font-size:11px;">${datumNajave || '-'}</td>
-                        <td>${formatToNumericDate(vremeNajave)}</td>
-                        <td>${formatToNumericDate(pocetakIstovara)}</td>
-                        <td>${formatToNumericDate(zavrsenIstovar)}</td>
-                        <td>${formatToNumericDate(izlazRealni)}</td>
+                        <td>${formatToNumericDate(vremeNajave, datumNajave)}</td>
+                        <td>${formatToNumericDate(pocetakIstovara, datumNajave)}</td>
+                        <td>${formatToNumericDate(zavrsenIstovar, datumNajave)}</td>
+                        <td>${formatToNumericDate(izlazRealni, datumNajave)}</td>
                         <td style="text-align:center;">${komentarHtml}</td>
                     </tr>`;
                 }
@@ -481,19 +509,17 @@
         async function exportAndCleanup() {
             if(cachedTrucks.length === 0) return alert("Nema podataka za izvoz.");
 
-            // Dodajemo BOM marker (\uFEFF) i separator instrukciju za Excel (sep=;)
             let csv = "\uFEFFsep=;\r\n";
-            // Header red
             csv += "Tablica;Firma;Vozilo;Roba;Palete;Status;Datum;Ulaz;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
             
             cachedTrucks.forEach(t => { 
-                const pocIst = formatToNumericDate(t.Vreme_Start || t.R || "");
-                const zavIst = formatToNumericDate(t.Vreme_Izlaz || t.P || "");
-                const izl = formatToNumericDate(t.Izlaz || t.L || "");
-                const ulaz = formatToNumericDate(t.Vreme);
-                const kom = (t.Komentar || "-").replace(/;/g, ' ').replace(/"/g, '""'); // Čistimo tačka-zarez iz komentara
+                const datumNaj = t.Datum || "";
+                const pocIst = formatToNumericDate(t.Vreme_Start || t.R || "", datumNaj);
+                const zavIst = formatToNumericDate(t.Vreme_Izlaz || t.P || "", datumNaj);
+                const izl = formatToNumericDate(t.Izlaz || t.L || "", datumNaj);
+                const ulaz = formatToNumericDate(t.Vreme, datumNaj);
+                const kom = (t.Komentar || "-").replace(/;/g, ' ').replace(/"/g, '""'); 
                 
-                // Formiramo red sa tačka-zarez separatorom
                 csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${t.Datum || '-'}";"${ulaz}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
             });
 
@@ -554,12 +580,9 @@
             } 
         }
 
-        window.onload = () => { 
-            loadAdminData(); 
-            renderUserList(); 
-            setInterval(() => { 
-                if (document.activeElement.tagName !== 'INPUT') loadAdminData(); 
-            }, 30000); 
+        window.onload = function() {
+            loadAdminData();
+            renderUserList();
         };
     </script>
 </body>
