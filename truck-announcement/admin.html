@@ -11,11 +11,9 @@
             const loggedUser = sessionStorage.getItem('stellantis_user_logged');
             const userRole = sessionStorage.getItem('stellantis_user_role');
             
-
             const isMaster = (loggedUser === 'dusan.kostic@stellantis.com' || loggedUser === 'admin@zf.com');
             const isAdminRole = (userRole === 'admin.html');
             
-
             if (!loggedUser || (!isMaster && !isAdminRole)) {
                 document.documentElement.style.display = 'none';
                 window.location.replace('truck-login.html');
@@ -229,7 +227,8 @@
                 <thead>
                     <tr>
                         <th>Korisničko Ime</th>
-                        <th>Nalog kreiran</th> <th>Pristup</th>
+                        <th>Nalog kreiran</th>
+                        <th>Pristup</th>
                         <th style="text-align:right; width: 100px;">Akcije</th>
                     </tr>
                 </thead>
@@ -277,7 +276,6 @@
     <script>
         const MASTER_EMAIL = "dusan.kostic@stellantis.com";
         const ADMIN_PASS = "Ninica1122!";
-
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwDGTRVTD7VOpD3oyDNGajSeGiKa3xRo30hdDDIEFtMyRxd-MrIs47G8TVf1RzzwvTEQg/exec";
 
         const roleConfig = {
@@ -290,51 +288,60 @@
         let cachedTrucks = []; 
         let cachedUsers = [];  
 
-        function formatToNumericDate(dateStr, fallbackDate = "") {
-            if (!dateStr || dateStr === "-" || dateStr === "") return "-";
-            
-            if (dateStr.includes('T')) {
-                const dObj = new Date(dateStr);
+        // PRECIZNA FUNKCIJA ZA FORMATIRANJE DATUMA I VREMENA ZA SVAKI KORAK
+        function formatStepDateTime(specificDate, defaultDate, rawTime) {
+            if (!rawTime || rawTime === "-" || rawTime === "") return "-";
+
+            let datePart = "";
+            let timePart = "";
+
+            // 1. Pokušaj da uzmemo specifičan datum datog koraka ako postoji
+            let candidateDate = specificDate || defaultDate;
+
+            if (candidateDate && candidateDate !== "-" && candidateDate !== "") {
+                if (typeof candidateDate === 'string' && candidateDate.includes('T')) {
+                    const dObj = new Date(candidateDate);
+                    if (!isNaN(dObj.getTime())) {
+                        const day = String(dObj.getDate()).padStart(2, '0');
+                        const month = String(dObj.getMonth() + 1).padStart(2, '0');
+                        const year = dObj.getFullYear();
+                        datePart = `${day}.${month}.${year}.`;
+                    }
+                } else if (typeof candidateDate === 'string' && candidateDate.includes('-') && candidateDate.length >= 10) {
+                    const p = candidateDate.split('T')[0].split('-');
+                    if (p.length === 3) {
+                        datePart = `${p[2]}.${p[1]}.${p[0]}.`;
+                    }
+                } else if (typeof candidateDate === 'string' && candidateDate.includes('.')) {
+                    datePart = candidateDate;
+                }
+            }
+
+            // 2. Ako u samom rawTime stringu već postoji datum ili ISO zapis
+            let tStr = String(rawTime);
+            if (tStr.includes('T')) {
+                const parts = tStr.split('T');
+                const dObj = new Date(tStr);
                 if (!isNaN(dObj.getTime())) {
                     const day = String(dObj.getDate()).padStart(2, '0');
                     const month = String(dObj.getMonth() + 1).padStart(2, '0');
                     const year = dObj.getFullYear();
-                    const hours = String(dObj.getHours()).padStart(2, '0');
-                    const minutes = String(dObj.getMinutes()).padStart(2, '0');
-                    return `${day}.${month}.${year}. | ${hours}:${minutes}`;
+                    datePart = `${day}.${month}.${year}.`;
                 }
+                tStr = parts[1] ? parts[1].substring(0, 5) : "";
+            } else if (tStr.includes('|')) {
+                const parts = tStr.split('|');
+                datePart = parts[0].trim();
+                tStr = parts[1] ? parts[1].trim() : "";
+            } else if (tStr.length > 5) {
+                tStr = tStr.substring(0, 5); // npr. "14:30:00" -> "14:30"
             }
 
-            if (dateStr.includes('1899-12-30T') || (!dateStr.includes('.') && dateStr.includes(':') && dateStr.length <= 5)) {
-                let timePart = dateStr;
-                if (dateStr.includes('T')) {
-                    timePart = dateStr.split('T')[1].substring(0, 5);
-                }
-                
-                let baseDate = fallbackDate;
-                if (!baseDate || baseDate === "-") {
-                    const now = new Date();
-                    const day = String(now.getDate()).padStart(2, '0');
-                    const month = String(now.getMonth() + 1).padStart(2, '0');
-                    const year = now.getFullYear();
-                    baseDate = `${day}.${month}.${year}.`;
-                }
-                return `${baseDate} | ${timePart}`;
+            if (!datePart) {
+                datePart = defaultDate || "-";
             }
 
-            const dObj = new Date(dateStr);
-            if (isNaN(dObj.getTime())) return dateStr;
-            const day = String(dObj.getDate()).padStart(2, '0');
-            const month = String(dObj.getMonth() + 1).padStart(2, '0');
-            const year = dObj.getFullYear();
-            
-            if (dateStr.includes(':') || dateStr.includes('T')) {
-                const hours = String(dObj.getHours()).padStart(2, '0');
-                const minutes = String(dObj.getMinutes()).padStart(2, '0');
-                if(year === 1899) return `${fallbackDate || '-'} | ${hours}:${minutes}`;
-                return `${day}.${month}.${year}. | ${hours}:${minutes}`;
-            }
-            return `${day}.${month}.${year}.`;
+            return `${datePart} | ${tStr}`;
         }
 
         function parseToDateObj(dateStr, timeStr) {
@@ -371,9 +378,9 @@
             const izlReal = t.Izlaz || t.L || "";
 
             const dtNajava = parseToDateObj(dNajave, vNajave);
-            const dtPocetak = (pocIst && pocIst !== "-") ? parseToDateObj(dNajave, pocIst) : null;
-            const dtZavrsetak = (zavIst && zavIst !== "-") ? parseToDateObj(dNajave, zavIst) : null;
-            const dtIzlaz = (izlReal && izlReal !== "-") ? parseToDateObj(dNajave, izlReal) : null;
+            const dtPocetak = (pocIst && pocIst !== "-") ? parseToDateObj(t.Datum_Start || dNajave, pocIst) : null;
+            const dtZavrsetak = (zavIst && zavIst !== "-") ? parseToDateObj(t.Datum_Zavrsetka || t.Datum_Start || dNajave, zavIst) : null;
+            const dtIzlaz = (izlReal && izlReal !== "-") ? parseToDateObj(t.Datum_Izlaz || dNajave, izlReal) : null;
 
             const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 
@@ -462,22 +469,28 @@
                                status.includes("RAMP") ? 'status-ramp' : 
                                status.includes("ISTOVAR") ? 'status-unloaded' : 'status-exited';
 
+                    // Uzimanje tačnih vrednosti iz baze za svaki korak pojedinačno
                     const datumNajave = t.Datum || "";
-                    const vremeNajaveRaw = t.Vreme || "";
-                    const spojenVremeNajave = formatToNumericDate(vremeNajaveRaw, datumNajave);
-                    const pocetakIstovara = t.Vreme_Start || t.R || ""; 
-                    const zavrsenIstovar = t.Vreme_Izlaz || t.P || ""; 
-                    const izlazRealni = t.Izlaz || t.L || ""; 
-                    const komentarTekst = t.Komentar || "";
+                    const vremeNajave = t.Vreme || "";
+                    
+                    const datumStart = t.Datum_Start || t.Q || datumNajave;
+                    const vremeStart = t.Vreme_Start || t.R || ""; 
+                    
+                    const datumZavrsetka = t.Datum_Zavrsetka || t.Datum_Start || datumNajave;
+                    const vremeZavrsetka = t.Vreme_Izlaz || t.P || ""; 
+                    
+                    const datumIzlaz = t.Datum_Izlaz || t.O || datumNajave;
+                    const vremeIzlazRealni = t.Izlaz || t.L || ""; 
 
-                    if (vremeNajaveRaw && izlazRealni && izlazRealni !== "-") {
-                        const diff = getDiffMin(vremeNajaveRaw, izlazRealni);
+                    if (vremeNajave && vremeIzlazRealni && vremeIzlazRealni !== "-") {
+                        const diff = getDiffMin(vremeNajave, vremeIzlazRealni);
                         if (diff !== null) { 
                             sumMin += diff; 
                             countDone++; 
                         }
                     }
 
+                    let komentarTekst = t.Komentar || "";
                     let komentarHtml = '-';
                     if(komentarTekst && komentarTekst !== "-") {
                         komentarHtml = `<button class="action-btn btn-edit" onclick="alert('KOMENTAR:\\n${komentarTekst.replace(/'/g, "\\'")}')"><i class="fas fa-comment-dots"></i></button>`;
@@ -492,10 +505,10 @@
                         <td>${t.Roba || '-'}</td>
                         <td style="text-align:center; font-weight:700; color:var(--zf-blue);">${t.Palete || '-'}</td>
                         <td><span class="badge ${sCls}">${t.Status || '-'}</span></td>
-                        <td>${spojenVremeNajave}</td>
-                        <td>${formatToNumericDate(pocetakIstovara, datumNajave)}</td>
-                        <td>${formatToNumericDate(zavrsenIstovar, datumNajave)}</td>
-                        <td>${formatToNumericDate(izlazRealni, datumNajave)}</td>
+                        <td>${formatStepDateTime(datumNajave, datumNajave, vremeNajave)}</td>
+                        <td>${formatStepDateTime(datumStart, datumNajave, vremeStart)}</td>
+                        <td>${formatStepDateTime(datumZavrsetka, datumNajave, vremeZavrsetka)}</td>
+                        <td>${formatStepDateTime(datumIzlaz, datumNajave, vremeIzlazRealni)}</td>
                         <td style="text-align:center;">${komentarHtml}</td>
                     </tr>`;
                 }
@@ -580,13 +593,18 @@
             
             cachedTrucks.forEach(t => { 
                 const datumNaj = t.Datum || "";
-                const pocIst = formatToNumericDate(t.Vreme_Start || t.R || "", datumNaj);
-                const zavIst = formatToNumericDate(t.Vreme_Izlaz || t.P || "", datumNaj);
-                const izl = formatToNumericDate(t.Izlaz || t.L || "", datumNaj);
-                const vremeNajaveSpojeno = formatToNumericDate(t.Vreme, datumNaj);
+                const datumStart = t.Datum_Start || t.Q || datumNaj;
+                const datumZavrsetka = t.Datum_Zavrsetka || t.Datum_Start || datumNaj;
+                const datumIzlaz = t.Datum_Izlaz || t.O || datumNaj;
+
+                const vremeNajaveSpojeno = formatStepDateTime(datumNaj, datumNaj, t.Vreme);
+                const pocIst = formatStepDateTime(datumStart, datumNaj, t.Vreme_Start || t.R || "");
+                const zavIst = formatStepDateTime(datumZavrsetka, datumNaj, t.Vreme_Izlaz || t.P || "");
+                const izl = formatStepDateTime(datumIzlaz, datumNaj, t.Izlaz || t.L || "");
+                
                 const kom = (t.Komentar || "-").replace(/;/g, ' ').replace(/"/g, '""'); 
                 
-                csv += `"${t.Tablica || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${vremeNajaveSpojeno}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
+                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Status || '-'}";"${vremeNajaveSpojeno}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -650,7 +668,6 @@
             loadAdminData();
             renderUserList();
 
-            // Automatsko osvežavanje tabele na svakih 10 sekundi
             setInterval(() => {
                 loadAdminData();
                 renderUserList();
