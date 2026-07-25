@@ -26,7 +26,7 @@
     <style>
         :root {
             --zf-blue: #00549f; --zf-dark: #002e5d; --border: #e2e8f0; --bg: #f8fafc;
-            --text-main: #1e293b; --text-muted: #64748b; --container-width: 1350px;
+            --text-main: #1e293b; --text-muted: #64748b; --container-width: 1420px;
             --excel-green: #10b981; --excel-green-hover: #059669; --logout-red: #be123c;
             --stats-purple: #8b5cf6;
         }
@@ -71,7 +71,7 @@
         .main-card { background: white; width: 100%; max-width: var(--container-width); margin: 0 auto 20px; border-radius: 8px; border: 1px solid var(--border); padding: 20px; box-sizing: border-box; }
         .table-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; flex-wrap: wrap; gap: 10px; }
         .table-scroll-wrapper { max-height: 500px; overflow-x: auto; overflow-y: auto; margin-top: 10px; border: 1px solid #f1f5f9; border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1300px; }
         th { text-align: left; padding: 12px; background: #f8fafc; font-size: 10px; color: var(--text-muted); text-transform: uppercase; border-bottom: 2px solid var(--border); font-weight: 800; position: sticky; top: 0; z-index: 5; white-space: nowrap; }
         td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; white-space: nowrap; }
         
@@ -201,9 +201,10 @@
                 <thead>
                     <tr>
                         <th style="width:100px;">Tablica</th>
-                        <th style="width:130px;">Firma</th>
+                        <th style="width:120px;">Firma</th>
                         <th style="width:90px;">Vozilo</th>
                         <th style="width:90px;">Roba</th>
+                        <th style="width:110px;">Telefon</th>
                         <th style="width:50px; text-align:center;">Palete</th>
                         <th style="width:80px; text-align:center;">Rampa</th>
                         <th style="width:110px;">Status</th>
@@ -290,7 +291,6 @@
         let cachedTrucks = []; 
         let cachedUsers = [];  
 
-        // FUNKCIJA KOJA PRAVILNO UPARUJE ODVOJENE KOLONE ZA DATUM I VREME
         function formatStepDateTime(row, dateKey, timeKey) {
             let rawDate = row[dateKey] || "";
             let rawTime = row[timeKey] || "";
@@ -300,7 +300,6 @@
             let datePart = "";
             let timePart = String(rawTime).trim();
 
-            // Formatiranje datuma iz posebne kolone za datum
             if (rawDate && rawDate !== "-" && rawDate !== "") {
                 if (typeof rawDate === 'string' && rawDate.includes('-') && rawDate.length >= 10) {
                     const p = rawDate.split('T')[0].split('-');
@@ -315,7 +314,6 @@
                 }
             }
 
-            // Ako specifični datum nije popunjen, uzmi Datum_Najave kao fallback
             if (!datePart) {
                 let fallbackDate = row.Datum_Najave || row.Datum || "";
                 if (fallbackDate) {
@@ -331,7 +329,6 @@
             if (!datePart) datePart = "-";
             if (!timePart || timePart === "-") return "-";
 
-            // Ako vreme već sadrži datum, očisti ga
             if (timePart.includes('|')) {
                 timePart = timePart.split('|')[1].trim();
             } else if (timePart.includes('T')) {
@@ -466,7 +463,6 @@
                                status.includes("RAMP") ? 'status-ramp' : 
                                status.includes("ISTOVAR") ? 'status-unloaded' : 'status-exited';
 
-                    // Korišćenje pravih parova kolona iz tabele (Datum + Vreme)
                     const vremeNajaveIspis = formatStepDateTime(t, 'Datum_Najave', 'Vreme_Najave');
                     const vremeRampaIspis = formatStepDateTime(t, 'Datum_Rampa', 'Vreme_Rampa');
                     const pocIstIspis = formatStepDateTime(t, 'Datum_Start', 'Vreme_Start');
@@ -494,6 +490,7 @@
                         <td>${t.Kompanija || '-'}</td>
                         <td>${t.Vozilo || '-'}</td>
                         <td>${t.Roba || '-'}</td>
+                        <td>${t.Telefon || '-'}</td>
                         <td style="text-align:center; font-weight:700; color:var(--zf-blue);">${t.Palete || '-'}</td>
                         <td style="text-align:center; font-weight:700;">${t.Rampa || '-'}</td>
                         <td><span class="badge ${sCls}">${t.Status || '-'}</span></td>
@@ -582,7 +579,7 @@
             if(cachedTrucks.length === 0) return alert("Nema podataka za izvoz.");
 
             let csv = "\uFEFFsep=;\r\n";
-            csv += "Tablica;Firma;Vozilo;Roba;Palete;Rampa;Status;Vreme Najave;Vreme Rampe;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
+            csv += "Tablica;Firma;Vozilo;Roba;Telefon;Palete;Rampa;Status;Vreme Najave;Vreme Rampe;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
             
             cachedTrucks.forEach(t => { 
                 const vremeNajaveSpojeno = formatStepDateTime(t, 'Datum_Najave', 'Vreme_Najave');
@@ -593,7 +590,7 @@
                 
                 const kom = (t.Komentar || "-").replace(/;/g, ' ').replace(/"/g, '""'); 
                 
-                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Palete || 0}";"${t.Rampa || '-'}";"${t.Status || '-'}";"${vremeNajaveSpojeno}";"${vremeRampaSpojeno}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
+                csv += `"${t.Tablice || '-'}";"${t.Kompanija || '-'}";"${t.Vozilo || '-'}";"${t.Roba || '-'}";"${t.Telefon || '-'}";"${t.Palete || 0}";"${t.Rampa || '-'}";"${t.Status || '-'}";"${vremeNajaveSpojeno}";"${vremeRampaSpojeno}";"${pocIst}";"${zavIst}";"${izl}";"${kom}"\r\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
