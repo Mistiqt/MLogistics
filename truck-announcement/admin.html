@@ -290,64 +290,53 @@
         let cachedTrucks = []; 
         let cachedUsers = [];  
 
-        // ISPRAVLJENA I ROBUSTNA FUNKCIJA ZA FORMATIRANJE DATUMA I VREMENA
-        function formatStepDateTime(specificDate, defaultDate, rawTime) {
+        // FUNKCIJA KOJA PRAVILNO UPARUJE ODVOJENE KOLONE ZA DATUM I VREME
+        function formatStepDateTime(row, dateKey, timeKey) {
+            let rawDate = row[dateKey] || "";
+            let rawTime = row[timeKey] || "";
+
             if (!rawTime || rawTime === "-" || rawTime === "") return "-";
 
             let datePart = "";
-            let timePart = "";
-            let tStr = String(rawTime).trim();
+            let timePart = String(rawTime).trim();
 
-            let candidateDate = specificDate || defaultDate;
-
-            // 1. Ekstrakcija datuma
-            if (candidateDate && candidateDate !== "-" && candidateDate !== "") {
-                if (typeof candidateDate === 'string' && candidateDate.includes('T')) {
-                    const dObj = new Date(candidateDate);
+            // Formatiranje datuma iz posebne kolone za datum
+            if (rawDate && rawDate !== "-" && rawDate !== "") {
+                if (typeof rawDate === 'string' && rawDate.includes('-') && rawDate.length >= 10) {
+                    const p = rawDate.split('T')[0].split('-');
+                    if (p.length === 3) datePart = `${p[2]}.${p[1]}.${p[0]}.`;
+                } else if (typeof rawDate === 'string' && rawDate.includes('.')) {
+                    datePart = rawDate;
+                } else {
+                    const dObj = new Date(rawDate);
                     if (!isNaN(dObj.getTime())) {
-                        const day = String(dObj.getDate()).padStart(2, '0');
-                        const month = String(dObj.getMonth() + 1).padStart(2, '0');
-                        const year = dObj.getFullYear();
-                        datePart = `${day}.${month}.${year}.`;
+                        datePart = `${String(dObj.getDate()).padStart(2, '0')}.${String(dObj.getMonth() + 1).padStart(2, '0')}.${dObj.getFullYear()}.`;
                     }
-                } else if (typeof candidateDate === 'string' && candidateDate.includes('-') && candidateDate.length >= 10) {
-                    const p = candidateDate.split('T')[0].split('-');
-                    if (p.length === 3) {
-                        datePart = `${p[2]}.${p[1]}.${p[0]}.`;
-                    }
-                } else if (typeof candidateDate === 'string' && candidateDate.includes('.')) {
-                    datePart = candidateDate;
                 }
             }
 
-            // 2. Ekstrakcija i čišćenje vremena (da sprečimo da se datum upiše na mesto vremena)
-            if (tStr.includes('T')) {
-                const parts = tStr.split('T');
-                const dObj = new Date(tStr);
-                if (!isNaN(dObj.getTime())) {
-                    const day = String(dObj.getDate()).padStart(2, '0');
-                    const month = String(dObj.getMonth() + 1).padStart(2, '0');
-                    const year = dObj.getFullYear();
-                    datePart = `${day}.${month}.${year}.`;
-                }
-                timePart = parts[1] ? parts[1].substring(0, 5) : "";
-            } else if (tStr.includes('|')) {
-                const parts = tStr.split('|');
-                datePart = parts[0].trim();
-                timePart = parts[1] ? parts[1].trim().substring(0, 5) : "";
-            } else if (tStr.includes(':')) {
-                // Čisto vreme tipa "21:18"
-                timePart = tStr.substring(0, 5);
-            } else {
-                // Ako u tStr nije bilo vremena, već je možda bio datum ili nešto drugo, tretiraj ga bezbedno
-                timePart = tStr.length <= 5 ? tStr : "-";
-            }
-
+            // Ako specifični datum nije popunjen, uzmi Datum_Najave kao fallback
             if (!datePart) {
-                datePart = defaultDate || "-";
+                let fallbackDate = row.Datum_Najave || row.Datum || "";
+                if (fallbackDate) {
+                    if (typeof fallbackDate === 'string' && fallbackDate.includes('-')) {
+                        const p = fallbackDate.split('T')[0].split('-');
+                        if (p.length === 3) datePart = `${p[2]}.${p[1]}.${p[0]}.`;
+                    } else {
+                        datePart = fallbackDate;
+                    }
+                }
             }
 
+            if (!datePart) datePart = "-";
             if (!timePart || timePart === "-") return "-";
+
+            // Ako vreme već sadrži datum, očisti ga
+            if (timePart.includes('|')) {
+                timePart = timePart.split('|')[1].trim();
+            } else if (timePart.includes('T')) {
+                timePart = timePart.split('T')[1].substring(0, 5);
+            }
 
             return `${datePart} | ${timePart}`;
         }
@@ -367,9 +356,9 @@
             if (!d || isNaN(d.getTime())) d = new Date();
 
             if (timeStr) {
-                let timePart = timeStr;
-                if (timeStr.includes('|')) timePart = timeStr.split('|')[1].trim();
-                else if (timeStr.includes('T')) timePart = timeStr.split('T')[1].substring(0, 5);
+                let timePart = String(timeStr).trim();
+                if (timePart.includes('|')) timePart = timePart.split('|')[1].trim();
+                else if (timePart.includes('T')) timePart = timePart.split('T')[1].substring(0, 5);
                 const tParts = timePart.split(':');
                 if (tParts.length >= 2) {
                     d.setHours(parseInt(tParts[0]), parseInt(tParts[1]), 0, 0);
@@ -382,12 +371,12 @@
             const dNajave = t.Datum_Najave || t.Datum || "";
             const vNajave = t.Vreme_Najave || t.Vreme || "";
             const pocIst = t.Vreme_Start || "";
-            const zavIst = t.Vreme_Zavrsetka || "";
+            const zavIst = t.Vreme_Zavrsetka || t.Vreme_Zavrsetk || "";
             const izlReal = t.Vreme_Izlaz || "";
 
             const dtNajava = parseToDateObj(dNajave, vNajave);
             const dtPocetak = (pocIst && pocIst !== "-") ? parseToDateObj(t.Datum_Start || dNajave, pocIst) : null;
-            const dtZavrsetak = (zavIst && zavIst !== "-") ? parseToDateObj(t.Datum_Zavrsetka || t.Datum_Start || dNajave, zavIst) : null;
+            const dtZavrsetak = (zavIst && zavIst !== "-") ? parseToDateObj(t.Datum_Zavrsetka || t.Datum_Zavrsetk || t.Datum_Start || dNajave, zavIst) : null;
             const dtIzlaz = (izlReal && izlReal !== "-") ? parseToDateObj(t.Datum_Izlaz || dNajave, izlReal) : null;
 
             const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
@@ -403,9 +392,9 @@
             if(!start || !end || start === "-" || end === "-") return null;
             const parse = (t) => { 
                 if(!t) return 0;
-                let timePart = t;
-                if(t.includes('|')) timePart = t.split('|')[1].trim();
-                else if(t.includes('T')) timePart = t.split('T')[1].substring(0,5);
+                let timePart = String(t).trim();
+                if(timePart.includes('|')) timePart = timePart.split('|')[1].trim();
+                else if(timePart.includes('T')) timePart = timePart.split('T')[1].substring(0,5);
                 const parts = timePart.split(':');
                 if(parts.length < 2) return 0;
                 return parseInt(parts[0]) * 60 + parseInt(parts[1]); 
@@ -477,24 +466,15 @@
                                status.includes("RAMP") ? 'status-ramp' : 
                                status.includes("ISTOVAR") ? 'status-unloaded' : 'status-exited';
 
-                    const datumNajave = t.Datum_Najave || t.Datum || "";
-                    const vremeNajave = t.Vreme_Najave || t.Vreme || "";
-                    
-                    const rampaOznaka = t.Rampa || "-";
-                    const datumRampa = t.Datum_Rampa || "";
-                    const vremeRampa = t.Vreme_Rampa || "";
+                    // Korišćenje pravih parova kolona iz tabele (Datum + Vreme)
+                    const vremeNajaveIspis = formatStepDateTime(t, 'Datum_Najave', 'Vreme_Najave');
+                    const vremeRampaIspis = formatStepDateTime(t, 'Datum_Rampa', 'Vreme_Rampa');
+                    const pocIstIspis = formatStepDateTime(t, 'Datum_Start', 'Vreme_Start');
+                    const zavIstIspis = formatStepDateTime(t, 'Datum_Zavrsetka', t.Vreme_Zavrsetka ? 'Vreme_Zavrsetka' : 'Vreme_Zavrsetk');
+                    const izlazIspis = formatStepDateTime(t, 'Datum_Izlaz', 'Vreme_Izlaz');
 
-                    const datumStart = t.Datum_Start || datumNajave;
-                    const vremeStart = t.Vreme_Start || ""; 
-                    
-                    const datumZavrsetka = t.Datum_Zavrsetka || datumNajave;
-                    const vremeZavrsetka = t.Vreme_Zavrsetka || ""; 
-                    
-                    const datumIzlaz = t.Datum_Izlaz || datumNajave;
-                    const vremeIzlazRealni = t.Vreme_Izlaz || ""; 
-
-                    if (vremeNajave && vremeIzlazRealni && vremeIzlazRealni !== "-") {
-                        const diff = getDiffMin(vremeNajave, vremeIzlazRealni);
+                    if (t.Vreme_Najave && t.Vreme_Izlaz && t.Vreme_Izlaz !== "-") {
+                        const diff = getDiffMin(t.Vreme_Najave, t.Vreme_Izlaz);
                         if (diff !== null) { 
                             sumMin += diff; 
                             countDone++; 
@@ -515,13 +495,13 @@
                         <td>${t.Vozilo || '-'}</td>
                         <td>${t.Roba || '-'}</td>
                         <td style="text-align:center; font-weight:700; color:var(--zf-blue);">${t.Palete || '-'}</td>
-                        <td style="text-align:center; font-weight:700;">${rampaOznaka}</td>
+                        <td style="text-align:center; font-weight:700;">${t.Rampa || '-'}</td>
                         <td><span class="badge ${sCls}">${t.Status || '-'}</span></td>
-                        <td>${formatStepDateTime(datumNajave, datumNajave, vremeNajave)}</td>
-                        <td>${formatStepDateTime(datumRampa, datumNajave, vremeRampa)}</td>
-                        <td>${formatStepDateTime(datumStart, datumNajave, vremeStart)}</td>
-                        <td>${formatStepDateTime(datumZavrsetka, datumNajave, vremeZavrsetka)}</td>
-                        <td>${formatStepDateTime(datumIzlaz, datumNajave, vremeIzlazRealni)}</td>
+                        <td>${vremeNajaveIspis}</td>
+                        <td>${vremeRampaIspis}</td>
+                        <td>${pocIstIspis}</td>
+                        <td>${zavIstIspis}</td>
+                        <td>${izlazIspis}</td>
                         <td style="text-align:center;">${komentarHtml}</td>
                     </tr>`;
                 }
@@ -605,17 +585,11 @@
             csv += "Tablica;Firma;Vozilo;Roba;Palete;Rampa;Status;Vreme Najave;Vreme Rampe;Pocetak Istovara;Zavrsen Istovar;Izlaz;Komentar\r\n";
             
             cachedTrucks.forEach(t => { 
-                const datumNaj = t.Datum_Najave || t.Datum || "";
-                const datumRampa = t.Datum_Rampa || "";
-                const datumStart = t.Datum_Start || datumNaj;
-                const datumZavrsetka = t.Datum_Zavrsetka || datumNaj;
-                const datumIzlaz = t.Datum_Izlaz || datumNaj;
-
-                const vremeNajaveSpojeno = formatStepDateTime(datumNaj, datumNaj, t.Vreme_Najave || t.Vreme);
-                const vremeRampaSpojeno = formatStepDateTime(datumRampa, datumNaj, t.Vreme_Rampa);
-                const pocIst = formatStepDateTime(datumStart, datumNaj, t.Vreme_Start);
-                const zavIst = formatStepDateTime(datumZavrsetka, datumNaj, t.Vreme_Zavrsetka);
-                const izl = formatStepDateTime(datumIzlaz, datumNaj, t.Vreme_Izlaz);
+                const vremeNajaveSpojeno = formatStepDateTime(t, 'Datum_Najave', 'Vreme_Najave');
+                const vremeRampaSpojeno = formatStepDateTime(t, 'Datum_Rampa', 'Vreme_Rampa');
+                const pocIst = formatStepDateTime(t, 'Datum_Start', 'Vreme_Start');
+                const zavIst = formatStepDateTime(t, 'Datum_Zavrsetka', t.Vreme_Zavrsetka ? 'Vreme_Zavrsetka' : 'Vreme_Zavrsetk');
+                const izl = formatStepDateTime(t, 'Datum_Izlaz', 'Vreme_Izlaz');
                 
                 const kom = (t.Komentar || "-").replace(/;/g, ' ').replace(/"/g, '""'); 
                 
