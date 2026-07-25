@@ -649,6 +649,12 @@
         window.onload = function() {
             loadAdminData();
             renderUserList();
+
+            // Automatsko osvežavanje tabele na svakih 10 sekundi
+            setInterval(() => {
+                loadAdminData();
+                renderUserList();
+            }, 10000);
         };
     </script>
 </body>
