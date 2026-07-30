@@ -211,7 +211,7 @@
             background-color: var(--zf-dark);
             color: white;
             width: 100%; 
-            border: none;                                 
+            border: none;                                           
             padding: 18px; 
             border-radius: 6px; 
             font-size: 16px; 
@@ -507,7 +507,6 @@
                 if (statusText === 'NA RAMPI') {
                     statusClass = "status-ramp";
                     rampaPrikaz = t.Rampa ? ` : ${t.Rampa}` : "";
-                    // Prikazujemo žuti trougao SAMO na rampi (i na čekanju dole)
                     extraTools = `
                         <i class="fas fa-exclamation-triangle warning-icon" onclick="toggleCancelBtn('${index}')" title="Opcije prekida"></i>
                         <button id="cancel-btn-${index}" class="btn-cancel-transport" onclick="cancelTransport('${t.Tablice}')">
@@ -517,7 +516,6 @@
                 else if (statusText === 'NA ISTOVARU') {
                     statusClass = "status-ramp";
                     rampaPrikaz = t.Rampa ? ` : ${t.Rampa}` : "";
-                    // OVDE JE PRAZNO - Ne prikazujemo trougao kad je na istovaru
                 }
                 else if (statusText === 'ZAVRŠENO' || statusText === 'ISTOVAREN' || statusText === 'SPREMAN ZA IZLAZ') {
                     statusClass = "status-finished";
@@ -533,7 +531,6 @@
                         </button>`;
                 }
                 else if (statusText === 'NA ČEKANJU') {
-                    // Prikazujemo žuti trougao na čekanju
                     extraTools = `
                         <i class="fas fa-exclamation-triangle warning-icon" onclick="toggleCancelBtn('${index}')" title="Opcije prekida"></i>
                         <button id="cancel-btn-${index}" class="btn-cancel-transport" onclick="cancelTransport('${t.Tablice}')">
@@ -545,7 +542,7 @@
                     extraTools += `<button class="btn-read-comment" onclick="showComment('${t.Komentar}')"><i class="fas fa-comment-dots"></i> Pročitaj komentar</button>`;
                 }
 
-                let prikazVremena = t.Vreme || '--:--';
+                let prikazVremena = t.Vreme_Najave || '--:--';
                 const item = document.createElement('div');
                 item.className = 'truck-item';
                 item.innerHTML = `
@@ -559,7 +556,7 @@
                         </small>
                     </div>
                     <div class="item-right-content">
-                        <div class="timestamp-box">${t.Datum || ''}<br>${prikazVremena}</div>
+                        <div class="timestamp-box">${t.Datum_Najave || ''}<br>${prikazVremena}</div>
                         ${extraTools}
                     </div>`;
                 gateList.appendChild(item);
