@@ -179,7 +179,6 @@
                     const card = document.createElement('div');
                     card.className = 'waiting-card';
                     
-                    // Provera za komentar: ako postoji, pravi se HTML za dugme
                     const commentBtnHtml = (t.Komentar && t.Komentar.trim() !== "") 
                         ? `<div class="comment-link" onclick="alert('Komentar: ' + '${t.Komentar.replace(/'/g, "\\'")}');">
                              <i class="fas fa-comment-dots"></i> PROČITAJ KOMENTAR
@@ -194,7 +193,7 @@
                                 <div class="info-item"><i class="fas fa-truck"></i> <span class="info-value">${t.Vozilo || '/'}</span></div>
                                 <div class="info-item"><i class="fas fa-boxes"></i> <span class="info-value">${t.Roba || '/'}</span></div>
                                 <div class="info-item"><i class="fas fa-phone-alt"></i> <span class="info-value">${t.Telefon || '/'}</span></div>
-                                <div class="info-item"><i class="far fa-clock" style="color:var(--zf-blue)"></i> <span class="info-value">Prijavljen: ${formatDateTime(t.Datum, t.Vreme)}</span></div>
+                                <div class="info-item"><i class="far fa-clock" style="color:var(--zf-blue)"></i> <span class="info-value">Prijavljen: ${formatDateTime(t.Datum_Najave, t.Vreme_Najave)}</span></div>
                             </div>
                         </div>
                         <div class="waiting-actions">
@@ -227,7 +226,7 @@
             grid.innerHTML = ''; 
             rampList.forEach(name => {
                 const isOccupied = cachedData.some(t => t.Rampa === name && (t.Status === 'NA RAMPI' || t.Status === 'NA ISTOVARU'));
-                let canClick = (isKombi) ? ((name === "SPOLJA RAMPA 2" || name === "SPOLJNA RAMPA 1") && !isOccupied) : (name !== "SPOLJNA RAMPA 1" && !isOccupied);
+                let canClick = (isKombi) ? ((name === "SPOLJNA RAMPA 2" || name === "SPOLJNA RAMPA 1") && !isOccupied) : (name !== "SPOLJNA RAMPA 1" && !isOccupied);
                 const btn = document.createElement('button');
                 btn.className = 'ramp-btn';
                 btn.innerHTML = name;
