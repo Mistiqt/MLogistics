@@ -208,18 +208,18 @@
 
         function createCard(truck, isReady) {
             let formattedDate = "/";
-            if (truck.Datum) {
-                let d = new Date(truck.Datum);
-                formattedDate = !isNaN(d.getTime()) ? d.toLocaleDateString('de-DE') : truck.Datum;
+            if (truck.Datum_Rampa) {
+                let d = new Date(truck.Datum_Rampa);
+                formattedDate = !isNaN(d.getTime()) ? d.toLocaleDateString('de-DE') : truck.Datum_Rampa;
             }
 
             let formattedTime = "/";
-            if (truck.Vreme) {
-                if (typeof truck.Vreme === 'string' && truck.Vreme.includes('T')) {
-                    let t = new Date(truck.Vreme);
+            if (truck.Vreme_Rampa) {
+                if (typeof truck.Vreme_Rampa === 'string' && truck.Vreme_Rampa.includes('T')) {
+                    let t = new Date(truck.Vreme_Rampa);
                     formattedTime = t.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
                 } else {
-                    formattedTime = truck.Vreme;
+                    formattedTime = truck.Vreme_Rampa;
                 }
             }
 
@@ -258,7 +258,7 @@
                             ${palletInfo}
                             <div class="detail-item">
                                 <i class="far fa-clock"></i>
-                                <span>Ulaz: <b>${entryInfo}</b></span>
+                                <span>Rampa: <b>${entryInfo}</b></span>
                             </div>
                         </div>
                     </div>
