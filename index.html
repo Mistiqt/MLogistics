@@ -125,6 +125,12 @@
                         <a class="dropdown-item" href="truck-announcement/truck-login.html" target="_blank">Najava i praćenje kamiona</a>
                     </div>
                 </div>
+                <div class="dropdown" id="navPopis">
+                    <a class="nav-tab-item">Popis ▾</a>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="popis.html" target="_blank">Popis - Evidencija</a>
+                    </div>
+                </div>
                 <a href="https://logimind.net" target="_blank" class="nav-tab-item" id="navStillServis">STILL-Servis</a>
                 <a href="https://shiftup-my.sharepoint.com/:x:/r/personal/ta75382_stellantis_com/_layouts/15/Doc.aspx?sourcedoc=%7B23DC8C6F-8241-41ED-AF7E-4CF14363167A%7D&file=2026%20Time%20sheet%20planning.xlsx&action=default&mobileredirect=true&DefaultItemOpen=1" target="_blank" id="navTimeSheet" class="nav-tab-item">Time Sheet Planning</a>
                 <a href="zaposleni.html" target="_blank" class="nav-tab-item" id="navZaposleni">Zaposleni</a>
@@ -323,6 +329,7 @@
                         const isMasterAdmin = (userRole === 'MASTER' || userRole === 'ADMIN');
                         
                         document.getElementById('navTransport').style.display = isGuest ? 'none' : 'inline-block';
+                        document.getElementById('navPopis').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navTimeSheet').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navStillServis').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navZaposleni').style.display = isMasterAdmin ? 'inline-block' : 'none';
