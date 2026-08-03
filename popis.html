@@ -1,540 +1,3 @@
-
-Conversation with Gemini
-treba mi html stranica za popis , po izgledu kao stranica za utovar istovar ( vizuelno ) ,a da ima sledece podatke za unos : broj popisnog listica, magacin ( G, W, F , i drugo za unos ) , datum, direktni materijali / delovi u proizvodnom procesu , broj crteza, naziv, kolicina, ime i prezime lica koje je obavilo popis i posle da ga uvezemo u glavni html ali za pocetak daj mi ovaj kod i da bude vizuelno kao sa slike
-
-Evo kompletne HTML stranice (sa ugrađenim CSS-om i JavaScript-om) koja vizuelno prati dizajn sa slike (plavo zaglavlje, kartice, raspored formi i tabelu sa akcijama), prilagođene tačno tvojim poljima za Popis.
-
-Kod podržava:
-
-Unos svih traženih polja (broj popisnog listića, magacin sa ponuđenim opcijama G, W, F i mogućnošću unosa sopstvene, datum, direktni materijali, broj crteža, naziv, količina, ime i prezime).
-
-Dodavanje unetih podataka u tabelu ispod.
-
-Dugmad za izmenu i brisanje redova.
-
-Spreman format za lako preuzimanje i kasnije uvezivanje u glavni sistem.
-
-HTML
-<!DOCTYPE html>
-<html lang="sr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logistika: Popis</title>
-    <!-- Uvoz FontAwesome ikonica za vizuelni identitet sa slike -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        body {
-            background-color: #f4f6f9;
-            color: #333;
-        }
-
-        /* Glavno plavo zaglavlje */
-        header {
-            background-color: #1b3b6f;
-            color: white;
-            text-align: center;
-            padding: 25px 20px;
-        }
-
-        header h1 {
-            font-size: 24px;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-
-        header p {
-            font-size: 13px;
-            color: #b0c4de;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 20px auto;
-            padding: 0 15px;
-        }
-
-        /* Kartice (Forma i Tabela) */
-        .card {
-            background: white;
-            border-radius: 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 25px;
-            padding: 20px;
-            border-top: 4px solid #1b3b6f;
-        }
-
-        .card-title {
-            font-size: 16px;
-            color: #1b3b6f;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-
-        /* Forma - Grid sistem */
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            font-size: 11px;
-            font-weight: bold;
-            color: #2e8b57; /* Zeleni natpisi kao na slici za unose */
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-
-        .form-group input, .form-group select {
-            padding: 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            font-size: 14px;
-            color: #333;
-            background-color: #fff;
-        }
-
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #2e8b57;
-            box-shadow: 0 0 4px rgba(46, 139, 87, 0.2);
-        }
-
-        /* Dugmad */
-        .btn-container {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-size: 14px;
-            cursor: pointer;
-            font-weight: bold;
-            color: white;
-        }
-
-        .btn-reset {
-            background-color: #d9534f;
-        }
-
-        .btn-reset:hover {
-            background-color: #c9302c;
-        }
-
-        .btn-save {
-            background-color: #1b3b6f;
-        }
-
-        .btn-save:hover {
-            background-color: #132b50;
-        }
-
-        .btn-action-bar {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .btn-refresh {
-            background-color: #007bff;
-        }
-
-        .btn-excel {
-            background-color: #28a745;
-        }
-
-        /* Tabela */
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 13px;
-        }
-
-        th {
-            background-color: #343a40;
-            color: white;
-            padding: 12px 10px;
-            font-weight: 600;
-            border: 1px solid #454d55;
-        }
-
-        /* Posebno obojeno zaglavlje iznad tabele kao na slici */
-        .table-super-header {
-            background-color: #ffcc00;
-            color: #000;
-            text-align: center;
-            font-weight: bold;
-            padding: 8px;
-            font-size: 14px;
-            border: 1px solid #e6b800;
-        }
-
-        td {
-            padding: 10px;
-            border: 1px solid #dee2e6;
-            background-color: #fff;
-        }
-
-        tr:nth-child(even) td {
-            background-color: #f8f9fa;
-        }
-
-        .action-icons {
-            text-align: center;
-        }
-
-        .action-icons i {
-            cursor: pointer;
-            margin: 0 5px;
-            font-size: 14px;
-        }
-
-        .fa-pen-to-square {
-            color: #007bff;
-        }
-
-        .fa-xmark {
-            color: #dc3545;
-        }
-    </style>
-</head>
-<body>
-
-    <header>
-        <h1>LOGISTIKA: POPIS</h1>
-        <p>Unos i praćenje popisa magacina i proizvodnje</p>
-    </header>
-
-    <div class="container">
-        <!-- Forma za unos -->
-        <div class="card">
-            <div class="card-title">
-                <i class="fa-solid fa-pen-to-square"></i> Novi Unos Podataka Popisa
-            </div>
-            <form id="popisForm" onsubmit="dodajPodatak(event)">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Broj popisnog listića</label>
-                        <input type="text" id="brojListica" placeholder="Npr. PL-2026/01" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Magacin</label>
-                        <select id="magacin" required onchange="proveriMagacin()">
-                            <option value="G">G</option>
-                            <option value="W">W</option>
-                            <option value="F">F</option>
-                            <option value="Ostalo">Drugo (Unesi...)</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="drugiMagacinGroup" style="display: none;">
-                        <label>Unesi magacin</label>
-                        <input type="text" id="drugiMagacin" placeholder="Naziv magacina">
-                    </div>
-                    <div class="form-group">
-                        <label>Datum</label>
-                        <input type="date" id="datum" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Direktni materijali / delovi</label>
-                        <input type="text" id="direktniMaterijali" placeholder="Npr. Sirovine / Komponente">
-                    </div>
-                    <div class="form-group">
-                        <label>Broj crteža</label>
-                        <input type="text" id="brojCrteza" placeholder="Npr. CR-10492">
-                    </div>
-                    <div class="form-group">
-                        <label>Naziv</label>
-                        <input type="text" id="naziv" placeholder="Naziv dela/artikla" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Količina</label>
-                        <input type="number" id="kolicina" placeholder="Npr. 150" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Ime i prezime (Popis obavio)</label>
-                        <input type="text" id="popisivač" placeholder="Ime i prezime" required>
-                    </div>
-                </div>
-                <div class="btn-container">
-                    <button type="reset" class="btn btn-reset"><i class="fa-solid fa-rotate-left"></i> Resetuj Polja</button>
-                    <button type="submit" class="btn btn-save"><i class="fa-solid fa-floppy-disk"></i> Sačuvaj u Bazu</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Tabela sa evidencijom -->
-        <div class="card">
-            <div class="card-title" style="justify-content: space-between; border: none; margin-bottom: 10px;">
-                <span><i class="fa-solid fa-table"></i> Zajednička Evidencija Popisa</span>
-            </div>
-            <div class="btn-action-bar">
-                <button class="btn btn-refresh" onclick="osveziTabelu()"><i class="fa-solid fa-rotate"></i> Refresh</button>
-                <button class="btn btn-excel" onclick="izveziExcel()"><i class="fa-solid fa-file-excel"></i> Izvezi u Excel (.xlsx)</button>
-            </div>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th colspan="9" class="table-super-header">EVIDENCIJA POPISA MAGACINA I PROIZVODNJE</th>
-                            <th colspan="2" style="background-color: #343a40; text-align: center;">AKCIJE</th>
-                        </tr>
-                        <tr>
-                            <th>Br. listića</th>
-                            <th>Magacin</th>
-                            <th>Datum</th>
-                            <th>Dir. materijali / Delovi</th>
-                            <th>Br. crteža</th>
-                            <th>Naziv</th>
-                            <th>Količina</th>
-                            <th>Ime i prezime</th>
-                            <th class="action-icons">Izmeni</th>
-                            <th class="action-icons">Briši</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelaPodataka">
-                        <!-- Primer unetog reda radi vizuelnog prikaza -->
-                        <tr>
-                            <td>PL-2026/001</td>
-                            <td>G</td>
-                            <td>03/08/2026</td>
-                            <td>Direktni materijali</td>
-                            <td>CR-8842</td>
-                            <td>Kućište motora</td>
-                            <td>45</td>
-                            <td>Petar Petrović</td>
-                            <td class="action-icons"><i class="fa-solid fa-pen-to-square" onclick="izmeniRed(this)"></i></td>
-                            <td class="action-icons"><i class="fa-solid fa-xmark" onclick="obrisiRed(this)"></i></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Automatsko postavljanje današnjeg datuma u formu
-        document.getElementById('datum').valueAsDate = new Date();
-
-        // Prikaz dodatnog polja ako se izaberi "Drugo" za magacin
-        function proveriMagacin() {
-            const magacinSelect = document.getElementById('magacin');
-            const drugiGroup = document.getElementById('drugiMagacinGroup');
-            if (magacinSelect.value === 'Ostalo') {
-                drugiGroup.style.display = 'flex';
-            } else {
-                drugiGroup.style.display = 'none';
-            }
-        }
-
-        // Funkcija za dodavanje unosa u tabelu
-        function dodajPodatak(event) {
-            event.preventDefault();
-
-            const brListica = document.getElementById('brojListica').value;
-            let magacin = document.getElementById('magacin').value;
-            if (magacin === 'Ostalo') {
-                magacin = document.getElementById('drugiMagacin').value || 'Ostalo';
-            }
-            const datum = document.getElementById('datum').value;
-            const materijali = document.getElementById('direktniMaterijali').value || '-';
-            const brCrteza = document.getElementById('brojCrteza').value || '-';
-            const naziv = document.getElementById('naziv').value;
-            const kolicina = document.getElementById('kolicina').value;
-            const popisivac = document.getElementById('popisivač').value;
-
-            const tbody = document.getElementById('tabelaPodataka');
-            const noviRed = document.createElement('tr');
-
-            noviRed.innerHTML = `
-                <td>${brListica}</td>
-                <td>${magacin}</td>
-                <td>${datum}</td>
-                <td>${materijali}</td>
-                <td>${brCrteza}</td>
-                <td>${naziv}</td>
-                <td>${kolicina}</td>
-                <td>${popisivac}</td>
-                <td class="action-icons"><i class="fa-solid fa-pen-to-square" onclick="izmeniRed(this)"></i></td>
-                <td class="action-icons"><i class="fa-solid fa-xmark" onclick="obrisiRed(this)"></i></td>
-            `;
-
-            tbody.appendChild(noviRed);
-            document.getElementById('popisForm').reset();
-            document.getElementById('datum').valueAsDate = new Date();
-            document.getElementById('drugiMagacinGroup').style.display = 'none';
-        }
-
-        // Funkcija za brisanje reda
-        function obrisiRed(element) {
-            if (confirm('Da li ste sigurni da želite da obrišete ovaj unos?')) {
-                const red = element.closest('tr');
-                red.remove();
-            }
-        }
-
-        // Funkcija za izmenu reda (vraća podatke nazad u formu)
-        function izmeniRed(element) {
-            const red = element.closest('tr');
-            const kolone = red.querySelectorAll('td');
-
-            document.getElementById('brojListica').value = kolone[0].innerText;
-            document.getElementById('magacin').value = kolone[1].innerText;
-            document.getElementById('datum').value = kolone[2].innerText;
-            document.getElementById('direktniMaterijali').value = kolone[3].innerText === '-' ? '' : kolone[3].innerText;
-            document.getElementById('brojCrteza').value = kolone[4].innerText === '-' ? '' : kolone[4].innerText;
-            document.getElementById('naziv').value = kolone[5].innerText;
-            document.getElementById('kolicina').value = kolone[6].innerText;
-            document.getElementById('popisivač').value = kolone[7].innerText;
-
-            red.remove();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function osveziTabelu() {
-            alert('Tabela je osvežena.');
-        }
-
-        function izveziExcel() {
-            alert('Funkcija za izvoz u Excel (.xlsx) biće povezana sa glavnim sistemom.');
-        }
-    </script>
-</body>
-</html>
-Možeš sačuvati ovaj kod kao popis.html fajl i otvoriti ga u bilo kom pretraživaču. Vizuelno je u potpunosti usklađen sa tvojom aplikacijom za utovar/istovar, a kasnije se preko JavaScript-a ili serverskog dela lako može povezati sa bazom (poput Google Sheets-a ili SQL-a).
-
-opcija Skladiste direktnih materijala i Delovi u proizvodnom procesu treba da bude padajuci meni. Placeholder za broj popisnog listica da bude npr. 000001 , placeholder za broj crteze 0757200810, i hocu da uvezem sa google sheetsom napravio sam google sheets
-
-Vaš HTML fajl za popis je uspešno prilagođen!
-
-Tabela fajla je sačuvana:
-HTML icon
-popis
- HTML 
-Open
-
-Šta je izmenjeno i dodato:
-Padajući meni za skladište/proizvodnju: Polje Direktni materijali / delovi u proizvodnom procesu je prebačeno u padajući meni sa ponuđenim opcijama:
-
-Skladište direktnih materijala
-
-Delovi u proizvodnom procesu
-
-Ostalo
-
-Placehold-eri prema vašem zahtevu:
-
-Za Broj popisnog listića: 000001
-
-Za Broj crteža: 0757200810
-
-Povezivanje sa Google Sheets-om (App Script logika):
-
-Kod u sebi već ima funkcije za slanje podataka ka Google Sheet-u (POST) i povlačenje podataka u tabelu (GET).
-
-Kako da aktivirate vezu sa Vašim Google Sheets-om (sa slike):
-Da bi HTML stranica mogla da upisuje i čita podatke iz vašeg Google Sheets-a, potrebno je da kreirate malu Google Apps Script skriptu na sledeći način:
-
-Otvorite vaš Google Sheet sa slike (koji ima kolone: Broj_popisnog_listica, Magacin, Datum, Direktni_materijali_delovi_sa_linije, Broj_crteza, Naziv, Kolicina, Ime_prezime).
-
-U gornjem meniju kliknite na Extensions (Eksenzije) -> Apps Script.
-
-Obrišite sve što se tamo nalazi i nalepite ovaj kod:
-
-JavaScript
-var sheetName = "Sheet1"; // Promenite u naziv vašeg tab-a ako je drugačiji
-
-function doPost(e) {
-  var data = JSON.parse(e.postData.contents);
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-  
-  sheet.appendRow([
-    data.broj_popisnog_listica,
-    data.magacin,
-    data.datum,
-    data.direktni_materijali_delovi_sa_linije,
-    data.broj_crteza,
-    data.naziv,
-    data.kolicina,
-    data.ime_prezime
-  ]);
-  
-  return ContentService.createTextOutput(JSON.stringify({"status": "success"}))
-                      .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-  var rows = sheet.getDataRange().getValues();
-  var headers = rows[0];
-  var result = [];
-  
-  for (var i = 1; i < rows.length; i++) {
-    var row = rows[i];
-    var obj = {};
-    for (var j = 0; j < headers.length; j++) {
-      // Pretvaranje naziva kolona u ključeve
-      var key = headers[j].toString().toLowerCase().replace(/ /g, "_");
-      obj[key] = row[j];
-    }
-    result.push(obj);
-  }
-  
-  return ContentService.createTextOutput(JSON.stringify(result))
-                      .setMimeType(ContentService.MimeType.JSON);
-}
-Kliknite na dugme Deploy (Gore desno) -> New deployment.
-
-Izaberite tip (Select type): Web app.
-
-Podesite:
-
-Execute as: Me (Ja)
-
-Who has access: Anyone (Bilo ko)
-
-Kliknite Deploy, dozvolite pristup nalogu (Advanced -> Go to Untitled project...) i kopirajte dobijeni Web app URL.
-
-Otvorite dati popis.html fajl i zamenite liniju:
-
-JavaScript
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz...TVOJ_URL_OVDE.../exec";
-sa vašim pravim URL-om koji ste kopirali.
-
-Nakon ovoga, svaki klik na "Sačuvaj u Bazu" direktno upisuje podatke u vaš Google Sheet, a dugme "Učitaj sa Sheets-a" prikazuje podatke u donjoj tabeli!
-
-
-
-
-Gemini is AI and can make mistakes.
-
 <!DOCTYPE html>
 <html lang="sr">
 <head>
@@ -542,220 +5,54 @@ Gemini is AI and can make mistakes.
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logistika: Popis</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS biblioteka za Excel izvoz -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        body {
-            background-color: #f4f6f9;
-            color: #333;
-        }
-
-        header {
-            background-color: #1b3b6f;
-            color: white;
-            text-align: center;
-            padding: 25px 20px;
-        }
-
-        header h1 {
-            font-size: 24px;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-
-        header p {
-            font-size: 13px;
-            color: #b0c4de;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 20px auto;
-            padding: 0 15px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 25px;
-            padding: 20px;
-            border-top: 4px solid #1b3b6f;
-        }
-
-        .card-title {
-            font-size: 16px;
-            color: #1b3b6f;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            font-size: 11px;
-            font-weight: bold;
-            color: #2e8b57;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-
-        .form-group input, .form-group select {
-            padding: 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            font-size: 14px;
-            color: #333;
-            background-color: #fff;
-        }
-
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #2e8b57;
-            box-shadow: 0 0 4px rgba(46, 139, 87, 0.2);
-        }
-
-        .btn-container {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-size: 14px;
-            cursor: pointer;
-            font-weight: bold;
-            color: white;
-        }
-
-        .btn-reset {
-            background-color: #d9534f;
-        }
-
-        .btn-reset:hover {
-            background-color: #c9302c;
-        }
-
-        .btn-save {
-            background-color: #1b3b6f;
-        }
-
-        .btn-save:hover {
-            background-color: #132b50;
-        }
-
-        .btn-action-bar {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .btn-refresh {
-            background-color: #007bff;
-        }
-
-        .btn-excel {
-            background-color: #28a745;
-        }
-
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 13px;
-        }
-
-        th {
-            background-color: #343a40;
-            color: white;
-            padding: 12px 10px;
-            font-weight: 600;
-            border: 1px solid #454d55;
-        }
-
-        .table-super-header {
-            background-color: #ffcc00;
-            color: #000;
-            text-align: center;
-            font-weight: bold;
-            padding: 8px;
-            font-size: 14px;
-            border: 1px solid #e6b800;
-        }
-
-        td {
-            padding: 10px;
-            border: 1px solid #dee2e6;
-            background-color: #fff;
-        }
-
-        tr:nth-child(even) td {
-            background-color: #f8f9fa;
-        }
-
-        .action-icons {
-            text-align: center;
-        }
-
-        .action-icons i {
-            cursor: pointer;
-            margin: 0 5px;
-            font-size: 14px;
-        }
-
-        .fa-pen-to-square {
-            color: #007bff;
-        }
-
-        .fa-xmark {
-            color: #dc3545;
-        }
-
-        #loading-indicator {
-            display: none;
-            font-size: 12px;
-            color: #007bff;
-            margin-left: 10px;
-            align-self: center;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background-color: #f4f6f9; color: #333; }
+        header { background-color: #1b3b6f; color: white; text-align: center; padding: 25px 20px; }
+        header h1 { font-size: 24px; letter-spacing: 1px; margin-bottom: 5px; }
+        header p { font-size: 13px; color: #b0c4de; }
+        .container { max-width: 1400px; margin: 20px auto; padding: 0 15px; }
+        .card { background: white; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 25px; padding: 20px; border-top: 4px solid #1b3b6f; }
+        .card-title { font-size: 16px; color: #1b3b6f; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 11px; font-weight: bold; color: #2e8b57; margin-bottom: 5px; text-transform: uppercase; }
+        .form-group input, .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; color: #333; background-color: #fff; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #2e8b57; box-shadow: 0 0 4px rgba(46, 139, 87, 0.2); }
+        .btn-container { display: flex; justify-content: flex-end; gap: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; font-weight: bold; color: white; }
+        .btn-reset { background-color: #d9534f; }
+        .btn-save { background-color: #1b3b6f; }
+        .btn-action-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; }
+        .btn-refresh { background-color: #007bff; }
+        .btn-excel { background-color: #28a745; }
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        th { background-color: #343a40; color: white; padding: 12px 10px; font-weight: 600; border: 1px solid #454d55; }
+        .table-super-header { background-color: #ffcc00; color: #000; text-align: center; font-weight: bold; padding: 8px; font-size: 14px; border: 1px solid #e6b800; }
+        td { padding: 10px; border: 1px solid #dee2e6; background-color: #fff; }
+        tr:nth-child(even) td { background-color: #f8f9fa; }
+        .action-icons { text-align: center; }
+        .action-icons i { cursor: pointer; margin: 0 5px; font-size: 14px; }
+        .fa-pen-to-square { color: #007bff; }
+        .fa-xmark { color: #dc3545; }
+        #loading-indicator { display: none; font-size: 12px; color: #007bff; margin-left: 10px; align-self: center; }
+        
+        /* Modal za izmenu */
+        #editModal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 6px; width: 90%; max-width: 600px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
     <header>
         <h1>LOGISTIKA: POPIS</h1>
-        <p>Unos i praćenje popisa magacina i proizvodnje sa Google Sheets integracijom</p>
+        <p>Unos i praćenje popisa sa automatskim osvežavanjem</p>
     </header>
 
     <div class="container">
-        <!-- Forma za unos -->
         <div class="card">
             <div class="card-title">
                 <i class="fa-solid fa-pen-to-square"></i> Novi Unos Podataka Popisa
@@ -778,10 +75,6 @@ Gemini is AI and can make mistakes.
                     <div class="form-group" id="drugiMagacinGroup" style="display: none;">
                         <label>Unesi magacin</label>
                         <input type="text" id="drugiMagacin" placeholder="Naziv magacina">
-                    </div>
-                    <div class="form-group">
-                        <label>Datum</label>
-                        <input type="date" id="datum" required>
                     </div>
                     <div class="form-group">
                         <label>Skladište / Delovi u proizvodnji</label>
@@ -809,32 +102,33 @@ Gemini is AI and can make mistakes.
                     </div>
                 </div>
                 <div class="btn-container">
-                    <span id="loading-indicator"><i class="fa-solid fa-spinner fa-spin"></i> Čuvanje u Google Sheets...</span>
-                    <button type="reset" class="btn btn-reset"><i class="fa-solid fa-rotate-left"></i> Resetuj Polja</button>
+                    <span id="loading-indicator"><i class="fa-solid fa-spinner fa-spin"></i> Čuvanje...</span>
+                    <button type="reset" class="btn btn-reset"><i class="fa-solid fa-rotate-left"></i> Resetuj</button>
                     <button type="submit" class="btn btn-save"><i class="fa-solid fa-floppy-disk"></i> Sačuvaj u Bazu</button>
                 </div>
             </form>
         </div>
 
-        <!-- Tabela sa evidencijom -->
         <div class="card">
             <div class="card-title" style="justify-content: space-between; border: none; margin-bottom: 10px;">
-                <span><i class="fa-solid fa-table"></i> Zajednička Evidencija Popisa (Google Sheets)</span>
+                <span><i class="fa-solid fa-table"></i> Zajednička Evidencija Popisa</span>
             </div>
             <div class="btn-action-bar">
-                <button class="btn btn-refresh" onclick="ucitajPodatkeIzSheetsa()"><i class="fa-solid fa-rotate"></i> Učitaj sa Sheets-a</button>
+                <button class="btn btn-excel" onclick="izveziUExcel()"><i class="fa-solid fa-file-excel"></i> Izvezi u Excel</button>
+                <button class="btn btn-refresh" onclick="ucitajPodatkeIzSheetsa()"><i class="fa-solid fa-rotate"></i> Osveži odmah</button>
             </div>
             <div class="table-responsive">
-                <table>
+                <table id="popisTabela">
                     <thead>
                         <tr>
-                            <th colspan="8" class="table-super-header">EVIDENCIJA POPISA MAGACINA I PROIZVODNJE</th>
+                            <th colspan="9" class="table-super-header">EVIDENCIJA POPISA MAGACINA I PROIZVODNJE</th>
                             <th colspan="2" style="background-color: #343a40; text-align: center;">AKCIJE</th>
                         </tr>
                         <tr>
                             <th>Br. listića</th>
                             <th>Magacin</th>
                             <th>Datum</th>
+                            <th>Vreme</th>
                             <th>Skladište / Delovi</th>
                             <th>Br. crteža</th>
                             <th>Naziv</th>
@@ -846,7 +140,7 @@ Gemini is AI and can make mistakes.
                     </thead>
                     <tbody id="tabelaPodataka">
                         <tr>
-                            <td colspan="10" style="text-align: center; color: #666;">Kliknite na "Učitaj sa Sheets-a" da prikažete podatke</td>
+                            <td colspan="11" style="text-align: center; color: #666;">Učitavanje podataka...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -854,27 +148,61 @@ Gemini is AI and can make mistakes.
         </div>
     </div>
 
-    <script>
-        // Postavi trenutni datum
-        document.getElementById('datum').valueAsDate = new Date();
+    <!-- MODAL ZA IZMENU -->
+    <div id="editModal">
+        <div class="modal-content">
+            <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Izmena Podataka Popisa</div>
+            <form id="editForm" onsubmit="sacuvajIzmene(event)">
+                <input type="hidden" id="editOriginalBrListica">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Broj popisnog listića</label>
+                        <input type="text" id="editBrListica" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Magacin</label>
+                        <input type="text" id="editMagacin" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Skladište / Delovi</label>
+                        <input type="text" id="editSkladiste" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Broj crteža</label>
+                        <input type="text" id="editBrCrteza">
+                    </div>
+                    <div class="form-group">
+                        <label>Naziv</label>
+                        <input type="text" id="editNaziv" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Količina</label>
+                        <input type="number" id="editKolicina" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Ime i prezime</label>
+                        <input type="text" id="editIme" required>
+                    </div>
+                </div>
+                <div class="btn-container">
+                    <button type="button" class="btn btn-reset" onclick="zatvoriModal()">Otkaži</button>
+                    <button type="submit" class="btn btn-save">Sačuvaj izmene</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        // ⚠️ ZAMENI OVU URL ADRESU SA SVOJIM GOOGLE APPS SCRIPT WEB APP URL-OM NAKON OBJAVLJIVANJA
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz...TVOJ_URL_OVDE.../exec";
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwmFA2wik0cVIZ7RopVM8OJy9FRvS_fJKqZsVO2a2HUeKxElWLvW6WhDL6Fr_Rv7TkPDw/exec";
 
         function proveriMagacin() {
             const magacinSelect = document.getElementById('magacin');
             const drugiGroup = document.getElementById('drugiMagacinGroup');
-            if (magacinSelect.value === 'Ostalo') {
-                drugiGroup.style.display = 'flex';
-            } else {
-                drugiGroup.style.display = 'none';
-            }
+            drugiGroup.style.display = (magacinSelect.value === 'Ostalo') ? 'flex' : 'none';
         }
 
-        // Slanje podataka na Google Sheets preko Fetch API-ja
         function posaljiNaGoogleSheets(event) {
             event.preventDefault();
-            
             const loader = document.getElementById('loading-indicator');
             loader.style.display = 'inline-block';
 
@@ -883,10 +211,25 @@ Gemini is AI and can make mistakes.
                 magacinVal = document.getElementById('drugiMagacin').value || 'Ostalo';
             }
 
+            const now = new Date();
+            const mm = ('0' + (now.getMonth() + 1)).slice(-2);
+            const dd = ('0' + now.getDate()).slice(-2);
+            const yyyy = now.getFullYear();
+            const datumFormatiran = `${mm}/${dd}/${yyyy}`;
+
+            let hours = now.getHours();
+            const minutes = ('0' + now.getMinutes()).slice(-2);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const vremeFormatirano = `${hours}:${minutes} ${ampm}`;
+
             const podaci = {
+                action: "insert",
                 broj_popisnog_listica: document.getElementById('brojListica').value,
                 magacin: magacinVal,
-                datum: document.getElementById('datum').value,
+                datum: datumFormatiran,
+                vreme: vremeFormatirano,
                 direktni_materijali_delovi_sa_linije: document.getElementById('direktniMaterijali').value,
                 broj_crteza: document.getElementById('brojCrteza').value || '-',
                 naziv: document.getElementById('naziv').value,
@@ -896,64 +239,160 @@ Gemini is AI and can make mistakes.
 
             fetch(WEB_APP_URL, {
                 method: 'POST',
-                mode: 'no-cors', // Neophodno za Google Apps Script bez CORS komplikacija
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(podaci)
             })
             .then(response => {
                 loader.style.display = 'none';
-                alert('Uspešno sačuvano u Google Sheets!');
+                alert('Uspešno sačuvano!');
                 document.getElementById('popisForm').reset();
-                document.getElementById('datum').valueAsDate = new Date();
                 document.getElementById('drugiMagacinGroup').style.display = 'none';
                 ucitajPodatkeIzSheetsa();
             })
             .catch((error) => {
                 loader.style.display = 'none';
-                console.error('Greška:', error);
-                alert('Došlo je do greške prilikom slanja podataka.');
+                alert('Greška pri slanju podataka.');
             });
         }
 
-        // Učitavanje podataka iz Google Sheets-a (GET zahtev)
         function ucitajPodatkeIzSheetsa() {
-            const tbody = document.getElementById('tabelaPodataka');
-            tbody.innerHTML = `<tr><td colspan="10" style="text-align: center;">Učitavanje podataka...</td></tr>`;
-
             fetch(WEB_APP_URL)
-                .then(response => response.json())
-                .then(data => {
-                    tbody.innerHTML = '';
-                    if (data.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center;">Nema unetih podataka.</td></tr>`;
-                        return;
+                .then(response => response.text())
+                .then(textData => {
+                    try {
+                        const data = JSON.parse(textData);
+                        const tbody = document.getElementById('tabelaPodataka');
+                        tbody.innerHTML = '';
+                        if (data.length === 0) {
+                            tbody.innerHTML = `<tr><td colspan="11" style="text-align: center;">Nema podataka.</td></tr>`;
+                            return;
+                        }
+                        data.forEach((row) => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${row.broj_popisnog_listica || ''}</td>
+                                <td>${row.magacin || ''}</td>
+                                <td>${row.datum || ''}</td>
+                                <td>${row.vreme || ''}</td>
+                                <td>${row.direktni_materijali_delovi_sa_linije || ''}</td>
+                                <td>${row.broj_crteza || ''}</td>
+                                <td>${row.naziv || ''}</td>
+                                <td>${row.kolicina || ''}</td>
+                                <td>${row.ime_prezime || ''}</td>
+                                <td class="action-icons"><i class="fa-solid fa-pen-to-square" onclick='otvoriIzmenu(${JSON.stringify(row)})'></i></td>
+                                <td class="action-icons"><i class="fa-solid fa-xmark" onclick='obrisiRed("${row.broj_popisnog_listica}")'></i></td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    } catch (e) {
+                        console.error("Greška pri parsiranju podataka");
                     }
-                    data.forEach((row, index) => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${row.broj_popisnog_listica || ''}</td>
-                            <td>${row.magacin || ''}</td>
-                            <td>${row.datum || ''}</td>
-                            <td>${row.direktni_materijali_delovi_sa_linije || ''}</td>
-                            <td>${row.broj_crteza || ''}</td>
-                            <td>${row.naziv || ''}</td>
-                            <td>${row.kolicina || ''}</td>
-                            <td>${row.ime_prezime || ''}</td>
-                            <td class="action-icons"><i class="fa-solid fa-pen-to-square" title="Izmeni"></i></td>
-                            <td class="action-icons"><i class="fa-solid fa-xmark" title="Obriši"></i></td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
                 })
                 .catch(error => {
-                    console.error('Greška pri učitavanju:', error);
-                    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: red;">Greška pri učitavanju sa Google Sheets-a (proverite URL skripte).</td></tr>`;
+                    console.error('Greška pri konekciji');
                 });
         }
+
+        function obrisiRed(brListica) {
+            if (confirm("Da li ste sigurni da želite da obrišete ovaj zapis (Br. listića: " + brListica + ")?")) {
+                const podaci = {
+                    action: "delete",
+                    broj_popisnog_listica: brListica
+                };
+
+                fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(podaci)
+                })
+                .then(() => {
+                    alert('Zapis je obrisan.');
+                    setTimeout(ucitajPodatkeIzSheetsa, 1500);
+                })
+                .catch(() => alert('Greška pri brisanju.'));
+            }
+        }
+
+        function otvoriIzmenu(row) {
+            document.getElementById('editOriginalBrListica').value = row.broj_popisnog_listica;
+            document.getElementById('editBrListica').value = row.broj_popisnog_listica;
+            document.getElementById('editMagacin').value = row.magacin;
+            document.getElementById('editSkladiste').value = row.direktni_materijali_delovi_sa_linije;
+            document.getElementById('editBrCrteza').value = row.broj_crteza;
+            document.getElementById('editNaziv').value = row.naziv;
+            document.getElementById('editKolicina').value = row.kolicina;
+            document.getElementById('editIme').value = row.ime_prezime;
+
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function zatvoriModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        function sacuvajIzmene(event) {
+            event.preventDefault();
+            if (!confirm("Da li ste sigurni da želite da sačuvate ove izmene?")) return;
+
+            const podaci = {
+                action: "update",
+                original_broj_listica: document.getElementById('editOriginalBrListica').value,
+                broj_popisnog_listica: document.getElementById('editBrListica').value,
+                magacin: document.getElementById('editMagacin').value,
+                datum: new Date().toLocaleDateString('en-US'),
+                vreme: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                direktni_materijali_delovi_sa_linije: document.getElementById('editSkladiste').value,
+                broj_crteza: document.getElementById('editBrCrteza').value,
+                naziv: document.getElementById('editNaziv').value,
+                kolicina: document.getElementById('editKolicina').value,
+                ime_prezime: document.getElementById('editIme').value
+            };
+
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(podaci)
+            })
+            .then(() => {
+                alert('Izmene su uspešno sačuvane!');
+                zatvoriModal();
+                setTimeout(ucitajPodatkeIzSheetsa, 1500);
+            })
+            .catch(() => alert('Greška pri čuvanju izmena.'));
+        }
+
+        // Ažurirana funkcija za izvoz u Excel (uklanja žuti super-naslov i kolone za akcije)
+        function izveziUExcel() {
+            const tabela = document.getElementById('popisTabela');
+            
+            // Kreiramo klon tabele da ne utičemo na prikaz na ekranu
+            const klonTabela = tabela.cloneNode(true);
+            
+            // 1. Uklanjamo prvi red zaglavlja (žuti super-naslov)
+            const thead = klonTabela.querySelector('thead');
+            if (thead && thead.rows.length > 0) {
+                thead.deleteRow(0);
+            }
+            
+            // 2. Uklanjamo poslednje dve kolone (Izmeni i Briši) iz preostalih redova
+            const redovi = klonTabela.querySelectorAll('tr');
+            redovi.forEach(red => {
+                if (red.cells.length >= 11) {
+                    red.deleteCell(10); // Briši kolonu Briši
+                    red.deleteCell(9);  // Briši kolonu Izmeni
+                }
+            });
+
+            // Generisanje i preuzimanje Excel fajla
+            const wb = XLSX.utils.table_to_book(klonTabela, { sheet: "Popis" });
+            XLSX.writeFile(wb, "Evidencija_Popisa.xlsx");
+        }
+
+        ucitajPodatkeIzSheetsa();
+        setInterval(ucitajPodatkeIzSheetsa, 10000);
     </script>
 </body>
 </html>
-popis.html
-Displaying popis.html.
