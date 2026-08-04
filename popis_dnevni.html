@@ -59,11 +59,13 @@
         .qty-input { width: 80px; padding: 8px; text-align: center; font-weight: bold; font-size: 16px; border: 2px solid #007bff; border-radius: 4px; display: inline-block; }
         .qty-input:focus { background-color: #e8f4fd; outline: none; }
         
-        .btn-container { margin-top: 20px; text-align: right; display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-container { margin-top: 20px; text-align: right; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
         button.action-btn { background-color: #28a745; color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button.action-btn:hover { background-color: #218838; }
         .btn-sync { background-color: #007bff; }
         .btn-sync:hover { background-color: #0056b3; }
+        .btn-reset { background-color: #dc3545; }
+        .btn-reset:hover { background-color: #c82333; }
         
         .center { text-align: center; }
         #loading { display: none; color: #007bff; font-weight: bold; font-size: 14px; align-self: center; height: 41px; line-height: 41px; margin-left: 5px; }
@@ -122,8 +124,9 @@
     </div>
 
     <div class="btn-container">
+        <button class="action-btn btn-reset" onclick="resetujKolicine()">Resetuj količine</button>
         <button class="action-btn btn-sync" onclick="sacuvajUGoggleSheet()">Sačuvaj u Google Sheets</button>
-        <button class="action-btn" onclick="izveziUExcel()">Sačuvaj i Izvezi u Excel</button>
+        <button class="action-btn" onclick="izveziUExcel()">Izvezi u Excel</button>
     </div>
 </div>
 
@@ -179,6 +182,10 @@
     }
 
     async function sacuvajUGoggleSheet() {
+        if (!confirm("Da li ste sigurni da želite da sačuvate promene u Google Sheets bazu?")) {
+            return;
+        }
+
         let sheetName = document.getElementById('filter_osoba').value;
         let inputs = document.querySelectorAll('.qty-input');
         let updates = {};
@@ -220,7 +227,22 @@
         }
     }
 
+    function resetujKolicine() {
+        if (!confirm("Da li ste sigurni da želite da resetujete sva uneta polja za količinu?")) {
+            return;
+        }
+
+        let inputs = document.querySelectorAll('.qty-input');
+        inputs.forEach(input => {
+            input.value = "";
+        });
+    }
+
     function izveziUExcel() {
+        if (!confirm("Da li ste sigurni da želite da izvezete podatke u Excel?")) {
+            return;
+        }
+
         let datumPopisa = document.getElementById('datum_popisa').value;
         let izabrano = document.getElementById('filter_osoba').value;
         let rows = document.querySelectorAll('#tabela-sadrzaj tr');
