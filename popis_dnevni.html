@@ -184,9 +184,9 @@
         let updates = {};
 
         inputs.forEach(input => {
-            let partNum = input.getAttribute('data-part');
+            let partNum = String(input.getAttribute('data-part')).trim();
             let val = input.value;
-            if (val !== "") {
+            if (val !== "" && val !== null) {
                 updates[partNum] = Number(val);
             }
         });
@@ -198,11 +198,16 @@
         try {
             let response = await fetch(WEB_APP_URL, {
                 method: "POST",
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
                 body: JSON.stringify({ sheet: sheetName, updates: updates })
             });
             let result = await response.json();
+            
             if (result.status === "success") {
                 alert("Uspešno sačuvano u Google Sheets bazu!");
+                ucitajPodatke();
             } else {
                 alert("Došlo je do greške: " + (result.message || "Nepoznata greška"));
             }
