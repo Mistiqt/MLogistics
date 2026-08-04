@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dnevni Popis - Google Sheets</title>
+    <!-- SheetJS za Excel izvoz -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 0; }
+        
+        /* Vizuelno zaglavlje */
+        .main-header { background-color: #1a365d; color: white; padding: 20px; text-align: center; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .main-header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
+        .main-header p { margin: 5px 0 0; font-size: 13px; color: #cbd5e0; }
+
+        .container { max-width: 1200px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: auto; margin-bottom: 30px; }
+        
+        .controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-end; background: #e9ecef; padding: 15px; border-radius: 6px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #495057; font-size: 13px; }
+        select, input[type="text"], input[type="date"] { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; font-size: 14px; background: white; }
+        
+        /* Novo, elegantno i diskretno dugme bez rotacije */
+        .btn-refresh-modern { 
+            background: #ffffff; 
+            border: 1px solid #cbd5e0; 
+            cursor: pointer; 
+            padding: 10px 16px;
+            font-size: 13px; 
+            color: #2d3748; 
+            border-radius: 4px;
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px;
+            font-weight: 600;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.2s ease-in-out;
+            height: 41px;
+        }
+        
+        .btn-refresh-modern:hover {
+            background: #edf2f7;
+            border-color: #a0aec0;
+            color: #1a365d;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        .btn-refresh-modern:active {
+            transform: translateY(1px);
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
+        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; font-size: 14px; vertical-align: middle; }
+        th { background-color: #343a40; color: white; text-align: center; }
+        
+        .th-qty { text-align: center; background-color: #343a40; padding: 12px 10px; font-weight: bold; }
+
+        .qty-cell { text-align: center; }
+        .qty-input { width: 80px; padding: 8px; text-align: center; font-weight: bold; font-size: 16px; border: 2px solid #007bff; border-radius: 4px; display: inline-block; }
+        .qty-input:focus { background-color: #e8f4fd; outline: none; }
+        
+        .btn-container { margin-top: 20px; text-align: right; display: flex; justify-content: flex-end; gap: 10px; }
+        button.action-btn { background-color: #28a745; color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.action-btn:hover { background-color: #218838; }
+        .btn-sync { background-color: #007bff; }
+        .btn-sync:hover { background-color: #0056b3; }
+        
+        .center { text-align: center; }
+        #loading { display: none; color: #007bff; font-weight: bold; font-size: 14px; align-self: center; height: 41px; line-height: 41px; margin-left: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="main-header">
+    <h1>LOGISTIKA: POPIS</h1>
+    <p>Unos i praćenje popisa sa automatskim osvežavanjem</p>
+</div>
+
+<div class="container">
+    
+    <div class="controls">
+        <div class="form-group">
+            <label for="filter_osoba">Izaberite dobavljača / sheet:</label>
+            <select id="filter_osoba" onchange="ucitajPodatke()">
+                <option value="Plastic_Omnium">Plastic Omnium</option>
+                <option value="AD_Plastik">AD Plastik</option>
+                <option value="SIGIT">SIGIT</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="datum_popisa">Datum Popisa:</label>
+            <input type="date" id="datum_popisa">
+        </div>
+        <div>
+            <!-- Novo elegantno dugme bez rotacije sa čistom SVG ikonicom -->
+            <button class="btn-refresh-modern" onclick="ucitajPodatke()" title="Osveži podatke">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.65-5.65"></path>
+                </svg>
+                Osveži
+            </button>
+        </div>
+        <div>
+            <span id="loading">Učitavanje...</span>
+        </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table id="popis-tabela">
+            <thead>
+                <tr>
+                    <th style="width: 45%;">Component Name</th>
+                    <th style="width: 25%;">Supplier</th>
+                    <th style="width: 15%;">Part number</th>
+                    <th class="th-qty" style="width: 15%;">QTY</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-sadrzaj">
+                <tr><td colspan="4" class="center">Izaberite dobavljača za učitavanje...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="btn-container">
+        <button class="action-btn btn-sync" onclick="sacuvajUGoggleSheet()">Sačuvaj u Google Sheets</button>
+        <button class="action-btn" onclick="izveziUExcel()">Sačuvaj i Izvezi u Excel</button>
+    </div>
+</div>
+
+<script>
+    // ⚠️ OVDE ZALEPITE VAŠ GOOGLE APPS SCRIPT WEB APP URL:
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby7AJvdcxsBsoEGvslb3b76Pu88YBZXi4QN70bvrboyoGhEvKhrlGUJaMycabbXH1R4TQ/exec";
+
+    async function ucitajPodatke() {
+        let sheetName = document.getElementById('filter_osoba').value;
+        let loading = document.getElementById('loading');
+        let tbody = document.getElementById('tabela-sadrzaj');
+        
+        loading.style.display = "inline";
+        tbody.innerHTML = `<tr><td colspan="4" class="center">Učitavanje podataka sa Google Sheets-a...</td></tr>`;
+
+        try {
+            let response = await fetch(`${WEB_APP_URL}?sheet=${sheetName}`);
+            let data = await response.json();
+            
+            if (data.error) {
+                tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:red;">Greška: ${data.error}</td></tr>`;
+                return;
+            }
+
+            prikaziTabelu(data);
+        } catch (error) {
+            console.error("Greška pri učitavanju:", error);
+            tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:red;">Greška pri povezivanju sa Google Sheets! Proverite URL.</td></tr>`;
+        } finally {
+            loading.style.display = "none";
+        }
+    }
+
+    function prikaziTabelu(podaci) {
+        const tbody = document.getElementById('tabela-sadrzaj');
+        tbody.innerHTML = "";
+
+        if (!podaci || podaci.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="center">Nema podataka u ovom sheet-u.</td></tr>`;
+            return;
+        }
+
+        podaci.forEach((item) => {
+            let row = document.createElement('tr');
+            row.innerHTML = `
+                <td><b>${item.name}</b></td>
+                <td>${item.supplier}</td>
+                <td class="center">${item.partNumber}</td>
+                <td class="qty-cell"><input type="number" class="qty-input" data-part="${item.partNumber}" value="${item.qty !== undefined && item.qty !== null ? item.qty : ""}" min="0" placeholder="0"></td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    async function sacuvajUGoggleSheet() {
+        let sheetName = document.getElementById('filter_osoba').value;
+        let inputs = document.querySelectorAll('.qty-input');
+        let updates = {};
+
+        inputs.forEach(input => {
+            let partNum = input.getAttribute('data-part');
+            let val = input.value;
+            if (val !== "") {
+                updates[partNum] = Number(val);
+            }
+        });
+
+        let loading = document.getElementById('loading');
+        loading.innerText = "Čuvanje...";
+        loading.style.display = "inline";
+
+        try {
+            let response = await fetch(WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify({ sheet: sheetName, updates: updates })
+            });
+            let result = await response.json();
+            if (result.status === "success") {
+                alert("Uspešno sačuvano u Google Sheets bazu!");
+            } else {
+                alert("Došlo je do greške: " + (result.message || "Nepoznata greška"));
+            }
+        } catch (error) {
+            console.error("Greška:", error);
+            alert("Greška u mreži prilikom čuvanja.");
+        } finally {
+            loading.style.display = "none";
+            loading.innerText = "Učitavanje...";
+        }
+    }
+
+    function izveziUExcel() {
+        let datumPopisa = document.getElementById('datum_popisa').value;
+        let izabrano = document.getElementById('filter_osoba').value;
+        let rows = document.querySelectorAll('#tabela-sadrzaj tr');
+        
+        let excelData = [
+            ["DATUM POPISA:", datumPopisa],
+            ["DOBAVLJAČ / SHEET:", izabrano],
+            [],
+            ["Component Name", "Supplier", "Part number", "QTY"]
+        ];
+
+        rows.forEach(row => {
+            let cols = row.querySelectorAll('td');
+            if(cols.length === 4) {
+                let name = cols[0].innerText;
+                let supplier = cols[1].innerText;
+                let partNumber = cols[2].innerText;
+                let qty = cols[3].querySelector('input') ? cols[3].querySelector('input').value : "";
+                excelData.push([name, supplier, partNumber, qty]);
+            }
+        });
+
+        let ws = XLSX.utils.aoa_to_sheet(excelData);
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Popis");
+        XLSX.writeFile(wb, `Popis_${izabrano}_${datumPopisa}.xlsx`);
+    }
+
+    window.onload = function() {
+        let danas = new Date().toISOString().split('T')[0];
+        document.getElementById('datum_popisa').value = danas;
+        ucitajPodatke();
+    };
+</script>
+
+</body>
+</html>
