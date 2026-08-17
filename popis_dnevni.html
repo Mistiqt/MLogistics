@@ -178,9 +178,8 @@
         inputs.forEach(input => {
             let partNum = String(input.getAttribute('data-part')).trim();
             let val = input.value;
-            if (val !== "" && val !== null) {
-                updates[partNum] = Number(val);
-            }
+            // Šaljemo vrednost (bilo unet broj ili prazno string polje da se obriše u sheet-u)
+            updates[partNum] = val !== "" ? Number(val) : "";
         });
 
         let loading = document.getElementById('loading');
