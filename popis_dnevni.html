@@ -3,62 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <title>Dnevni Popis - Google Sheets</title>
-    <!-- SheetJS za Excel izvoz -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 0; }
-        
-        /* Vizuelno zaglavlje */
         .main-header { background-color: #1a365d; color: white; padding: 20px; text-align: center; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .main-header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
         .main-header p { margin: 5px 0 0; font-size: 13px; color: #cbd5e0; }
-
         .container { max-width: 1200px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: auto; margin-bottom: 30px; }
-        
         .controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-end; background: #e9ecef; padding: 15px; border-radius: 6px; flex-wrap: wrap; }
-        .form-group { flex: 1; min-width: 200px; }
+        .form-group { flex: 1; min-width: 250px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; color: #495057; font-size: 13px; }
         select, input[type="text"], input[type="date"] { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; font-size: 14px; background: white; }
-        
-        /* Novo, elegantno i diskretno dugme bez rotacije */
         .btn-refresh-modern { 
-            background: #ffffff; 
-            border: 1px solid #cbd5e0; 
-            cursor: pointer; 
-            padding: 10px 16px;
-            font-size: 13px; 
-            color: #2d3748; 
-            border-radius: 4px;
-            display: inline-flex; 
-            align-items: center; 
-            gap: 8px;
-            font-weight: 600;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            transition: all 0.2s ease-in-out;
-            height: 41px;
+            background: #ffffff; border: 1px solid #cbd5e0; cursor: pointer; padding: 10px 16px; font-size: 13px; color: #2d3748; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s ease-in-out; height: 41px;
         }
-        
-        .btn-refresh-modern:hover {
-            background: #edf2f7;
-            border-color: #a0aec0;
-            color: #1a365d;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-        }
-
-        .btn-refresh-modern:active {
-            transform: translateY(1px);
-        }
-
+        .btn-refresh-modern:hover { background: #edf2f7; border-color: #a0aec0; color: #1a365d; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; font-size: 14px; vertical-align: middle; }
         th { background-color: #343a40; color: white; text-align: center; }
-        
         .th-qty { text-align: center; background-color: #343a40; padding: 12px 10px; font-weight: bold; }
-
         .qty-cell { text-align: center; }
         .qty-input { width: 80px; padding: 8px; text-align: center; font-weight: bold; font-size: 16px; border: 2px solid #007bff; border-radius: 4px; display: inline-block; }
         .qty-input:focus { background-color: #e8f4fd; outline: none; }
-        
         .btn-container { margin-top: 20px; text-align: right; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
         button.action-btn { background-color: #28a745; color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button.action-btn:hover { background-color: #218838; }
@@ -66,7 +32,6 @@
         .btn-sync:hover { background-color: #0056b3; }
         .btn-reset { background-color: #dc3545; }
         .btn-reset:hover { background-color: #c82333; }
-        
         .center { text-align: center; }
         #loading { display: none; color: #007bff; font-weight: bold; font-size: 14px; align-self: center; height: 41px; line-height: 41px; margin-left: 5px; }
     </style>
@@ -79,7 +44,6 @@
 </div>
 
 <div class="container">
-    
     <div class="controls">
         <div class="form-group">
             <label for="filter_osoba">Izaberite dobavljača / sheet:</label>
@@ -87,6 +51,29 @@
                 <option value="Plastic_Omnium">Plastic Omnium</option>
                 <option value="AD_Plastik">AD Plastik</option>
                 <option value="SIGIT">SIGIT</option>
+                <option value="Leva">Leva</option>
+                <option value="Algontec">Algontec</option>
+                <option value="FEKA">FEKA</option>
+                <option value="LEVA IT">LEVA IT</option>
+                <option value="PMC">PMC</option>
+                <option value="SEW">SEW</option>
+                <option value="Optimas">Optimas</option>
+                <option value="A Raymond Italiana">A Raymond Italiana</option>
+                <option value="A Raymond France">A Raymond France</option>
+                <option value="Becchis Osiride">Becchis Osiride</option>
+                <option value="ITW Slovakia">ITW Slovakia</option>
+                <option value="ITW de France">ITW de France</option>
+                <option value="ITW Lys Fusion">ITW Lys Fusion</option>
+                <option value="ITW Espana">ITW Espana</option>
+                <option value="Mustad">Mustad</option>
+                <option value="ITW Pronovia">ITW Pronovia</option>
+                <option value="Simoldes">Simoldes</option>
+                <option value="BOELHOFF SRL">BOELHOFF SRL</option>
+                <option value="Valeo">Valeo</option>
+                <option value="Stanely Tucker">Stanely Tucker</option>
+                <option value="VGV">VGV</option>
+                <option value="Adhex">Adhex</option>
+                <option value="Boje">Boje</option>
             </select>
         </div>
         <div class="form-group">
@@ -94,7 +81,6 @@
             <input type="date" id="datum_popisa">
         </div>
         <div>
-            <!-- Novo elegantno dugme bez rotacije sa čistom SVG ikonicom -->
             <button class="btn-refresh-modern" onclick="ucitajPodatke()" title="Osveži podatke">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.65-5.65"></path>
@@ -131,7 +117,6 @@
 </div>
 
 <script>
-    // ⚠️ OVDE ZALEPITE VAŠ GOOGLE APPS SCRIPT WEB APP URL:
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby7AJvdcxsBsoEGvslb3b76Pu88YBZXi4QN70bvrboyoGhEvKhrlGUJaMycabbXH1R4TQ/exec";
 
     async function ucitajPodatke() {
@@ -143,7 +128,7 @@
         tbody.innerHTML = `<tr><td colspan="4" class="center">Učitavanje podataka sa Google Sheets-a...</td></tr>`;
 
         try {
-            let response = await fetch(`${WEB_APP_URL}?sheet=${sheetName}`);
+            let response = await fetch(`${WEB_APP_URL}?sheet=${encodeURIComponent(sheetName)}`);
             let data = await response.json();
             
             if (data.error) {
@@ -205,9 +190,7 @@
         try {
             let response = await fetch(WEB_APP_URL, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "text/plain;charset=utf-8"
-                },
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ sheet: sheetName, updates: updates })
             });
             let result = await response.json();
@@ -228,20 +211,12 @@
     }
 
     function resetujKolicine() {
-        if (!confirm("Da li ste sigurni da želite da resetujete sva uneta polja za količinu?")) {
-            return;
-        }
-
-        let inputs = document.querySelectorAll('.qty-input');
-        inputs.forEach(input => {
-            input.value = "";
-        });
+        if (!confirm("Da li ste sigurni da želite da resetujete sva uneta polja za količinu?")) return;
+        document.querySelectorAll('.qty-input').forEach(input => input.value = "");
     }
 
     function izveziUExcel() {
-        if (!confirm("Da li ste sigurni da želite da izvezete podatke u Excel?")) {
-            return;
-        }
+        if (!confirm("Da li ste sigurni da želite da izvezete podatke u Excel?")) return;
 
         let datumPopisa = document.getElementById('datum_popisa').value;
         let izabrano = document.getElementById('filter_osoba').value;
