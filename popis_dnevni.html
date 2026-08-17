@@ -210,9 +210,9 @@
     }
 
     function resetujKolicine() {
-        if (!confirm("Da li ste sigurni da želite da resetujete sva uneta polja za količinu?")) return;
-        document.querySelectorAll('.qty-input').forEach(input => input.value = "");
-    }
+    if (!confirm("Da li ste sigurni da želite da resetujete sve količine na 0?")) return;
+    document.querySelectorAll('.qty-input').forEach(input => input.value = "0");
+}
 
     function izveziUExcel() {
         if (!confirm("Da li ste sigurni da želite da izvezete podatke u Excel?")) return;
