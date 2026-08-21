@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontrolna ček-lista za viljuškare</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .header-container {
+            background-color: #1b365d;
+            color: white;
+            padding: 20px 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header-container h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        .header-container p {
+            margin: 5px 0 0 0;
+            font-size: 13px;
+            color: #d0d7de;
+        }
+        .main-container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .section-title {
+            background-color: #eef2f7;
+            padding: 10px 15px;
+            font-weight: bold;
+            color: #1b365d;
+            border-left: 5px solid #1b365d;
+            margin: 25px 0 15px 0;
+            font-size: 15px;
+        }
+        .section-title-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #eef2f7;
+            padding: 8px 15px;
+            border-left: 5px solid #1b365d;
+            margin: 25px 0 15px 0;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .section-title-flex span {
+            font-weight: bold;
+            color: #1b365d;
+            font-size: 15px;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        table.checklist-table, table.added-list-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table.checklist-table th, table.checklist-table td, 
+        table.added-list-table th, table.added-list-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 13px;
+        }
+        table.checklist-table th, table.added-list-table th {
+            background-color: #1b365d;
+            color: white;
+        }
+        table.checklist-table td:nth-child(1) {
+            width: 8%;
+            text-align: center;
+            font-weight: bold;
+        }
+        table.checklist-table td:nth-child(3) {
+            width: 15%;
+            text-align: center;
+        }
+        .radio-group {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .btn-add {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .btn-add:hover { background-color: #218838; }
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-submit {
+            background-color: #1b365d;
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .btn-submit:hover { background-color: #122540; }
+        .btn-print {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-print:hover { background-color: #5a6268; }
+        .btn-load {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .btn-load:hover { background-color: #0056b3; }
+        #loading {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            color: #1b365d;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                margin: 10px;
+                padding: 12px;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .form-group {
+                min-width: 100%;
+            }
+            .section-title-flex {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .btn-add {
+                width: 100%;
+                justify-content: center;
+                padding: 10px;
+            }
+            table.checklist-table, table.added-list-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+
+        @media print {
+            body * {
+                visibility: hidden !important;
+            }
+            body.printing-current #printableArea,
+            body.printing-current #printableArea *,
+            body.printing-history #historyContainer,
+            body.printing-history #historyContainer * {
+                visibility: visible !important;
+            }
+            body.printing-current #printableArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                display: block !important;
+                background: white;
+            }
+            body.printing-history #historyContainer {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                display: block !important;
+                background: white;
+                border: none !important;
+                padding: 0 !important;
+            }
+            .no-print, .btn-delete, .no-print-action {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h1>KONTROLNA ČEK-LISTA ZA VILJUŠKARE</h1>
+        <p>Pregled po smenama i pojedinačna evidencija ispravnosti</p>
+    </div>
+
+    <div class="main-container">
+        <form id="mainForm">
+            
+            <!-- OPŠTI PODACI -->
+            <div class="section-title">OPŠTI PODACI SMENE</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="smena">Smena:</label>
+                    <select id="smena" required>
+                        <option value="">-- Izaberi smenu --</option>
+                        <option value="1. Smena">1. Smena</option>
+                        <option value="2. Smena">2. Smena</option>
+                        <option value="3. Smena">3. Smena</option>
+                        <option value="4. Smena">4. Smena</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="datum">Datum provere:</label>
+                    <input type="date" id="datum" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="teamLeader">Team Leader:</label>
+                    <select id="teamLeader" required>
+                        <option value="">-- Izaberi Team Leadera --</option>
+                        <option value="Djurdjina Jovcetic">Djurdjina Jovcetic</option>
+                        <option value="Miljan Rovcanin">Miljan Rovcanin</option>
+                        <option value="Nebojsa Cosic">Nebojsa Cosic</option>
+                        <option value="Bojan Prokic">Bojan Prokic</option>
+                        <option value="Stefan Stojkovic">Stefan Stojkovic</option>
+                        <option value="Aleksandar Rakovic">Aleksandar Rakovic</option>
+                        <option value="Goran Zivkovic">Goran Zivkovic</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pogonLokacija">Pogon / Lokacija:</label>
+                    <select id="pogonLokacija" required>
+                        <option value="Plastik Shop">Plastik Shop</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- EVIDENCIJA VILJUŠKARA -->
+            <div class="section-title-flex">
+                <span>UNOS VILJUŠKARA I ČEK-LISTA ZA OPERATERA</span>
+                <button type="button" class="btn-add" id="btnAddForklift">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <line x1="19" y1="8" x2="19" y2="14"></line>
+                        <line x1="16" y1="11" x2="22" y2="11"></line>
+                    </svg>
+                    DODAJ VILJUŠKARISTU
+                </button>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="viljuskarBr">Broj Viljuškara:</label>
+                    <select id="viljuskarBr">
+                        <option value="">-- Izaberi broj --</option>
+                        <option value="52">52</option>
+                        <option value="47">47</option>
+                        <option value="90">90</option>
+                        <option value="147">147</option>
+                        <option value="39">39</option>
+                        <option value="40">40</option>
+                        <option value="159">159</option>
+                        <option value="65">65</option>
+                        <option value="180">180</option>
+                        <option value="188">188</option>
+                        <option value="158">158</option>
+                        <option value="266">266</option>
+                        <option value="267">267</option>
+                        <option value="268">268</option>
+                        <option value="225">225</option>
+                        <option value="237">237</option>
+                        <option value="252">252</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tipViljuskara">Tip / Model viljuškara:</label>
+                    <select id="tipViljuskara">
+                        <option value="">-- Izaberi tip --</option>
+                        <option value="Bocna">Bocna</option>
+                        <option value="Ceona">Ceona</option>
+                        <option value="Bul">Bul</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="operater">Operater:</label>
+                    <input type="text" id="operater" placeholder="Ime i prezime operatera">
+                </div>
+                <div class="form-group">
+                    <label for="komentarDodela">Komentar o dodeli:</label>
+                    <input type="text" id="komentarDodela" placeholder="Eventualne napomene">
+                </div>
+            </div>
+
+            <!-- PRINTABLE AREA -->
+            <div id="printableArea" style="margin-top: 25px; display: none;">
+                <div style="border-bottom: 2px solid #1b365d; padding-bottom: 10px; margin-bottom: 15px;">
+                    <h2 style="margin: 0 0 10px 0; color: #1b365d; font-size: 18px;">EVIDENCIJA AKTIVNIH VILJUŠKARA</h2>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 4px; flex-wrap: wrap; gap: 5px;">
+                        <span id="printDatumText">Datum: </span>
+                        <span id="printSmenaText">Smena: </span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; flex-wrap: wrap; gap: 5px;">
+                        <span id="printLeaderText">Team Leader: </span>
+                        <span>Pogon: Plastik Shop</span>
+                    </div>
+                </div>
+
+                <table class="added-list-table">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Br. Viljuškara</th>
+                            <th>Tip / Model</th>
+                            <th>Operater</th>
+                            <th>Komentar</th>
+                            <th style="width: 80px; text-align: center;" class="no-print-action">Akcija</th>
+                        </tr>
+                    </thead>
+                    <tbody id="forkliftTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- GLAVNA ČEK-LISTA -->
+            <table class="checklist-table" style="margin-top: 25px;">
+                <thead>
+                    <tr>
+                        <th>Br.</th>
+                        <th>Stavka provere (Šta se kontroliše?)</th>
+                        <th>Status (DA / NE)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="3" style="background:#f0f4f8; font-weight:bold;">1. DOKUMENTACIJA & OPERATER</td></tr>
+                    <tr><td>1.1</td><td>Operater poseduje važeću dozvolu / sertifikat za rad</td><td><div class="radio-group"><label><input type="radio" name="c1_1" value="DA" checked> DA</label><label><input type="radio" name="c1_1" value="NE"> NE</label></div></td></tr>
+                    <tr><td>1.2</td><td>Operater je popunio svoju pred-smenu ček-listu</td><td><div class="radio-group"><label><input type="radio" name="c1_2" value="DA" checked> DA</label><label><input type="radio" name="c1_2" value="NE"> NE</label></div></td></tr>
+                    <tr><td>1.3</td><td>Operater nosi propisanu HTZ opremu (cipele, prsluk, itd.)</td><td><div class="radio-group"><label><input type="radio" name="c1_3" value="DA" checked> DA</label><label><input type="radio" name="c1_3" value="NE"> NE</label></div></td></tr>
+
+                    <tr><td colspan="3" style="background:#f0f4f8; font-weight:bold;">2. VIZUELNI PREGLED VILJUŠKARA</td></tr>
+                    <tr><td>2.1</td><td>Gume, točkovi i felne (nema oštećenja, pritisak, čistoća)</td><td><div class="radio-group"><label><input type="radio" name="c2_1" value="DA" checked> DA</label><label><input type="radio" name="c2_1" value="NE"> NE</label></div></td></tr>
+                    <tr><td>2.2</td><td>Viljuške i kran (nema pukotina, iskrivljenja, lanac podmazan)</td><td><div class="radio-group"><label><input type="radio" name="c2_2" value="DA" checked> DA</label><label><input type="radio" name="c2_2" value="NE"> NE</label></div></td></tr>
+                    <tr><td>2.3</td><td>Ima li vidljivih curenja (ulje, hidraulična tečnost, kiselina)</td><td><div class="radio-group"><label><input type="radio" name="c2_3" value="DA" checked> DA</label><label><input type="radio" name="c2_3" value="NE"> NE</label></div></td></tr>
+                    <tr><td>2.4</td><td>Stanje baterije / plinske boce (fiksiranost, kablovi, spojevi)</td><td><div class="radio-group"><label><input type="radio" name="c2_4" value="DA" checked> DA</label><label><input type="radio" name="c2_4" value="NE"> NE</label></div></td></tr>
+
+                    <tr><td colspan="3" style="background:#f0f4f8; font-weight:bold;">3. FUNKCIONALNI & BEZBEDNOSNI PREGLED</td></tr>
+                    <tr><td>3.1</td><td>Kočnice (radna i parking kočnica reaguju ispravno)</td><td><div class="radio-group"><label><input type="radio" name="c3_1" value="DA" checked> DA</label><label><input type="radio" name="c3_1" value="NE"> NE</label></div></td></tr>
+                    <tr><td>3.2</td><td>Upravljanje i hidraulika (podizanje, spust i nagib rade glatko)</td><td><div class="radio-group"><label><input type="radio" name="c3_2" value="DA" checked> DA</label><label><input type="radio" name="c3_2" value="NE"> NE</label></div></td></tr>
+                    <tr><td>3.3</td><td>Zvučna signalizacija (sirena i alarm za kretanje u rikverc)</td><td><div class="radio-group"><label><input type="radio" name="c3_3" value="DA" checked> DA</label><label><input type="radio" name="c3_3" value="NE"> NE</label></div></td></tr>
+                    <tr><td>3.4</td><td>Svetlosna signalizacija (rotacija, radna svetla, Blue Spot)</td><td><div class="radio-group"><label><input type="radio" name="c3_4" value="DA" checked> DA</label><label><input type="radio" name="c3_4" value="NE"> NE</label></div></td></tr>
+                    <tr><td>3.5</td><td>Sigurnosni pojas i sedište (ispravni, fiksirani i čisti)</td><td><div class="radio-group"><label><input type="radio" name="c3_5" value="DA" checked> DA</label><label><input type="radio" name="c3_5" value="NE"> NE</label></div></td></tr>
+                    <tr><td>3.6</td><td>Ispravnost, podesivost sedista / pojasa</td><td><div class="radio-group"><label><input type="radio" name="c3_6" value="DA" checked> DA</label><label><input type="radio" name="c3_6" value="NE"> NE</label></div></td></tr>
+                    <tr><td>3.7</td><td>Stanje zastitnog rama i/ili kabine</td><td><div class="radio-group"><label><input type="radio" name="c3_7" value="DA" checked> DA</label><label><input type="radio" name="c3_7" value="NE"> NE</label></div></td></tr>
+
+                    <tr><td colspan="3" style="background:#f0f4f8; font-weight:bold;">4. Ostalo</td></tr>
+                    <tr><td>4.1</td><td>Viljuškar je očišćen od grubog smeća i prašine</td><td><div class="radio-group"><label><input type="radio" name="c4_1" value="DA" checked> DA</label><label><input type="radio" name="c4_1" value="NE"> NE</label></div></td></tr>
+                    <tr><td>4.2</td><td>Ostavljen na namenskom mestu za punjenje / ugašen pravilno</td><td><div class="radio-group"><label><input type="radio" name="c4_2" value="DA" checked> DA</label><label><input type="radio" name="c4_2" value="NE"> NE</label></div></td></tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box no-print" style="margin-top: 25px;">
+                VAŽNO PRAVILO: Ukoliko je bilo koja stavka označena sa 'NE', viljuškar se MORA odmah prijaviti Supervizoru.
+            </div>
+
+            <!-- ZAPAŽANJA -->
+            <div class="form-group no-print" style="margin-top: 20px;">
+                <label for="zapazanja">Zapažanja vođe smene i uočeni nedostaci:</label>
+                <textarea id="zapazanja" rows="3" placeholder="Unesite opaske ukoliko postoje..."></textarea>
+            </div>
+
+            <!-- DUGMAD NA KRAJU -->
+            <button type="button" class="btn-submit no-print" id="btnSubmitAll">SAČUVAJ SVE U BAZU</button>
+            <button type="button" class="btn-print no-print" onclick="printCurrentShift()">ŠTAMPAJ TRENUTNU SMENU</button>
+            
+            <!-- SEKCIJA ZA PREUZIMANJE ISTORIJE -->
+            <div class="section-title no-print" style="margin-top: 40px;">PREGLED / ISTORIJA IZ BAZE PO DATUMU</div>
+            <div class="form-row no-print">
+                <div class="form-group">
+                    <label for="filterDatum">Izaberi datum za pregled:</label>
+                    <input type="date" id="filterDatum">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button type="button" class="btn-load" onclick="loadHistoryFromDatabase()">UČITAJ PODATKE IZ BAZE</button>
+                </div>
+            </div>
+
+            <!-- KONTEJNER ZA UČITANU ISTORIJU -->
+            <div id="historyContainer" style="margin-top: 15px; display: none; padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
+                <h3 id="historyTitle" style="color: #1b365d; margin-top: 0; font-size: 16px;">Evidencija za datum: </h3>
+                
+                <table class="added-list-table">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Smena</th>
+                            <th>Team Leader</th>
+                            <th>Br. Viljuškara</th>
+                            <th>Tip / Model</th>
+                            <th>Operater</th>
+                            <th>Komentar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+
+                <button type="button" class="btn-print no-print" style="margin-top: 15px;" onclick="printLoadedHistory()">ŠTAMPAJ UČITANE PODATKE</button>
+            </div>
+
+            <div id="loading" class="no-print">Čuvanje podataka u toku...</div>
+        </form>
+    </div>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyTNP4jRyl3QBNoDYgwJAvR97KBlqjFLlqb1eTVmCdMHNfsoMWZqpkUTGt-jA3dnNSaZQ/exec";
+
+        document.getElementById('datum').valueAsDate = new Date();
+        document.getElementById('filterDatum').valueAsDate = new Date();
+        let viljuskariNiz = [];
+
+        document.getElementById('btnAddForklift').addEventListener('click', function() {
+            const br = document.getElementById('viljuskarBr').value;
+            const tip = document.getElementById('tipViljuskara').value;
+            const operater = document.getElementById('operater').value.trim();
+            const komentar = document.getElementById('komentarDodela').value.trim();
+            const datumUnosa = document.getElementById('datum').value;
+
+            if (!br || !tip || !operater || !datumUnosa) {
+                alert('Molimo izaberite datum, broj viljuškara, tip i unesite ime operatera!');
+                return;
+            }
+
+            viljuskariNiz.push({
+                datum: datumUnosa,
+                viljuskarBr: br,
+                tipViljuskara: tip,
+                operater: operater,
+                komentarDodela: komentar
+            });
+
+            osveziTabeluViljuskara();
+
+            document.getElementById('viljuskarBr').value = '';
+            document.getElementById('tipViljuskara').value = '';
+            document.getElementById('operater').value = '';
+            document.getElementById('komentarDodela').value = '';
+        });
+
+        function osveziTabeluViljuskara() {
+            const tbody = document.getElementById('forkliftTableBody');
+            const container = document.getElementById('printableArea');
+            tbody.innerHTML = '';
+
+            if (viljuskariNiz.length > 0) {
+                container.style.display = 'block';
+                document.getElementById('printDatumText').innerText = "Datum: " + document.getElementById('datum').value;
+                document.getElementById('printSmenaText').innerText = "Smena: " + document.getElementById('smena').value;
+                document.getElementById('printLeaderText').innerText = "Team Leader: " + document.getElementById('teamLeader').value;
+
+                viljuskariNiz.forEach((v, index) => {
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${v.datum}</td>
+                        <td>${v.viljuskarBr}</td>
+                        <td>${v.tipViljuskara}</td>
+                        <td>${v.operater}</td>
+                        <td>${v.komentarDodela}</td>
+                        <td style="text-align: center;" class="no-print-action"><button type="button" class="btn-delete" onclick="obrisiViljuskar(${index})">Obriši</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        window.obrisiViljuskar = function(index) {
+            viljuskariNiz.splice(index, 1);
+            osveziTabeluViljuskara();
+        };
+
+        function printCurrentShift() {
+            document.body.classList.add('printing-current');
+            window.print();
+            document.body.classList.remove('printing-current');
+        }
+
+        function printLoadedHistory() {
+            document.body.classList.add('printing-history');
+            window.print();
+            document.body.classList.remove('printing-history');
+        }
+
+        function loadHistoryFromDatabase() {
+            const izabraniDatum = document.getElementById('filterDatum').value;
+            if (!izabraniDatum) {
+                alert('Molimo izaberite datum.');
+                return;
+            }
+
+            fetch(WEB_APP_URL + "?action=getData")
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('historyTableBody');
+                    const container = document.getElementById('historyContainer');
+                    const title = document.getElementById('historyTitle');
+                    tbody.innerHTML = '';
+                    
+                    let pronadjeno = 0;
+
+                    if (!data || data.length <= 1) {
+                        container.style.display = 'none';
+                        alert('Baza je prazna.');
+                        return;
+                    }
+
+                    for (let i = 1; i < data.length; i++) {
+                        let red = data[i];
+                        if (!red || !red[0]) continue;
+
+                        let datumRedaStr = "";
+                        let parsedDate = new Date(red[0]);
+                        if (!isNaN(parsedDate.getTime())) {
+                            let year = parsedDate.getFullYear();
+                            let month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                            let day = String(parsedDate.getDate()).padStart(2, '0');
+                            datumRedaStr = `${year}-${month}-${day}`;
+                        } else {
+                            datumRedaStr = String(red[0]).split('T')[0];
+                        }
+
+                        if (datumRedaStr === izabraniDatum) {
+                            pronadjeno++;
+                            let tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${datumRedaStr}</td>
+                                <td>${red[1] || ''}</td>
+                                <td>${red[2] || ''}</td>
+                                <td>${red[4] || ''}</td>
+                                <td>${red[5] || ''}</td>
+                                <td>${red[6] || ''}</td>
+                                <td>${red[7] || ''}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        }
+                    }
+
+                    if (pronadjeno > 0) {
+                        title.innerText = "Evidencija za datum: " + izabraniDatum;
+                        container.style.display = 'block';
+                    } else {
+                        container.style.display = 'none';
+                        alert('Nema unosa za izabrani datum: ' + izabraniDatum);
+                    }
+                })
+                .catch(error => {
+                    console.error('Greška pri učitavanju:', error);
+                    alert('Došlo je do greške prilikom čitanja baze: ' + error.message);
+                });
+        }
+
+        document.getElementById('btnSubmitAll').addEventListener('click', function() {
+            const smena = document.getElementById('smena').value;
+            const datum = document.getElementById('datum').value;
+            const teamLeader = document.getElementById('teamLeader').value;
+            const pogonLokacija = document.getElementById('pogonLokacija').value;
+
+            if (!smena || !datum || !teamLeader || !pogonLokacija) {
+                alert('Molimo popunite opšte podatke smene!');
+                return;
+            }
+
+            if (viljuskariNiz.length === 0) {
+                alert('Morate dodati bar jednog viljuškaristu u listu pre čuvanja!');
+                return;
+            }
+            
+            // Skupljanje vrednosti iz radio dugmića ček-liste
+            const checklisteObjekt = {};
+            const radioButtons = document.querySelectorAll('input[type="radio"]:checked');
+            radioButtons.forEach(rb => {
+                if (rb.name.startsWith('c')) {
+                    checklisteObjekt[rb.name] = rb.value;
+                }
+            });
+
+            document.getElementById('loading').style.display = 'block';
+            
+            const payload = {
+                datum: datum,
+                smena: smena,
+                teamLeader: teamLeader,
+                pogonLokacija: pogonLokacija,
+                zapazanja: document.getElementById('zapazanja').value,
+                viljuskari: viljuskariNiz,
+                checkliste: checklisteObjekt
+            };
+
+            const formData = new FormData();
+            formData.append("data", JSON.stringify(payload));
+
+            fetch(WEB_APP_URL, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.text())
+            .then(result => {
+                document.getElementById('loading').style.display = 'none';
+                alert('Odgovor servera: ' + result);
+                if (result.trim() === "Success") {
+                    document.getElementById('mainForm').reset();
+                    document.getElementById('datum').valueAsDate = new Date();
+                    viljuskariNiz = [];
+                    osveziTabeluViljuskara();
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                alert('Došlo je do greške: ' + error.message);
+            });
+        });
+    </script>
+</body>
+</html>
