@@ -537,7 +537,6 @@
   .status-utoku{ color:var(--accent); background:rgba(255,199,44,0.12); border-color:rgba(255,199,44,0.3); }
   .status-zavrseno{ color:var(--green); background:rgba(95,184,122,0.12); border-color:rgba(95,184,122,0.3); }
 
-  /* Stilovi za Prioritet i redni broj */
   .priority-badge {
     display: inline-flex;
     align-items: center;
@@ -617,7 +616,6 @@
         <button type="button" class="btn btn-primary" id="openModalBtn">+ Nova najava</button>
     </div>
 
-    <!-- Statističke Kartice -->
     <div class="stats-grid">
         <div class="stat-card c-blue" onclick="setQuickFilter('najava_danas')">
             <div class="stat-value" id="statNajavaDanas">0</div>
@@ -641,7 +639,6 @@
         </div>
     </div>
 
-    <!-- Modalni prozor -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-container">
             <div class="modal-header">
@@ -1067,11 +1064,25 @@
             currentRow['Prioritet'] = maxP + 1;
         } else {
             currentRow['Prioritet'] = "";
+            
+            let activePriorities = [];
+            database.forEach(r => {
+                let p = parseInt(r['Prioritet'], 10);
+                if (!isNaN(p) && p > 0) activePriorities.push({ row: r, val: p });
+            });
+            
+            activePriorities.sort((a, b) => a.val - b.val);
+            activePriorities.forEach((item, idx) => {
+                item.row['Prioritet'] = idx + 1;
+            });
         }
 
         updateDashboardStats();
         renderTable();
-        saveRowChangesToServer(index);
+        
+        database.forEach((_, idx) => {
+            saveRowChangesToServer(idx);
+        });
     }
 
     function renderTable() {
@@ -1086,18 +1097,7 @@
 
         const visibleIndices = getFilteredIndices();
         
-        visibleIndices.sort((a, b) => {
-            let pA = parseInt(database[a]['Prioritet'], 10);
-            let pB = parseInt(database[b]['Prioritet'], 10);
-            let hasA = !isNaN(pA) && pA > 0;
-            let hasB = !isNaN(pB) && pB > 0;
-
-            if (hasA && hasB) return pA - pB;
-            if (hasA) return -1;
-            if (hasB) return 1;
-            return 0;
-        });
-
+        // Zadržavamo originalni redosled unosa u bazi (bez automatskog premeštanja na vrh)
         document.getElementById('filterCount').innerText = `${visibleIndices.length} od ${database.length} stavki`;
 
         if(visibleIndices.length === 0) {
@@ -1173,20 +1173,13 @@
             data: rowData
         };
 
-        showLoading("Ažuriranje podataka...");
         fetch(SCRIPT_URL, {
             method: 'POST',
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify(payload)
         })
-        .then(res => res.json())
-        .then(response => {
-            hideLoading();
-            loadDataFromSheets();
-        })
         .catch(err => {
             console.error("Greška pri ažuriranju:", err);
-            hideLoading();
         });
     }
 
