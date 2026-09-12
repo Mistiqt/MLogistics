@@ -438,7 +438,7 @@
     width:100%;
     border-collapse:collapse;
     font-size:13px;
-    min-width: 1150px;
+    min-width: 1200px;
   }
   thead th{
     text-align:left;
@@ -536,6 +536,31 @@
   .status-najavljen{ color:var(--amber); background:rgba(224,168,59,0.12); border-color:rgba(224,168,59,0.3); }
   .status-utoku{ color:var(--accent); background:rgba(255,199,44,0.12); border-color:rgba(255,199,44,0.3); }
   .status-zavrseno{ color:var(--green); background:rgba(95,184,122,0.12); border-color:rgba(95,184,122,0.3); }
+
+  /* Stilovi za Prioritet i redni broj */
+  .priority-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(226, 87, 76, 0.15);
+    border: 1px solid rgba(226, 87, 76, 0.4);
+    color: var(--red);
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .priority-badge:hover {
+    background: rgba(226, 87, 76, 0.3);
+  }
+  .priority-badge.active {
+    background: var(--red);
+    color: #fff;
+    border-color: var(--red);
+  }
 
   .empty-state{
     padding:70px 20px;
@@ -743,6 +768,7 @@
             <table class="data-table" id="logisticsTable">
                 <thead>
                     <tr>
+                        <th style="text-align: center; width: 70px;">Prioritet</th>
                         <th>Team Leader</th>
                         <th>Datum</th>
                         <th>Vreme</th>
@@ -826,6 +852,8 @@
                 if (Array.isArray(data)) {
                     database = data.map((row, idx) => ({
                         ...row,
+                        // Osiguravamo da prioritet polje postoji (prazan string ili broj)
+                        'Prioritet': row['Prioritet'] !== undefined ? row['Prioritet'] : '',
                         _sheetRow: idx + 4 
                     })).reverse(); 
                     
@@ -932,8 +960,6 @@
         if(!rowDateStr) return false;
         
         const todayStr = getLocalDateString();
-        
-        // Crveni se samo ako je datum unosa strogo manji od današnjeg lokalnog datuma (prošli dani)
         return rowDateStr < todayStr;
     }
 
@@ -1023,21 +1049,57 @@
         renderTable();
     }
 
+    // Funkcija za upravljanje prioritetom (klik na prioritet badge)
+    function togglePriority(index) {
+        let currentRow = database[index];
+        let currentPriority = currentRow['Prioritet'];
+
+        if (!currentPriority || currentPriority === "" || currentPriority === "0") {
+            // Pronađi najveći postojeći prioritet u bazi da bismo dodelili sledeći redni broj (1, 2, 3...)
+            let maxP = 0;
+            database.forEach(r => {
+                let p = parseInt(r['Prioritet'], 10);
+                if (!isNaN(p) && p > maxP) maxP = p;
+            });
+            currentRow['Prioritet'] = maxP + 1;
+        } else {
+            // Ako je već bio prioritetan, uklanjamo prioritet (vraćamo na prazno)
+            currentRow['Prioritet'] = "";
+        }
+
+        // Sačuvaj izmenu na serveru / Sheets-u
+        saveRowChangesToServer(index);
+    }
+
     function renderTable() {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
 
         if(!database || database.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Tabela je trenutno prazna.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Tabela je trenutno prazna.</td></tr>`;
             document.getElementById('filterCount').innerText = '';
             return;
         }
 
         const visibleIndices = getFilteredIndices();
+        
+        // Sortiramo prikaz tako da prioritetna vozila idu na vrh (po rednom broju prioriteta)
+        visibleIndices.sort((a, b) => {
+            let pA = parseInt(database[a]['Prioritet'], 10);
+            let pB = parseInt(database[b]['Prioritet'], 10);
+            let hasA = !isNaN(pA) && pA > 0;
+            let hasB = !isNaN(pB) && pB > 0;
+
+            if (hasA && hasB) return pA - pB;
+            if (hasA) return -1;
+            if (hasB) return 1;
+            return 0;
+        });
+
         document.getElementById('filterCount').innerText = `${visibleIndices.length} od ${database.length} stavki`;
 
         if(visibleIndices.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Nema unosa koji odgovaraju izabranim filterima.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" class="empty-state">Nema unosa koji odgovaraju izabranim filterima.</td></tr>`;
             return;
         }
 
@@ -1045,12 +1107,21 @@
             const row = database[index];
             const status = getStatus(row);
             const isOvr = isOverdue(row);
+            
+            let pVal = parseInt(row['Prioritet'], 10);
+            let hasPriority = !isNaN(pVal) && pVal > 0;
+
             const tr = document.createElement('tr');
             if(isOvr) {
                 tr.style.background = 'rgba(226, 87, 76, 0.07)';
             }
 
             tr.innerHTML = `
+                <td style="text-align: center;">
+                    <button type="button" class="priority-badge ${hasPriority ? 'active' : ''}" onclick="togglePriority(${index})" title="Klikni za dodelu/uklanjanje prioriteta">
+                        ${hasPriority ? '★ ' + pVal : '☆'}
+                    </button>
+                </td>
                 <td><span class="cell-primary">${row['Ime'] || ''} ${row['Prezime'] || ''}</span></td>
                 <td class="mono">${formatDate(row['Datum'])}</td>
                 <td class="mono">${formatTime(row['Vreme'])}</td>
@@ -1089,7 +1160,10 @@
     function updateRowStatus(index, newStatus) {
         database[index]['Status'] = newStatus;
         updateDashboardStats();
-        
+        saveRowChangesToServer(index);
+    }
+
+    function saveRowChangesToServer(index) {
         const rowData = database[index];
         const payload = {
             action: "update",
@@ -1097,7 +1171,7 @@
             data: rowData
         };
 
-        showLoading("Ažuriranje statusa...");
+        showLoading("Ažuriranje podataka...");
         fetch(SCRIPT_URL, {
             method: 'POST',
             headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -1109,7 +1183,7 @@
             loadDataFromSheets();
         })
         .catch(err => {
-            console.error("Greška pri ažuriranju statusa:", err);
+            console.error("Greška pri ažuriranju:", err);
             hideLoading();
         });
     }
@@ -1174,6 +1248,13 @@
     document.getElementById('logisticsForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
+        // Zadržavamo postojeći prioritet ako je u pitanju izmena, inače prazno za novu najavu
+        let existingPriority = "";
+        if (editSheetRow !== null) {
+            let found = database.find(r => r._sheetRow === editSheetRow);
+            if (found) existingPriority = found['Prioritet'] || "";
+        }
+
         const formData = {
             'Ime': document.getElementById('Ime').value,
             'Prezime': document.getElementById('Prezime').value,
@@ -1185,7 +1266,8 @@
             'Utovar/Istovar': document.getElementById('Utovar/Istovar').value,
             'Status': document.getElementById('Status').value,
             'Broj paleta': document.getElementById('Broj paleta').value,
-            'Tip robe': document.getElementById('Tip robe').value
+            'Tip robe': document.getElementById('Tip robe').value,
+            'Prioritet': existingPriority
         };
 
         let payload = {};
