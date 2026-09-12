@@ -2,38 +2,78 @@
 <html lang="sr">
 <head>
     <meta charset="UTF-8">
-    <title>Dnevni Popis - Google Sheets</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stellantis | Dnevni Popis</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 0; }
-        .main-header { background-color: #1a365d; color: white; padding: 20px; text-align: center; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .main-header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
-        .main-header p { margin: 5px 0 0; font-size: 13px; color: #cbd5e0; }
-        .container { max-width: 1200px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: auto; margin-bottom: 30px; }
-        .controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-end; background: #e9ecef; padding: 15px; border-radius: 6px; flex-wrap: wrap; }
-        .form-group { flex: 1; min-width: 250px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: #495057; font-size: 13px; }
-        select, input[type="text"], input[type="date"] { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; font-size: 14px; background: white; }
-        .btn-refresh-modern { 
-            background: #ffffff; border: 1px solid #cbd5e0; cursor: pointer; padding: 10px 16px; font-size: 13px; color: #2d3748; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s ease-in-out; height: 41px;
+        :root{
+            --bg:#0f1013;          /* Skroz tamna pozadina stranice */
+            --panel:#17191d;       /* Svetlija crna za kontejner */
+            --panel-2:#1e2025;     /* Za kontrole i tabele */
+            --panel-3:#26282d;     
+            --border:#2d3038;
+            --border-soft:#22242a;
+            --text:#eceef1;
+            --text-dim:#9a9ea6;
+            --brand:#1a3263;
+            --brand-2:#2a4a8a;
+            --brand-light:#6d9ae0;
+            --shadow:0 4px 20px rgba(0,0,0,0.5);
         }
-        .btn-refresh-modern:hover { background: #edf2f7; border-color: #a0aec0; color: #1a365d; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
-        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; font-size: 14px; vertical-align: middle; }
-        th { background-color: #343a40; color: white; text-align: center; }
-        .th-qty { text-align: center; background-color: #343a40; padding: 12px 10px; font-weight: bold; }
+
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; }
+
+        /* Skroz crni header */
+        .main-header { background-color: var(--panel); padding: 25px 0; border-bottom: 1px solid var(--border-soft); text-align: center; margin-bottom: 30px; }
+        .main-header h1 { margin: 0; font-size: 24px; letter-spacing: 3px; color: #fff; text-transform: uppercase; font-weight: 700; }
+        .main-header p { margin: 6px 0 0; font-size: 13px; color: var(--text-dim); }
+
+        /* Kontejner svetlije crne boje */
+        .container { max-width: 1360px; background: var(--panel); padding: 30px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid var(--border-soft); margin: auto; margin-bottom: 40px; }
+        
+        .controls { display: flex; gap: 15px; margin-bottom: 25px; align-items: flex-end; background: var(--panel-2); padding: 20px; border-radius: 8px; border: 1px solid var(--border-soft); flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 250px; }
+        
+        label { display: block; font-weight: 700; margin-bottom: 6px; color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        select, input[type="text"], input[type="date"] { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 14px; background: var(--panel); color: var(--text); }
+        select:focus, input:focus { background: var(--panel-3); border-color: var(--brand-light); outline: none; box-shadow: 0 0 0 3px rgba(109,154,224,0.18); }
+        input[type="date"] { color-scheme: dark; }
+
+        .btn-refresh-modern { 
+            background: var(--panel); border: 1px solid var(--border); cursor: pointer; padding: 10px 16px; font-size: 13px; color: var(--text); border-radius: 6px; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; transition: all 0.2s ease-in-out; height: 41px;
+        }
+        .btn-refresh-modern:hover { background: var(--panel-3); border-color: var(--brand-light); color: var(--brand-light); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: var(--panel-2); border-radius: 6px; overflow: hidden; }
+        th, td { border: 1px solid var(--border-soft); padding: 12px 15px; text-align: left; font-size: 14px; vertical-align: middle; color: var(--text); }
+        th { background-color: var(--panel-3); color: var(--brand-light); text-align: center; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+        .th-qty { text-align: center; background-color: var(--panel-3); padding: 12px 10px; font-weight: bold; }
         .qty-cell { text-align: center; }
-        .qty-input { width: 80px; padding: 8px; text-align: center; font-weight: bold; font-size: 16px; border: 2px solid #007bff; border-radius: 4px; display: inline-block; }
-        .qty-input:focus { background-color: #e8f4fd; outline: none; }
-        .btn-container { margin-top: 20px; text-align: right; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
-        button.action-btn { background-color: #28a745; color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button.action-btn:hover { background-color: #218838; }
-        .btn-sync { background-color: #007bff; }
-        .btn-sync:hover { background-color: #0056b3; }
-        .btn-reset { background-color: #dc3545; }
-        .btn-reset:hover { background-color: #c82333; }
-        .center { text-align: center; }
-        #loading { display: none; color: #007bff; font-weight: bold; font-size: 14px; align-self: center; height: 41px; line-height: 41px; margin-left: 5px; }
+        
+        .qty-input { width: 90px; padding: 8px; text-align: center; font-weight: bold; font-size: 16px; border: 2px solid var(--brand-2); border-radius: 6px; display: inline-block; background: var(--panel); color: var(--text); }
+        .qty-input:focus { background-color: var(--panel-3); border-color: var(--brand-light); outline: none; box-shadow: 0 0 0 3px rgba(109,154,224,0.18); }
+
+        .btn-container { margin-top: 25px; text-align: right; display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+        
+        button.action-btn { background-color: var(--brand); color: white; border: none; padding: 12px 24px; font-size: 14px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+        button.action-btn:hover { background-color: var(--brand-2); }
+        
+        .btn-sync { background-color: #2e9c4e; }
+        .btn-sync:hover { background-color: #257d3e; }
+        
+        .btn-reset { background-color: transparent; color: #f08890; border: 1px solid rgba(240,136,144,0.4); }
+        .btn-reset:hover { background: rgba(220,53,69,0.15); color: #f08890; }
+
+        .btn-excel { background-color: var(--panel-3); color: var(--text); border: 1px solid var(--border); }
+        .btn-excel:hover { background: var(--border); color: #fff; }
+
+        .center { text-align: center; color: var(--text-dim); }
+        #loading { display: none; color: var(--brand-light); font-weight: 600; font-size: 13px; align-self: center; height: 41px; line-height: 41px; margin-left: 5px; }
+        
+        tr:hover td { background-color: rgba(255, 255, 255, 0.01); }
     </style>
 </head>
 <body>
@@ -76,7 +116,7 @@
                 <option value="Boje">Boje</option>
             </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="flex: 0.6; min-width: 180px;">
             <label for="datum_popisa">Datum Popisa:</label>
             <input type="date" id="datum_popisa">
         </div>
@@ -111,8 +151,8 @@
 
     <div class="btn-container">
         <button class="action-btn btn-reset" onclick="resetujKolicine()">Resetuj količine</button>
+        <button class="action-btn btn-excel" onclick="izveziUExcel()">Izvezi u Excel</button>
         <button class="action-btn btn-sync" onclick="sacuvajUGoggleSheet()">Sačuvaj u Google Sheets</button>
-        <button class="action-btn" onclick="izveziUExcel()">Izvezi u Excel</button>
     </div>
 </div>
 
@@ -132,14 +172,14 @@
             let data = await response.json();
             
             if (data.error) {
-                tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:red;">Greška: ${data.error}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:#f08890;">Greška: ${data.error}</td></tr>`;
                 return;
             }
 
             prikaziTabelu(data);
         } catch (error) {
             console.error("Greška pri učitavanju:", error);
-            tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:red;">Greška pri povezivanju sa Google Sheets! Proverite URL.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:#f08890;">Greška pri povezivanju sa Google Sheets! Proverite URL.</td></tr>`;
         } finally {
             loading.style.display = "none";
         }
@@ -178,7 +218,6 @@
         inputs.forEach(input => {
             let partNum = String(input.getAttribute('data-part')).trim();
             let val = input.value;
-            // Šaljemo vrednost (bilo unet broj ili prazno string polje da se obriše u sheet-u)
             updates[partNum] = val !== "" ? Number(val) : "";
         });
 
@@ -210,9 +249,9 @@
     }
 
     function resetujKolicine() {
-    if (!confirm("Da li ste sigurni da želite da resetujete sve količine na 0?")) return;
-    document.querySelectorAll('.qty-input').forEach(input => input.value = "0");
-}
+        if (!confirm("Da li ste sigurni da želite da resetujete sve količine na 0?")) return;
+        document.querySelectorAll('.qty-input').forEach(input => input.value = "0");
+    }
 
     function izveziUExcel() {
         if (!confirm("Da li ste sigurni da želite da izvezete podatke u Excel?")) return;
