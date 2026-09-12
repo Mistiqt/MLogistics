@@ -141,7 +141,8 @@
             .slider-wrapper { height: 250px !important; }
             .login-card { margin: 15px; }
             .brand-logo { font-size: 20px; letter-spacing: 3px; }
-            .logout-wrapper { position: relative; top: 0; right: 0; transform: none; margin-top: 10px; }
+            /* Izmenjeno ovde: zadržavamo poziciju desno i na mobilnom ekranu, prilagođavamo razmake */
+            .logout-wrapper { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); margin-top: 0; }
             .custom-container { padding: 0 10px; }
         }
     </style>
@@ -476,63 +477,67 @@
             showLoading(true);
             
             if (brisiSliku) {
-                posaljiIzmenu(id, "DELETE", komentar);
+                posaljiIzmenu(id, "", komentar, true);
             } else if (fileInput.files && fileInput.files.length > 0) {
                 resizeImage(fileInput.files[0], (dataURL) => {
-                    posaljiIzmenu(id, dataURL, komentar);
+                    posaljiIzmenu(id, dataURL, komentar, false);
                 });
             } else {
-                posaljiIzmenu(id, "", komentar);
+                posaljiIzmenu(id, null, komentar, false);
             }
         }
 
-        function posaljiIzmenu(id, dataURL, komentar) {
-            const payload = { akcija: "izmeni", id: id, dokaz: dataURL, komentar: komentar, user: loggedUser };
-            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
+        function posaljiIzmenu(id, slikaDokaza, komentar, brisiSliku) {
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    akcija: "zavrsiObjavu",
+                    id: id,
+                    komentar: komentar,
+                    dokaz: slikaDokaza,
+                    brisiSliku: brisiSliku,
+                    user: loggedUser
+                })
+            })
             .then(res => res.json())
-            .then(() => {
-                alert("Izmena poslata!");
+            .then(data => {
                 showLoading(false);
-                isEditing = ""; 
-                ucitajSveObjaveSaGoogleTabele();
-            }).catch(err => { showLoading(false); alert("Greška pri slanju."); });
-        }
-
-        function obrisiObjavu(id) { 
-            if(confirm("Obriši i arhiviraj?")) { 
-                showLoading(true); 
-                fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ akcija: "obrisi", id: id, user: loggedUser }) })
-                .then(() => { setTimeout(() => { isEditing = ""; ucitajSveObjaveSaGoogleTabele(); showLoading(false); }, 2000); });
-            } 
-        }
-        
-        document.getElementById('secureAdminForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            showLoading(true);
-            const fileInput = document.getElementById('newFile');
-            resizeImage(fileInput.files[0], (dataURL) => {
-                fetch(GOOGLE_SCRIPT_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ 
-                        akcija: "dodaj", 
-                        id: Date.now().toString(), 
-                        user: loggedUser, 
-                        naslov: document.getElementById('newTitle').value, 
-                        mesto: document.getElementById('newLocation').value, 
-                        datum: document.getElementById('newDate').value, 
-                        smena: document.getElementById('newShift').value, 
-                        leader: document.getElementById('newLeader').value, 
-                        tekst: document.getElementById('newText').value, 
-                        slika: dataURL 
-                    }) 
-                }).then(() => {
-                    setTimeout(() => { ucitajSveObjaveSaGoogleTabele(); showLoading(false); document.getElementById('secureAdminForm').reset(); }, 2000);
-                });
+                isEditing = "";
+                ucitajSveObjaveSaGoogleTabele(true);
+            })
+            .catch(err => {
+                showLoading(false);
+                alert("Greška prilikom čuvanja.");
+                isEditing = "";
+                ucitajSveObjaveSaGoogleTabele(true);
             });
-        });
+        }
 
-        function zoomImage(i) { document.getElementById('lightboxImg').src = i.src; document.getElementById('imageLightbox').classList.add('active'); }
-        function closeZoom() { document.getElementById('imageLightbox').classList.remove('active'); }
+        function obrisiObjavu(id) {
+            if(confirm("Da li ste sigurni da želite da obrišete ovu objavu?")) {
+                showLoading(true);
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ akcija: "obrisiObjavu", id: id, user: loggedUser })
+                })
+                .then(res => res.json())
+                .then(() => {
+                    showLoading(false);
+                    ucitajSveObjaveSaGoogleTabele(true);
+                });
+            }
+        }
+
+        function zoomImage(imgElement) {
+            const modal = document.getElementById('imageLightbox');
+            const modalImg = document.getElementById('lightboxImg');
+            modalImg.src = imgElement.src;
+            modal.classList.add('active');
+        }
+
+        function closeZoom() {
+            document.getElementById('imageLightbox').classList.remove('active');
+        }
     </script>
 </body>
 </html>
