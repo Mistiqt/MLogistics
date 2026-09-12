@@ -13,71 +13,130 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
+        :root{
+            --bg:#0f1013;
+            --panel:#1a1c20;
+            --panel-2:#212327;
+            --panel-3:#26282d;
+            --border:#33353b;
+            --border-soft:#292b30;
+            --text:#eceef1;
+            --text-dim:#9a9ea6;
+            --text-faint:#6c6f76;
+            --brand:#1a3263;
+            --brand-2:#2a4a8a;
+            --brand-light:#6d9ae0;
+            --shadow:0 4px 18px rgba(0,0,0,0.35);
+        }
         html { scroll-behavior: smooth; }
-        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; color: #111111; margin: 0; padding: 0; }
-        #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1a3263; }
-        .login-card { background: #ffffff; padding: 40px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); width: 100%; max-width: 400px; }
-        .login-logo { font-weight: 700; font-size: 24px; letter-spacing: 6px; text-transform: uppercase; text-align: center; margin-bottom: 30px; color: #1a3263; }
-        .login-btn { background: #1a3263; color: #fff; border-radius: 8px; font-weight: 500; padding: 12px; border: none; width: 100%; cursor: pointer; transition: background 0.2s; }
-        .login-btn:hover { background: #12244a; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; }
+
+        #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(160deg, #101a30 0%, var(--brand) 100%); }
+        .login-card { background: var(--panel); padding: 40px; border-radius: 16px; box-shadow: var(--shadow); width: 100%; max-width: 400px; border: 1px solid var(--border-soft); }
+        .login-logo { font-weight: 700; font-size: 24px; letter-spacing: 6px; text-transform: uppercase; text-align: center; margin-bottom: 30px; color: var(--brand-light); }
+        .login-btn { background: var(--brand); color: #fff; border-radius: 8px; font-weight: 500; padding: 12px; border: none; width: 100%; cursor: pointer; transition: background 0.2s; }
+        .login-btn:hover { background: var(--brand-2); }
+
         #mainPortal { display: none; }
         .custom-container { max-width: 1360px; margin: 0 auto; padding: 0 15px; width: 100%; }
-        .header-clean { background-color: #ffffff; padding: 25px 0; border-bottom: 1px solid #eaeaea; position: relative; }
-        .brand-logo { font-weight: 700; font-size: 26px; letter-spacing: 7px; color: #1a3263; text-transform: uppercase; text-align: center; width: 100%; }
+
+        .header-clean { background-color: var(--panel); padding: 25px 0; border-bottom: 1px solid var(--border-soft); position: relative; }
+        .brand-logo { font-weight: 700; font-size: 26px; letter-spacing: 7px; color: var(--brand-light); text-transform: uppercase; text-align: center; width: 100%; }
         .logout-wrapper { position: absolute; right: 30px; top: 50%; transform: translateY(-50%); }
+
         .nav-clean-tabs { margin-top: 25px; display: flex; justify-content: center; align-items: center; gap: 15px; position: relative; flex-wrap: wrap; }
-        .nav-tab-item { display: inline-block; background: #ffffff; border: 1px solid #e5e5e5; padding: 12px 28px; border-radius: 30px; font-weight: 500; color: #555555 !important; text-decoration: none !important; transition: all 0.2s; cursor: pointer; line-height: 1.2; }
-        .nav-tab-item:hover { background: #1a3263; color: #ffffff !important; border-color: #1a3263; }
-        .counter-box { background: #fff; border: 1px solid #e5e5e5; padding: 10px 20px; border-radius: 30px; display: flex; gap: 20px; align-items: center; }
+        .nav-tab-item { display: inline-block; background: var(--panel); border: 1px solid var(--border); padding: 12px 28px; border-radius: 30px; font-weight: 500; color: var(--text-dim) !important; text-decoration: none !important; transition: all 0.2s; cursor: pointer; line-height: 1.2; }
+        .nav-tab-item:hover { background: var(--brand); color: #ffffff !important; border-color: var(--brand); }
+
+        .counter-box { background: var(--panel); border: 1px solid var(--border); padding: 10px 20px; border-radius: 30px; display: flex; gap: 20px; align-items: center; }
         .counter-item { text-align: center; cursor: pointer; }
-        .counter-label { font-size: 9px; font-weight: 700; color: #1a3263; text-transform: uppercase; }
-        .counter-value { font-size: 18px; font-weight: 700; color: #333; }
-        .btn-next { font-size: 10px; padding: 2px 8px; margin-top: 5px; background: #1a3263; color: white; border: none; border-radius: 4px; }
+        .counter-label { font-size: 9px; font-weight: 700; color: var(--brand-light); text-transform: uppercase; }
+        .counter-value { font-size: 18px; font-weight: 700; color: var(--text); }
+        .btn-next { font-size: 10px; padding: 2px 8px; margin-top: 5px; background: var(--brand); color: white; border: none; border-radius: 4px; }
+
         .dropdown { position: relative; display: inline-block; }
-        .dropdown-menu { display: none; position: absolute; background-color: #ffffff; min-width: 260px; box-shadow: 0px 8px 24px rgba(0,0,0,0.12); border-radius: 12px; border: 1px solid #eaeaea; z-index: 1050; left: 50%; transform: translateX(-50%); padding: 8px 0; top: 100%; margin-top: 0px; }
+        .dropdown-menu { display: none; position: absolute; background-color: var(--panel); min-width: 260px; box-shadow: var(--shadow); border-radius: 12px; border: 1px solid var(--border-soft); z-index: 1050; left: 50%; transform: translateX(-50%); padding: 8px 0; top: 100%; margin-top: 0px; }
         .dropdown:hover .dropdown-menu { display: block; }
-        .dropdown-item { color: #333333 !important; padding: 12px 20px; text-decoration: none !important; display: block; font-size: 14px; font-weight: 500; transition: background 0.2s; cursor: pointer; }
-        .dropdown-item:hover { background-color: #f1f5f9; color: #1a3263 !important; }
+        .dropdown-item { color: var(--text) !important; padding: 12px 20px; text-decoration: none !important; display: block; font-size: 14px; font-weight: 500; transition: background 0.2s; cursor: pointer; }
+        .dropdown-item:hover { background-color: var(--panel-3); color: var(--brand-light) !important; }
+
         .slider-section { margin-top: 35px; }
-        .slider-wrapper { background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid #eaeaea; position: relative; height: 620px; }
+        .slider-wrapper { background: var(--panel); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border-soft); position: relative; height: 620px; }
         .custom-slider-inner { display: flex; width: 300%; height: 100%; transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1); }
         .custom-slide { width: 33.3333%; height: 100%; }
         .custom-slide img { width: 100%; height: 100%; object-fit: cover; }
+
         .content-section { margin-top: 40px; }
-        .section-heading { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #1a3263; display: flex; align-items: center; justify-content: space-between; }
-        .clean-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 12px; padding: 25px; }
+        .section-heading { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--brand-light); display: flex; align-items: center; justify-content: space-between; }
+
+        .clean-card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 12px; padding: 25px; }
         .clean-card .form-group { margin-bottom: 18px; display: block; width: 100%; }
-        .clean-card label { display: block !important; width: 100% !important; text-align: left !important; margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #4a5568; text-transform: uppercase; }
-        .clean-card .form-control, .clean-card select, .clean-card textarea { display: block !important; width: 100% !important; height: auto; padding: 10px 14px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        .clean-card label { display: block !important; width: 100% !important; text-align: left !important; margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; }
+        .clean-card .form-control, .clean-card select, .clean-card textarea { display: block !important; width: 100% !important; height: auto; padding: 10px 14px; font-size: 14px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
+
+        /* dark overrides for bootstrap form controls used anywhere on the page (login, admin form, dynamic edit fields) */
+        .form-control, textarea.form-control, select.form-control, .form-control-file {
+            background-color: var(--panel-2) !important;
+            color: var(--text) !important;
+            border-color: var(--border) !important;
+        }
+        .form-control::placeholder { color: var(--text-faint) !important; opacity: 1; }
+        .form-control:focus, .clean-card .form-control:focus {
+            background-color: var(--panel-3) !important;
+            color: var(--text) !important;
+            border-color: var(--brand-light) !important;
+            box-shadow: 0 0 0 3px rgba(109,154,224,0.18) !important;
+        }
+        input[type="date"], input[type="password"], input[type="text"], input[type="file"] { color-scheme: dark; }
+
         #adminPanelBox { display: none; }
-        .btn-stellantis { background: #1a3263; color: #fff; font-weight: 600; transition: background 0.2s; }
-        .btn-stellantis:hover { background: #12244a; color: #fff; }
-        .announcement-card { background: #ffffff; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden; margin-bottom: 20px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.01); }
+        .btn-stellantis { background: var(--brand); color: #fff; font-weight: 600; transition: background 0.2s; }
+        .btn-stellantis:hover { background: var(--brand-2); color: #fff; }
+
+        .btn-outline-danger { color: #f08890; border-color: rgba(240,136,144,0.5); }
+        .btn-outline-danger:hover { background: rgba(220,53,69,0.15); color: #f08890; }
+        .btn-outline-primary { color: var(--brand-light); border-color: rgba(109,154,224,0.5); }
+        .btn-outline-primary:hover { background: rgba(109,154,224,0.15); color: var(--brand-light); }
+        .btn-outline-secondary { color: var(--text-dim); border-color: var(--border); }
+        .btn-outline-secondary:hover { background: var(--panel-3); color: var(--text); }
+
+        .announcement-card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 12px; overflow: hidden; margin-bottom: 20px; position: relative; box-shadow: var(--shadow); }
         .announcement-img { height: 190px; object-fit: cover; width: 100%; cursor: zoom-in; transition: opacity 0.2s; }
         .announcement-img:hover { opacity: 0.9; }
-        .post-meta-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; padding-top: 12px; border-top: 1px solid #f1f1f1; }
-        .meta-tag { font-size: 11px; font-weight: 500; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .meta-tag-date { background: #fdf2f8; color: #db2777; }
-        .meta-tag-shift { background: #fef3c7; color: #d97706; }
-        .meta-tag-leader { background: #e0f2fe; color: #0284c7; }
-        .delete-btn { position: absolute; top: 10px; right: 10px; background: #dc3545; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; z-index: 99; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+        .post-meta-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; padding-top: 12px; border-top: 1px solid var(--border-soft); }
+        .meta-tag { font-size: 11px; font-weight: 500; background: var(--panel-3); color: var(--text-dim); padding: 4px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .meta-tag-date { background: rgba(219,39,119,0.14); color: #f472b6; }
+        .meta-tag-shift { background: rgba(217,119,6,0.16); color: #e0a83b; }
+        .meta-tag-leader { background: rgba(2,132,199,0.16); color: #5eb8ea; }
+
+        .delete-btn { position: absolute; top: 10px; right: 10px; background: #dc3545; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; z-index: 99; box-shadow: 0 2px 8px rgba(0,0,0,0.35); }
         .delete-btn:hover { background: #bd2130; }
-        .user-action-section { margin-top: 15px; padding: 12px; border-top: 1px solid #eee; background: #f8f9fa; border-radius: 8px; }
+
+        .user-action-section { margin-top: 15px; padding: 12px; border-top: 1px solid var(--border-soft); background: var(--panel-2); border-radius: 8px; }
         .edit-fields { display: none; margin-top: 10px; }
-        .btn-zavrseno { background: #28a745; color: #fff; width: 100%; border: none; padding: 8px; border-radius: 6px; font-weight: 600; font-size: 13px; margin-top: 10px; cursor: pointer; }
-        .btn-zavrseno:disabled { background: #ccc; cursor: not-allowed; }
-        .btn-obrisi-sliku { background: #6c757d; color: #fff; width: 100%; border: none; padding: 8px; border-radius: 6px; font-weight: 600; font-size: 13px; margin-top: 5px; cursor: pointer; }
-        .image-lightbox-overlay { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(26, 50, 99, 0.95); align-items: center; justify-content: center; cursor: zoom-out; opacity: 0; transition: opacity 0.3s ease; }
+        .btn-zavrseno { background: #2e9c4e; color: #fff; width: 100%; border: none; padding: 8px; border-radius: 6px; font-weight: 600; font-size: 13px; margin-top: 10px; cursor: pointer; }
+        .btn-zavrseno:disabled { background: #3a3d42; color: var(--text-faint); cursor: not-allowed; }
+        .btn-obrisi-sliku { background: #565c66; color: #fff; width: 100%; border: none; padding: 8px; border-radius: 6px; font-weight: 600; font-size: 13px; margin-top: 5px; cursor: pointer; }
+
+        .image-lightbox-overlay { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(6, 10, 20, 0.95); align-items: center; justify-content: center; cursor: zoom-out; opacity: 0; transition: opacity 0.3s ease; }
         .image-lightbox-overlay.active { display: flex; opacity: 1; }
         .lightbox-img { max-width: 90%; max-height: 90%; border-radius: 8px; transform: scale(0.95); transition: transform 0.3s ease; }
         .image-lightbox-overlay.active .lightbox-img { transform: scale(1); }
-        .loading-spinner { text-align: center; width: 100%; padding: 30px; font-size: 16px; color: #666; }
-        .global-loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 10000; align-items: center; justify-content: center; font-weight: 600; color: #1a3263; font-size: 18px; }
-        footer { margin-top: 60px; padding: 25px 0; border-top: 1px solid #eaeaea; text-align: center; font-size: 13px; color: #888; }
-        .komentar-prikaz { background: #e0f2f1; padding: 10px; border-radius: 8px; font-size: 13px; margin-top: 10px; color: #00695c; border-left: 4px solid #00695c; }
-        .badge-zavrseno { background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-left: 10px; }
-        .badge-nije-zavrseno { background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-left: 10px; }
+
+        .loading-spinner { text-align: center; width: 100%; padding: 30px; font-size: 16px; color: var(--text-dim); }
+        .global-loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,16,19,0.92); z-index: 10000; align-items: center; justify-content: center; font-weight: 600; color: var(--brand-light); font-size: 18px; }
+
+        footer { margin-top: 60px; padding: 25px 0; border-top: 1px solid var(--border-soft); text-align: center; font-size: 13px; color: var(--text-faint); }
+
+        .komentar-prikaz { background: rgba(0,150,136,0.14); padding: 10px; border-radius: 8px; font-size: 13px; margin-top: 10px; color: #4fd1c5; border-left: 4px solid #4fd1c5; }
+        .badge-zavrseno { background: #2e9c4e; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-left: 10px; }
+        .badge-nije-zavrseno { background: #c23a34; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-left: 10px; }
         .btn-refresh { font-size: 12px; padding: 5px 15px; cursor: pointer; }
+
+        .text-muted { color: var(--text-faint) !important; }
+        h5, h3, .font-weight-bold { color: var(--text); }
+
         @media (max-width: 768px) {
             .nav-clean-tabs { flex-wrap: wrap; gap: 8px; }
             .slider-wrapper { height: 250px !important; }
@@ -124,6 +183,13 @@
                         <a class="dropdown-item" href="magacin-prijem.html" target="_blank">Utovar-Istovar</a>
                         <a class="dropdown-item" href="truck-announcement/truck-login.html" target="_blank">Najava i praćenje kamiona</a>
                         <a class="dropdown-item" href="check_list.html" target="_blank">Ček-lista viljuškara</a>
+                    </div>
+                </div>
+                <div class="dropdown" id="navPopis">
+                    <a class="nav-tab-item">Popis ▾</a>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="popis.html" target="_blank">Popis - Evidencija</a>
+                        <a class="dropdown-item" href="popis_dnevni.html" target="_blank">Dnevni Popis</a>
                     </div>
                 </div>
                 <a href="https://logimind.net" target="_blank" class="nav-tab-item" id="navStillServis">STILL-Servis</a>
@@ -324,6 +390,7 @@
                         const isMasterAdmin = (userRole === 'MASTER' || userRole === 'ADMIN');
                         
                         document.getElementById('navTransport').style.display = isGuest ? 'none' : 'inline-block';
+                        document.getElementById('navPopis').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navTimeSheet').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navStillServis').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navZaposleni').style.display = isMasterAdmin ? 'inline-block' : 'none';
