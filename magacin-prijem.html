@@ -1,403 +1,718 @@
 <!DOCTYPE html>
-<html lang="bs">
+<html lang="sr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem za Praćenje Utovara i Istovara</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evidencija utovara i istovara — Kontrola dokova</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14161a;
+    --bg-2:#0f1114;
+    --panel:#1e2126;
+    --panel-2:#262a30;
+    --panel-3:#2c3037;
+    --border:#383d45;
+    --border-soft:#2a2e34;
+    --text:#eae7e0;
+    --text-dim:#9aa0aa;
+    --text-faint:#6b7178;
+    --accent:#ffc72c;
+    --accent-ink:#1a1500;
+    --accent-dim:#8a6e10;
+    --blue:#5b9bd5;
+    --teal:#4fb3a0;
+    --green:#5fb87a;
+    --amber:#e0a83b;
+    --red:#e2574c;
+    --radius-s:3px;
+    --radius-m:6px;
+    --shadow-panel: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px rgba(0,0,0,0.35);
+  }
 
-        body {
-            background-color: #f4f6f9;
-            color: #333;
-            padding: 20px;
-        }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 15% -10%, rgba(255,199,44,0.05), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    font-size:15px;
+    line-height:1.5;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+  ::selection{ background:var(--accent); color:var(--accent-ink); }
+  a{ color:inherit; }
 
-        header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            text-align: center;
-        }
+  .wrap{
+    max-width:1480px;
+    margin:0 auto;
+    padding:0 28px 64px;
+    position:relative;
+  }
 
-        header h1 {
-            font-size: 24px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
+  header.top{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%),
+      var(--bg-2);
+    border-bottom:1px solid var(--border-soft);
+    padding:26px 28px 0;
+    margin-bottom:28px;
+  }
+  .top-inner{
+    max-width:1480px;
+    margin:0 auto;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    flex-wrap:wrap;
+    padding-bottom:22px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .brand-mark{
+    width:44px;height:44px;
+    border-radius:var(--radius-s);
+    background:
+      repeating-linear-gradient(135deg, var(--accent-ink) 0 6px, var(--accent) 6px 12px);
+    flex:none;
+    position:relative;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
+  }
+  .brand-text h1{
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:23px;
+    letter-spacing:0.2px;
+    margin:0;
+    color:#fff;
+  }
+  .brand-text .sub{
+    font-size:12.5px;
+    color:var(--text-dim);
+    margin-top:2px;
+  }
 
-        header p {
-            font-size: 14px;
-            opacity: 0.8;
-            margin-top: 5px;
-        }
+  .top-right{
+    display:flex;
+    align-items:center;
+    gap:18px;
+  }
+  .clock-block{
+    text-align:right;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .clock-time{
+    font-size:22px;
+    font-weight:600;
+    color:var(--accent);
+    letter-spacing:0.5px;
+  }
+  .clock-date{
+    font-size:11.5px;
+    color:var(--text-dim);
+    margin-top:1px;
+    text-transform:capitalize;
+  }
 
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-            position: relative;
-        }
+  .btn{
+    appearance:none;
+    border:1px solid var(--border);
+    background:var(--panel-2);
+    color:var(--text);
+    padding:10px 16px;
+    border-radius:var(--radius-s);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, transform .05s ease;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+  }
+  .btn:hover{ background:var(--panel-3); border-color:#454a52; }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{
+    background:var(--accent);
+    color:var(--accent-ink);
+    border-color:var(--accent);
+  }
+  .btn-primary:hover{ background:#ffd35c; }
+  .btn-ghost{
+    background:transparent;
+    border-color:var(--border-soft);
+    color:var(--text-dim);
+  }
+  .btn-ghost:hover{ color:var(--text); background:var(--panel); }
+  .btn-danger{
+    background:transparent;
+    border-color:rgba(226,87,76,0.4);
+    color:var(--red);
+  }
+  .btn-danger:hover{ background:rgba(226,87,76,0.1); }
+  .btn-warning{
+    background:transparent;
+    border-color:rgba(224,168,59,0.4);
+    color:var(--amber);
+  }
+  .btn-warning:hover{ background:rgba(224,168,59,0.1); }
+  .btn-sm{ padding:6px 12px; font-size:12px; }
 
-        .card-title {
-            font-size: 18px;
-            margin-bottom: 20px;
-            color: #1e3c72;
-            border-bottom: 2px solid #eef2f5;
-            padding-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+  .row-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  .btn-icon {
+    background: var(--panel-3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-s);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-icon:hover {
+    background: var(--border);
+    border-color: var(--text-dim);
+    color: #fff;
+  }
+  .btn-icon-del {
+    background: rgba(226,87,76,0.15);
+    border-color: rgba(226,87,76,0.4);
+    color: var(--red);
+  }
+  .btn-icon-del:hover {
+    background: rgba(226,87,76,0.3);
+    border-color: var(--red);
+    color: var(--red);
+  }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-        }
+  .action-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    padding: 16px 24px;
+    border-radius: var(--radius-m);
+    box-shadow: var(--shadow-panel);
+  }
+  .action-header-bar h2 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    margin: 0;
+    color: #fff;
+    font-weight: 500;
+  }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-m);
+    padding: 16px 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-panel);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .stat-card:hover {
+    border-color: var(--border);
+    transform: translateY(-2px);
+  }
+  .stat-card.active-filter {
+    border-color: var(--accent);
+    background: var(--panel-2);
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+  }
+  .stat-card.c-blue::before { background: var(--blue); }
+  .stat-card.c-amber::before { background: var(--amber); }
+  .stat-card.c-teal::before { background: var(--teal); }
+  .stat-card.c-green::before { background: var(--green); }
+  .stat-card.c-red::before { background: var(--red); }
 
-        .form-group label {
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-            color: #555;
-        }
+  .stat-value {
+    font-family: 'Oswald', sans-serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
 
-        .group-tl label { color: #d48806; }
-        .group-ts label { color: #389e0d; }
-        .group-dk label { color: #096dd9; }
-        .group-km label { color: #0050b3; }
-        .group-ddt label { color: #d46b08; }
-        .group-ui label { color: #531dab; }
-        .group-p label { color: #237804; }
-        .group-tr label { color: #08979c; }
-        .group-st label { color: #006064; }
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(10, 12, 15, 0.6);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex !important; }
+  .modal-container {
+    background: #181b20;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.8);
+    position: relative;
+    z-index: 100000;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .modal-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+  }
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background 0.1s, color 0.1s;
+  }
+  .modal-close:hover { background: var(--panel-2); color: #fff; }
+  .modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: #14161a;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
 
-        .form-group input, .form-group select {
-            padding: 10px 12px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: all 0.3s;
-            background-color: #fcfcfc;
-        }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius-m);
+    padding:24px;
+    margin-bottom:26px;
+    box-shadow:var(--shadow-panel);
+    position:relative;
+  }
+  .card-title{
+    font-family:'Oswald', sans-serif;
+    font-size:18px;
+    font-weight:500;
+    margin-bottom:20px;
+    color:#fff;
+    border-bottom:1px solid var(--border-soft);
+    padding-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
 
-        .form-group input:focus, .form-group select:focus {
-            border-color: #1e3c72;
-            box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
-            outline: none;
-            background-color: #fff;
-        }
+  .form-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+    gap:16px;
+  }
+  .form-group{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .form-group label{
+    font-size:11px;
+    font-weight:600;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+  input, select{
+    font-family:'IBM Plex Sans', sans-serif;
+    background:var(--bg-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:var(--radius-s);
+    font-size:13.5px;
+    outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  input::placeholder{ color:var(--text-faint); }
+  input:focus, select:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(255,199,44,0.15);
+  }
 
-        .actions-bar {
-            display: flex;
-            justify-content: flex-end;
-            gap: 15px;
-            margin-top: 25px;
-            padding-top: 15px;
-            border-top: 1px solid #eef2f5;
-        }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(2);
+    cursor: pointer;
+  }
 
-        .btn {
-            padding: 11px 22px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+    padding:14px 16px;
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius-m);
+  }
+  .filter-field{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .filter-field label{
+    font-size:10.5px;
+    color:var(--text-faint);
+    text-transform:uppercase;
+  }
+  .search-box{ min-width:220px; }
 
-        .btn-primary { background-color: #1e3c72; color: white; }
-        .btn-primary:hover { background-color: #152b52; }
-        .btn-success { background-color: #2e7d32; color: white; }
-        .btn-success:hover { background-color: #1b5e20; }
-        .btn-danger { background-color: #d32f2f; color: white; }
-        .btn-danger:hover { background-color: #c62828; }
-        .btn-warning { background-color: #e26b0a; color: white; }
-        .btn-warning:hover { background-color: #b85406; }
-        .btn-info { background-color: #007bff; color: white; }
-        .btn-info:hover { background-color: #0069d9; }
-        .btn-outline-clean { background-color: #fff; color: #555; border: 1px solid #ccc; }
-        .btn-outline-clean:hover { background-color: #f1f5f9; }
+  .table-wrap{
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius-m);
+    overflow-x: auto;
+    box-shadow:var(--shadow-panel);
+    width: 100%;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+    min-width: 1150px;
+  }
+  thead th{
+    text-align:left;
+    font-size:11px;
+    font-weight:600;
+    color:var(--text-faint);
+    padding:12px 14px;
+    border-bottom:1px solid var(--border-soft);
+    background:var(--bg-2);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:12px 14px;
+    border-bottom:1px solid var(--border-soft);
+    vertical-align:middle;
+    color:var(--text);
+  }
+  tbody tr{ transition:background .12s ease; }
+  tbody tr:hover{ background:rgba(255,255,255,0.02); }
+  tbody tr:last-child td{ border-bottom:none; }
 
-        /* ---------- filter bar ---------- */
-        .filter-bar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-end;
-            gap: 16px;
-            padding: 16px 18px;
-            background: #f8fafc;
-            border: 1px solid #e5e9ee;
-            border-radius: 8px;
-            margin-bottom: 18px;
-        }
-        .filter-field { display: flex; flex-direction: column; gap: 6px; }
-        .filter-field label {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #555;
-        }
-        .filter-field input, .filter-field select {
-            padding: 8px 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 13px;
-            background: #fff;
-            min-width: 150px;
-        }
-        .filter-count { margin-left: auto; font-size: 13px; color: #666; align-self: center; }
+  .data-table th:last-child,
+  .data-table td:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    box-shadow: -4px 0 8px rgba(0,0,0,0.3);
+  }
+  .data-table td:last-child {
+    background: var(--panel);
+  }
+  tbody tr:hover td:last-child {
+    background: #23272d;
+  }
+  .data-table th:last-child {
+    background: var(--bg-2);
+  }
 
-        .table-responsive {
-            overflow-x: auto;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            background: white;
-        }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  .plate{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    background:#fff;
+    color:#111;
+    padding:3px 8px;
+    border-radius:3px;
+    letter-spacing:0.5px;
+    font-size:12px;
+    border:2px solid #1a1a1a;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .cell-primary{ font-weight:600; color:#fff; }
+  .cell-dim{ color:var(--text-dim); font-size:12px; }
 
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-            text-align: left;
-            min-width: 1200px;
-        }
+  .type-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 10px 4px 8px;
+    border-radius:20px;
+    font-size:11.5px;
+    font-weight:600;
+    border:1px solid transparent;
+  }
+  .type-pill::before{
+    content:'';
+    width:6px;height:6px;
+    border-radius:50%;
+    background:currentColor;
+  }
+  .type-utovar{ color:var(--blue); background:rgba(91,155,213,0.12); border-color:rgba(91,155,213,0.25); }
+  .type-istovar{ color:var(--teal); background:rgba(79,179,160,0.12); border-color:rgba(79,179,160,0.25); }
 
-        .data-table th.mega-header {
-            text-align: center;
-            font-weight: bold;
-            font-size: 14px;
-            padding: 8px;
-            text-transform: uppercase;
-            color: white;
-            border: 1px solid #bbb;
-        }
+  .status-select{
+    padding:5px 8px;
+    border-radius:var(--radius-s);
+    font-family:'Oswald', sans-serif;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.4px;
+    cursor:pointer;
+    background:#181b20 !important;
+    border:1px solid var(--border);
+    color:#ffffff !important;
+  }
+  .status-select option {
+    background-color: #181b20 !important;
+    color: #ffffff !important;
+  }
+  .status-najavljen{ color:var(--amber); background:rgba(224,168,59,0.12); border-color:rgba(224,168,59,0.3); }
+  .status-utoku{ color:var(--accent); background:rgba(255,199,44,0.12); border-color:rgba(255,199,44,0.3); }
+  .status-zavrseno{ color:var(--green); background:rgba(95,184,122,0.12); border-color:rgba(95,184,122,0.3); }
 
-        .bg-main-title { background-color: #ffff00; color: black !important; }
-        .bg-tl { background-color: #ffc000; }
-        .bg-ts { background-color: #00b050; color: white; }
-        .bg-dk { background-color: #0070c0; color: white; }
-        .bg-km { background-color: #002060; color: white; }
-        .bg-ddt { background-color: #e26b0a; color: white; }
-        .bg-ui { background-color: #7030a0; color: white; }
-        .bg-p { background-color: #548235; color: white; }
-        .bg-tr { background-color: #375623; color: white; }
-        .bg-st { background-color: #006064; color: white; }
+  .empty-state{
+    padding:70px 20px;
+    text-align:center;
+    color:var(--text-dim);
+  }
 
-        .data-table th.sub-header {
-            background-color: #d9d9d9;
-            color: #333;
-            font-weight: 600;
-            padding: 10px;
-            border: 1px solid #bbb;
-        }
+  .danger-zone{
+    margin-top:24px;
+    display:flex;
+    justify-content:flex-start;
+  }
 
-        .data-table td {
-            padding: 10px;
-            border: 1px solid #e0e0e0;
-            color: #444;
-        }
-
-        .data-table tbody tr:nth-child(even) { background-color: #f8fafc; }
-        .data-table tbody tr:hover { background-color: #f1f5f9; }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .badge-istovar { background-color: #e8daff; color: #531dab; }
-        .badge-utovar { background-color: #e6f7ff; color: #0050b3; }
-
-        .status-select {
-            padding: 5px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 700;
-            border: 1px solid #bbb;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-        .status-najavljen { background-color: #fff3cd; color: #8a6512; border-color: #ffe08a; }
-        .status-utoku { background-color: #cce5ff; color: #084298; border-color: #9ec5fe; }
-        .status-zavrseno { background-color: #d4edda; color: #1b5e20; border-color: #a3d9a5; }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #888;
-            font-style: italic;
-        }
-        
-        .action-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-            padding: 0 5px;
-        }
-        .delete-btn { color: #ff4d4f; }
-        .delete-btn:hover { color: #cf1322; }
-        .edit-btn { color: #1890ff; }
-        .edit-btn:hover { color: #096dd9; }
-
-        .danger-zone {
-            margin-top: 30px;
-            display: flex;
-            justify-content: flex-start;
-        }
-
-        .loading-overlay {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.85);
-            z-index: 10;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            color: #1e3c72;
-            font-size: 18px;
-            border-radius: 8px;
-        }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  .loading-overlay {
+    display:none;
+    position:absolute;
+    top:0; left:0; width:100%; height:100%;
+    background:rgba(20,22,26,0.85);
+    z-index:10;
+    justify-content:center;
+    align-items:center;
+    font-weight:600;
+    color:var(--accent);
+    font-size:16px;
+    border-radius:var(--radius-m);
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
-<div class="container">
-    <header>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-text">
         <h1>LOGISTIKA: Utovar / Istovar</h1>
-        <p>Unos i praćenje utovara-istovara</p>
-    </header>
-        
-    <div class="card" id="formCard">
-        <div class="loading-overlay" id="loadingOverlay">Učitavanje podataka sa Google Sheets...</div>
-        <div class="card-title" id="formCardTitle">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
-            <span id="formTitleText">Novi Unos Podataka</span>
+        <div class="sub">Unos i praćenje utovara-istovara</div>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="clock-block">
+        <div class="clock-time" id="clockTime">--:--:--</div>
+        <div class="clock-date" id="clockDate">—</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container wrap">
+    
+    <div class="action-header-bar">
+        <h2>Upravljanje najavama dokova</h2>
+        <button type="button" class="btn btn-primary" id="openModalBtn">+ Nova najava</button>
+    </div>
+
+    <!-- Statističke Kartice -->
+    <div class="stats-grid">
+        <div class="stat-card c-blue" onclick="setQuickFilter('najava_danas')">
+            <div class="stat-value" id="statNajavaDanas">0</div>
+            <div class="stat-label">Najava danas</div>
         </div>
-        
-        <form id="logisticsForm">
-            <div class="form-grid">
-                <div class="form-group group-tl">
-                    <label>Ime (Team Leader)</label>
-                    <input type="text" id="ime" required placeholder="Npr. Petar">
-                </div>
-                <div class="form-group group-tl">
-                    <label>Prezime (Team Leader)</label>
-                    <input type="text" id="prezime" required placeholder="Npr. Petrovic">
-                </div>
+        <div class="stat-card c-amber" onclick="setQuickFilter('najavljeno')">
+            <div class="stat-value" id="statNajavljeno">0</div>
+            <div class="stat-label">Najavljeno</div>
+        </div>
+        <div class="stat-card c-teal" onclick="setQuickFilter('utoku')">
+            <div class="stat-value" id="statUtoku">0</div>
+            <div class="stat-label">U toku (utovar/istovar)</div>
+        </div>
+        <div class="stat-card c-green" onclick="setQuickFilter('zavrseno_danas')">
+            <div class="stat-value" id="statZavrsenoDanas">0</div>
+            <div class="stat-label">Završeno danas</div>
+        </div>
+        <div class="stat-card c-red" onclick="setQuickFilter('kasni')">
+            <div class="stat-value" id="statKasni">0</div>
+            <div class="stat-label">Kasni preko roka</div>
+        </div>
+    </div>
 
-                <div class="form-group group-ts">
-                    <label>Datum</label>
-                    <input type="date" id="datum" required>
-                </div>
-                <div class="form-group group-ts">
-                    <label>Vreme</label>
-                    <input type="time" id="vreme" required>
-                </div>
-
-                <div class="form-group group-dk">
-                    <label>Naziv Kompanije</label>
-                    <input type="text" id="kompanija" required placeholder="Npr. Sigit, Algontec">
-                </div>
-
-                <div class="form-group group-km">
-                    <label>Tablice Kamiona</label>
-                    <input type="text" id="tablice" required placeholder="Npr. KG 366 MD">
-                </div>
-
-                <div class="form-group group-ddt">
-                    <label>Broj DDT-a</label>
-                    <input type="text" id="ddt" required placeholder="Npr. 19336866">
-                </div>
-
-                <div class="form-group group-ui">
-                    <label>Tip Operacije</label>
-                    <select id="operacija" required>
-                        <option value="Istovar">Istovar</option>
-                        <option value="Utovar">Utovar</option>
-                    </select>
-                </div>
-
-                <div class="form-group group-st">
-                    <label>Status</label>
-                    <select id="status" required>
-                        <option value="Najavljen">Najavljen</option>
-                        <option value="U toku">U toku</option>
-                        <option value="Zavrseno">Zavrseno</option>
-                    </select>
-                </div>
-
-                <div class="form-group group-p">
-                    <label>Broj Paleta (Opciono)</label>
-                    <input type="number" id="palete" min="0" placeholder="Npr. 32">
-                </div>
-
-                <div class="form-group group-tr">
-                    <label>Tip Robe</label>
-                    <input type="text" id="tipRobe" placeholder="Opciono (Npr. Komponente)">
-                </div>
+    <!-- Modalni prozor -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title" id="formTitleText">Nova najava</h3>
+                <button type="button" class="modal-close" id="closeModalBtn">✕</button>
             </div>
+            
+            <form id="logisticsForm">
+                <div class="modal-body" style="position:relative;">
+                    <div class="loading-overlay" id="loadingOverlay">Učitavanje podataka...</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Ime (Team Leader)</label>
+                            <input type="text" id="Ime" required placeholder="Npr. Petar">
+                        </div>
+                        <div class="form-group">
+                            <label>Prezime (Team Leader)</label>
+                            <input type="text" id="Prezime" required placeholder="Npr. Petrović">
+                        </div>
 
-            <div class="actions-bar">
-                <button type="button" id="cancelEditBtn" class="btn btn-danger" style="display:none;" onclick="cancelEdit()">Otkaži Izmenu</button>
-                <button type="button" id="resetBtn" class="btn btn-danger" onclick="clearForm()">Resetuj Polja</button>
-                <button type="submit" id="submitBtn" class="btn btn-primary">Sačuvaj u Bazu</button>
-            </div>
-        </form>
+                        <div class="form-group">
+                            <label>Datum</label>
+                            <input type="date" id="Datum" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Vreme</label>
+                            <input type="time" id="Vreme" required>
+                        </div>
+
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Naziv Kompanije (Prevoznik)</label>
+                            <input type="text" id="Naziv kompanije" required placeholder="Npr. Trans-Logic doo">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tablice Kamiona</label>
+                            <input type="text" id="Tablice" required placeholder="Npr. ČA 123-AB">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Broj DDT-a</label>
+                            <input type="text" id="Broj DDT-a" required placeholder="Npr. 19336866">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tip Operacije</label>
+                            <select id="Utovar/Istovar" required>
+                                <option value="Istovar">Istovar</option>
+                                <option value="Utovar">Utovar</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="Status" required>
+                                <option value="Najavljen">Najavljen</option>
+                                <option value="U toku">U toku</option>
+                                <option value="Zavrseno">Zavrseno</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Broj Paleta (Opciono)</label>
+                            <input type="number" id="Broj paleta" min="0" placeholder="Npr. 14">
+                        </div>
+
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Tip Robe</label>
+                            <input type="text" id="Tip robe" placeholder="Opciono (Npr. Komponente)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" id="cancelEditBtn" class="btn btn-danger" style="display:none;">Otkaži Izmenu</button>
+                    <button type="button" class="btn btn-ghost" id="cancelModalBtn">Otkaži</button>
+                    <button type="submit" id="submitBtn" class="btn btn-primary">Sačuvaj najavu</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="card">
-        <div class="card-title" style="justify-content: space-between; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 2h-4v3h4V4zm0 4h-4v3h4V8zm0 4h-4v3h3a1 1 0 0 0 1-1v-2zm-5 3v-3H6v3h4zm-5 0v-3H1v2a1 1 0 0 0 1 1h3zm-4-4h4V8H1v3zm0-4h4V4H1v3zm5-3v3h4V4H6zm0 4v3h4V8H6z"/></svg>
-                Zajednička Evidencija (Google Sheets)
-            </div>
+        <div class="card-title" style="justify-content: space-between; flex-wrap: wrap; border-bottom:1px solid var(--border-soft); padding-bottom:15px; margin-bottom:16px;">
+            <span>Aktivne najave i istorija (Google Sheets)</span>
             <div style="display: flex; gap: 10px;">
-                <button class="btn btn-info" onclick="loadDataFromSheets()">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right:5px;"><path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36A.25.25 0 0 1 11.534 7zm-5.068 2H2.534a.25.25 0 0 0-.192.41l1.966 2.36a.25.25 0 0 0 .384 0l1.966-2.36A.25.25 0 0 0 6.466 9z"/><path fill-rule="evenodd" d="M8 3c-1.55 0-2.94.707-3.868 1.815a.25.25 0 0 1-.316.033l-.865-.577a.25.25 0 0 1-.033-.316A6.974 6.974 0 0 1 8 1c3.866 0 7 3.134 7 7a6.974 6.974 0 0 1-1.39 4.195.25.25 0 0 1-.316.033l-.865-.577a.25.25 0 0 1-.033-.316A5.975 5.975 0 0 0 8 3z"/></svg>
-                    Refresh
-                </button>
-                <button class="btn btn-success" onclick="exportToExcel()">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right:5px;"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2zM4.5 3A1.5 1.5 0 0 1 6 4.5v1a1.5 1.5 0 0 1-1.5 1.5h-1A1.5 1.5 0 0 1 2 5.5v-1A1.5 1.5 0 0 1 3.5 3h1zM3 4.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/></svg>
-                    Izvezi u Excel (.xlsx)
-                </button>
+                <button class="btn btn-ghost btn-sm" onclick="loadDataFromSheets()">Refresh</button>
+                <button class="btn btn-ghost btn-sm" onclick="exportToExcel()">Izvezi u Excel (.xlsx)</button>
             </div>
         </div>
 
-        <div class="filter-bar">
+        <div class="toolbar">
+            <div class="filter-field">
+                <label for="filterSearch">Pretraga</label>
+                <input id="filterSearch" class="search-box" type="text" placeholder="Kompanija, tablice, prevoznik...">
+            </div>
             <div class="filter-field">
                 <label for="filterDatum">Datum</label>
                 <input type="date" id="filterDatum">
@@ -419,42 +734,26 @@
                     <option value="Zavrseno">Zavrseno</option>
                 </select>
             </div>
-            <button type="button" class="btn btn-outline-clean" onclick="resetFilters()">Poništi filtere</button>
-            <span class="filter-count" id="filterCount"></span>
+            <div style="flex:1;"></div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="resetFilters()">Poništi filtere</button>
+            <span class="cell-dim" id="filterCount" style="margin-left:auto;"></span>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-wrap">
             <table class="data-table" id="logisticsTable">
                 <thead>
                     <tr>
-                        <th colspan="13" class="mega-header bg-main-title">UTOVAR / ISTOVAR</th>
-                    </tr>
-                    <tr>
-                        <th colspan="2" class="mega-header bg-tl">TEAM LEADER</th>
-                        <th colspan="2" class="mega-header bg-ts">TIMESTAMP</th>
-                        <th class="mega-header bg-dk">DOBAVLJAC/KUPAC</th>
-                        <th class="mega-header bg-km">KAMION</th>
-                        <th class="mega-header bg-ddt">DDT</th>
-                        <th class="mega-header bg-ui">UTOVAR/ISTOVAR</th>
-                        <th class="mega-header bg-st">STATUS</th>
-                        <th class="mega-header bg-p">PALETE</th>
-                        <th class="mega-header bg-tr">TIP ROBE</th>
-                        <th colspan="2" style="background: #333; color: white;" class="mega-header">AKCIJE</th>
-                    </tr>
-                    <tr>
-                        <th class="sub-header">Ime</th>
-                        <th class="sub-header">Prezime</th>
-                        <th class="sub-header">Datum</th>
-                        <th class="sub-header">Vreme</th>
-                        <th class="sub-header">Naziv kompanije</th>
-                        <th class="sub-header">Tablice</th>
-                        <th class="sub-header">Broj DDT-a</th>
-                        <th class="sub-header">Utovar/Istovar</th>
-                        <th class="sub-header">Status</th>
-                        <th class="sub-header">Broj paleta</th>
-                        <th class="sub-header">Tip robe</th>
-                        <th class="sub-header" style="text-align: center;">Izmeni</th>
-                        <th class="sub-header" style="text-align: center;">Briši</th>
+                        <th>Team Leader</th>
+                        <th>Datum</th>
+                        <th>Vreme</th>
+                        <th>Kompanija</th>
+                        <th>Tablice</th>
+                        <th>DDT</th>
+                        <th>Tip</th>
+                        <th>Status</th>
+                        <th style="text-align:right;">Palete</th>
+                        <th>Tip robe</th>
+                        <th style="text-align:right;">Akcije</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
@@ -462,10 +761,7 @@
         </div>
 
         <div class="danger-zone">
-            <button class="btn btn-warning" onclick="clearEntireDatabase()">
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right:5px;"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
-                Obriši celu Google Sheets tabelu
-            </button>
+            <button class="btn btn-warning btn-sm" onclick="clearEntireDatabase()">Obriši celu Google Sheets tabelu</button>
         </div>
     </div>
 </div>
@@ -474,37 +770,68 @@
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxsPviGg32zxhFiV-bLIg0U-6QKMROcqcfExq_n4aJQSOFAwvOYCpUWeSRkpgNHIqjw/exec";
 
     let database = [];
-    let editIndex = null; 
+    let editSheetRow = null; 
+    let activeQuickFilter = null;
+
+    function tickClock(){
+        const now = new Date();
+        const tEl = document.getElementById('clockTime');
+        const dEl = document.getElementById('clockDate');
+        if(tEl) tEl.textContent = now.toLocaleTimeString("sr-RS", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+        if(dEl) dEl.textContent = now.toLocaleDateString("sr-RS", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+    }
+    tickClock();
+    setInterval(tickClock, 1000);
+
+    function openModal() {
+        if(editSheetRow === null) {
+            setNow();
+        }
+        document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('modalOverlay').classList.remove('active');
+        if(editSheetRow !== null) {
+            cancelEdit();
+        }
+    }
+
+    document.getElementById('openModalBtn').addEventListener('click', openModal);
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
+    document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
 
     function showLoading(text) {
         const overlay = document.getElementById('loadingOverlay');
-        overlay.innerText = text;
-        overlay.style.display = 'flex';
+        if(overlay) {
+            overlay.innerText = text;
+            overlay.style.display = 'flex';
+        }
     }
 
     let loadingTimeout;
-    function showLoadingWithTimeout(text) {
-        showLoading(text);
-        clearTimeout(loadingTimeout);
-        loadingTimeout = setTimeout(() => {
-            hideLoading();
-        }, 8000); 
-    }
-
     function hideLoading() {
         clearTimeout(loadingTimeout);
-        document.getElementById('loadingOverlay').style.display = 'none';
+        const overlay = document.getElementById('loadingOverlay');
+        if(overlay) overlay.style.display = 'none';
     }
 
     function loadDataFromSheets() {
         if(!SCRIPT_URL) return;
-        
         showLoading("Učitavanje podataka sa Google Sheets...");
         fetch(SCRIPT_URL)
             .then(res => res.json())
             .then(data => {
-                database = data.reverse(); 
-                renderTable();
+                if (Array.isArray(data)) {
+                    database = data.map((row, idx) => ({
+                        ...row,
+                        _sheetRow: idx + 4 
+                    })).reverse(); 
+                    
+                    updateDashboardStats();
+                    renderTable();
+                }
                 hideLoading();
             })
             .catch(err => {
@@ -513,26 +840,21 @@
             });
     }
 
-    // Pretvara u čitljiv DD/MM/YYYY format
     function formatDate(dateStr) {
         if(!dateStr) return '-';
         try {
-            // Ako već ima kosu crtu i podseća na naš format, vrati kako jeste
             if(String(dateStr).includes('/') && !String(dateStr).includes('T')) return dateStr;
-            
             const d = new Date(dateStr);
             if(isNaN(d.getTime())) return dateStr;
-            
             const day = String(d.getDate()).padStart(2, '0');
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const year = d.getFullYear();
-            return `${day}/${month}/${year}`;
+            return `${day}.${month}.${year}.`;
         } catch(e) {
             return dateStr;
         }
     }
 
-    // Pretvara u ISO YYYY-MM-DD radi poređenja sa filterom datuma
     function normalizeDateForCompare(dateStr) {
         if(!dateStr) return '';
         try {
@@ -542,19 +864,27 @@
             }
             const d = new Date(dateStr);
             if(isNaN(d.getTime())) return '';
-            return d.toISOString().split('T')[0];
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         } catch(e) {
             return '';
         }
     }
 
-    // Pretvara u čitljiv 12-časovni format sa AM/PM (npr. 5:56 PM)
+    function getLocalDateString() {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     function formatTime(timeStr) {
         if(!timeStr) return '-';
         try {
             let hours, minutes;
-            
-            // Rešavanje ISO stringova koji sadrže 'T' (kao na slici)
             if(String(timeStr).includes('T')) {
                 const timePart = String(timeStr).split('T')[1];
                 const parts = timePart.split(':');
@@ -569,13 +899,7 @@
             }
 
             if(!isNaN(hours) && !isNaN(minutes)) {
-                // Konverzija u AM/PM format
-                const ampm = hours >= 12 ? 'PM' : 'AM';
-                hours = hours % 12;
-                hours = hours ? hours : 12; // ako je 0, postavi na 12
-                const minStr = String(minutes).padStart(2, '0');
-                
-                return `${hours}:${minStr} ${ampm}`;
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
             }
             return timeStr;
         } catch(e) {
@@ -584,10 +908,10 @@
     }
 
     function setNow() {
-        if (editIndex !== null) return; 
+        if (editSheetRow !== null) return; 
+        document.getElementById('Datum').value = getLocalDateString();
         const now = new Date();
-        document.getElementById('datum').value = now.toISOString().split('T')[0];
-        document.getElementById('vreme').value = now.toTimeString().slice(0,5);
+        document.getElementById('Vreme').value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     }
 
     function getStatus(row) {
@@ -600,23 +924,99 @@
         return 'status-najavljen';
     }
 
-    // Vraća listu indeksa iz "database" koji zadovoljavaju trenutne filtere
+    function isOverdue(row) {
+        const status = getStatus(row);
+        if(status === 'Zavrseno') return false;
+        
+        const rowDateStr = normalizeDateForCompare(row['Datum']);
+        if(!rowDateStr) return false;
+        
+        const todayStr = getLocalDateString();
+        
+        // Crveni se samo ako je datum unosa strogo manji od današnjeg lokalnog datuma (prošli dani)
+        return rowDateStr < todayStr;
+    }
+
+    function updateDashboardStats() {
+        const todayStr = getLocalDateString();
+        
+        let countNajavaDanas = 0;
+        let countNajavljeno = 0;
+        let countUtoku = 0;
+        let countZavrsenoDanas = 0;
+        let countKasni = 0;
+
+        database.forEach(row => {
+            const rowDate = normalizeDateForCompare(row['Datum']);
+            const status = getStatus(row);
+
+            if(rowDate === todayStr) countNajavaDanas++;
+            if(status === 'Najavljen') countNajavljeno++;
+            if(status === 'U toku') countUtoku++;
+            if(status === 'Zavrseno' && rowDate === todayStr) countZavrsenoDanas++;
+            if(isOverdue(row)) countKasni++;
+        });
+
+        document.getElementById('statNajavaDanas').innerText = countNajavaDanas;
+        document.getElementById('statNajavljeno').innerText = countNajavljeno;
+        document.getElementById('statUtoku').innerText = countUtoku;
+        document.getElementById('statZavrsenoDanas').innerText = countZavrsenoDanas;
+        document.getElementById('statKasni').innerText = countKasni;
+    }
+
+    function setQuickFilter(type) {
+        if(activeQuickFilter === type) {
+            activeQuickFilter = null;
+        } else {
+            activeQuickFilter = type;
+        }
+        
+        const cards = document.querySelectorAll('.stat-card');
+        cards.forEach(c => c.classList.remove('active-filter'));
+        
+        if(activeQuickFilter) {
+            const map = { 'najava_danas': 0, 'najavljeno': 1, 'utoku': 2, 'zavrseno_danas': 3, 'kasni': 4 };
+            if(cards[map[activeQuickFilter]]) {
+                cards[map[activeQuickFilter]].classList.add('active-filter');
+            }
+        }
+        renderTable();
+    }
+
     function getFilteredIndices() {
+        const fSearch = document.getElementById('filterSearch').value.trim().toLowerCase();
         const fDatum = document.getElementById('filterDatum').value;
         const fTip = document.getElementById('filterTip').value;
         const fStatus = document.getElementById('filterStatus').value;
+        const todayStr = getLocalDateString();
 
         const indices = [];
         database.forEach((row, index) => {
-            if(fDatum && normalizeDateForCompare(row['Datum']) !== fDatum) return;
+            const rowDate = normalizeDateForCompare(row['Datum']);
+            const status = getStatus(row);
+
+            if(activeQuickFilter === 'najava_danas' && rowDate !== todayStr) return;
+            if(activeQuickFilter === 'najavljeno' && status !== 'Najavljen') return;
+            if(activeQuickFilter === 'utoku' && status !== 'U toku') return;
+            if(activeQuickFilter === 'zavrseno_danas' && (status !== 'Zavrseno' || rowDate !== todayStr)) return;
+            if(activeQuickFilter === 'kasni' && !isOverdue(row)) return;
+
+            if(fDatum && rowDate !== fDatum) return;
             if(fTip && row['Utovar/Istovar'] !== fTip) return;
-            if(fStatus && getStatus(row) !== fStatus) return;
+            if(fStatus && status !== fStatus) return;
+            if(fSearch) {
+                const hay = [row['Naziv kompanije'], row['Tablice'], row['Ime'], row['Prezime'], row['Broj DDT-a'], row['Tip robe']].join(" ").toLowerCase();
+                if(!hay.includes(fSearch)) return;
+            }
             indices.push(index);
         });
         return indices;
     }
 
     function resetFilters() {
+        activeQuickFilter = null;
+        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+        document.getElementById('filterSearch').value = '';
         document.getElementById('filterDatum').value = '';
         document.getElementById('filterTip').value = '';
         document.getElementById('filterStatus').value = '';
@@ -628,274 +1028,245 @@
         tbody.innerHTML = '';
 
         if(!database || database.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="13" class="empty-state">Tabela je trenutno prazna.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Tabela je trenutno prazna.</td></tr>`;
             document.getElementById('filterCount').innerText = '';
             return;
         }
 
         const visibleIndices = getFilteredIndices();
-        document.getElementById('filterCount').innerText = `${visibleIndices.length} od ${database.length} redova prikazano`;
+        document.getElementById('filterCount').innerText = `${visibleIndices.length} od ${database.length} stavki`;
 
         if(visibleIndices.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="13" class="empty-state">Nema redova koji odgovaraju izabranim filterima.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Nema unosa koji odgovaraju izabranim filterima.</td></tr>`;
             return;
         }
 
-        visibleIndices.forEach(index => {
+        visibleIndices.forEach((index) => {
             const row = database[index];
-            try {
-                const tr = document.createElement('tr');
-                const badgeClass = String(row['Utovar/Istovar'] || '').toLowerCase() === 'istovar' ? 'badge-istovar' : 'badge-utovar';
-                const status = getStatus(row);
-
-                let paletePrikaz = (row['Broj paleta'] === "" || row['Broj paleta'] === undefined || row['Broj paleta'] === null) ? "-" : row['Broj paleta'];
-
-                tr.innerHTML = `
-                    <td><b>${row['Ime'] || '-'}</b></td>
-                    <td><b>${row['Prezime'] || '-'}</td>
-                    <td>${formatDate(row['Datum'])}</td>
-                    <td>${formatTime(row['Vreme'])}</td>
-                    <td>${row['Naziv kompanije'] || '-'}</td>
-                    <td><code style="font-size:12px; font-weight:bold; background:#eee; padding:2px 6px; border-radius:4px;">${row['Tablice'] || '-'}</code></td>
-                    <td>${row['Broj DDT-a'] || '-'}</td>
-                    <td><span class="badge ${badgeClass}">${row['Utovar/Istovar'] || 'Istovar'}</span></td>
-                    <td>
-                        <select class="status-select ${statusClass(status)}" onchange="updateStatus(${index}, this.value)">
-                            <option value="Najavljen" ${status==='Najavljen' ? 'selected' : ''}>Najavljen</option>
-                            <option value="U toku" ${status==='U toku' ? 'selected' : ''}>U toku</option>
-                            <option value="Zavrseno" ${status==='Zavrseno' ? 'selected' : ''}>Zavrseno</option>
-                        </select>
-                    </td>
-                    <td style="text-align: right; font-weight: bold; padding-right: 20px;">${paletePrikaz}</td>
-                    <td>${row['Tip robe'] || '-'}</td>
-                    <td style="text-align:center;"><button type="button" class="action-btn edit-btn" onclick="startEdit(${index})">✏️</button></td>
-                    <td style="text-align:center;"><button type="button" class="action-btn delete-btn" onclick="deleteRow(${index})">✕</button></td>
-                `;
-                tbody.appendChild(tr);
-            } catch(err) {
-                console.error("Greška pri renderovanju pojedinačnog reda:", err);
+            const status = getStatus(row);
+            const isOvr = isOverdue(row);
+            const tr = document.createElement('tr');
+            if(isOvr) {
+                tr.style.background = 'rgba(226, 87, 76, 0.07)';
             }
+
+            tr.innerHTML = `
+                <td><span class="cell-primary">${row['Ime'] || ''} ${row['Prezime'] || ''}</span></td>
+                <td class="mono">${formatDate(row['Datum'])}</td>
+                <td class="mono">${formatTime(row['Vreme'])}</td>
+                <td><span class="cell-primary">${row['Naziv kompanije'] || '-'}</span></td>
+                <td><span class="plate">${row['Tablice'] || '-'}</span></td>
+                <td class="mono cell-dim">${row['Broj DDT-a'] || '-'}</td>
+                <td>
+                    <span class="type-pill ${row['Utovar/Istovar'] === 'Utovar' ? 'type-utovar' : 'type-istovar'}">
+                        ${row['Utovar/Istovar'] || '-'}
+                    </span>
+                </td>
+                <td>
+                    <select class="status-select ${statusClass(status)}" onchange="updateRowStatus(${index}, this.value)">
+                        <option value="Najavljen" ${status === 'Najavljen' ? 'selected' : ''}>Najavljen</option>
+                        <option value="U toku" ${status === 'U toku' ? 'selected' : ''}>U toku</option>
+                        <option value="Zavrseno" ${status === 'Zavrseno' ? 'selected' : ''}>Završeno</option>
+                    </select>
+                </td>
+                <td style="text-align:right;" class="mono cell-primary">${row['Broj paleta'] !== undefined && row['Broj paleta'] !== '' ? row['Broj paleta'] : '-'}</td>
+                <td class="cell-dim" style="white-space:nowrap;">${row['Tip robe'] || '-'}</td>
+                <td>
+                    <div class="row-actions">
+                        <button type="button" class="btn-icon" title="Izmeni" onclick="editRow(${index})">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
+                        <button type="button" class="btn-icon btn-icon-del" title="Obriši" onclick="deleteRow(${index})">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
         });
     }
 
-    // Menja samo status postojećeg reda direktno iz tabele, bez otvaranja forme
-    function updateStatus(index, newStatus) {
-        const original = database[index];
-        const record = {
-            "Ime": original['Ime'] || '',
-            "Prezime": original['Prezime'] || '',
-            "Datum": original['Datum'] || '',
-            "Vreme": original['Vreme'] || '',
-            "Naziv kompanije": original['Naziv kompanije'] || '',
-            "Tablice": original['Tablice'] || '',
-            "Broj DDT-a": original['Broj DDT-a'] || '',
-            "Utovar/Istovar": original['Utovar/Istovar'] || '',
-            "Status": newStatus,
-            "Broj paleta": original['Broj paleta'] !== undefined ? original['Broj paleta'] : '',
-            "Tip robe": original['Tip robe'] || '',
-            "index": (database.length - 1) - index
+    function updateRowStatus(index, newStatus) {
+        database[index]['Status'] = newStatus;
+        updateDashboardStats();
+        
+        const rowData = database[index];
+        const payload = {
+            action: "update",
+            rowIndex: rowData._sheetRow, 
+            data: rowData
         };
 
-        showLoadingWithTimeout("Ažuriranje statusa...");
-        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(record) })
-            .then(res => res.json())
-            .then(() => { loadDataFromSheets(); })
-            .catch(() => { loadDataFromSheets(); });
+        showLoading("Ažuriranje statusa...");
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(response => {
+            hideLoading();
+            loadDataFromSheets();
+        })
+        .catch(err => {
+            console.error("Greška pri ažuriranju statusa:", err);
+            hideLoading();
+        });
     }
 
-    function startEdit(index) {
-        editIndex = index;
-        const record = database[index];
+    function editRow(index) {
+        const row = database[index];
+        editSheetRow = row._sheetRow; 
 
-        document.getElementById('ime').value = record['Ime'] || '';
-        document.getElementById('prezime').value = record['Prezime'] || '';
-        
-        if(record['Datum']) {
-            try {
-                if(String(record['Datum']).includes('/')) {
-                    const p = record['Datum'].split('/');
-                    if(p.length === 3) {
-                        document.getElementById('datum').value = `${p[2]}-${p[1]}-${p[0]}`;
-                    }
-                } else {
-                    const d = new Date(record['Datum']);
-                    if(!isNaN(d.getTime())) {
-                        document.getElementById('datum').value = d.toISOString().split('T')[0];
-                    }
-                }
-            } catch(e){}
-        }
-        
-        // Vraćanje vremena u input polje (mora biti u 24h formatu hh:mm)
-        if(record['Vreme']) {
-            try {
-                let tStr = String(record['Vreme']);
-                if(tStr.includes('T')) {
-                    document.getElementById('vreme').value = tStr.split('T')[1].slice(0,5);
-                } else if(tStr.includes('AM') || tStr.includes('PM')) {
-                    // Ako je u bazi već sačuvano kao AM/PM, konvertujemo nazad za input polje
-                    const parts = tStr.split(' ');
-                    const timeParts = parts[0].split(':');
-                    let hrs = parseInt(timeParts[0], 10);
-                    const mins = timeParts[1];
-                    const ampm = parts[1];
-                    if(ampm === 'PM' && hrs < 12) hrs += 12;
-                    if(ampm === 'AM' && hrs === 12) hrs = 0;
-                    document.getElementById('vreme').value = `${String(hrs).padStart(2, '0')}:${mins}`;
-                } else {
-                    document.getElementById('vreme').value = tStr.slice(0,5);
-                }
-            } catch(e){}
-        }
-        
-        document.getElementById('kompanija').value = record['Naziv kompanije'] || '';
-        document.getElementById('tablice').value = record['Tablice'] || '';
-        document.getElementById('ddt').value = record['Broj DDT-a'] || '';
-        document.getElementById('operacija').value = record['Utovar/Istovar'] || 'Istovar';
-        document.getElementById('status').value = record['Status'] || 'Najavljen';
-        document.getElementById('palete').value = record['Broj paleta'] !== undefined ? record['Broj paleta'] : '';
-        document.getElementById('tipRobe').value = record['Tip robe'] || '';
+        document.getElementById('formTitleText').innerText = "Izmena najave";
+        document.getElementById('submitBtn').innerText = "Sačuvaj izmene";
+        document.getElementById('cancelEditBtn').style.display = 'inline-block';
 
-        document.getElementById('formTitleText').innerText = "Izmena Postojećih Podataka na Google Sheets";
-        document.getElementById('submitBtn').innerText = "Ažuriraj Podatke";
-        document.getElementById('submitBtn').className = "btn btn-warning";
-        document.getElementById('cancelEditBtn').style.display = "inline-flex";
-        document.getElementById('resetBtn').style.display = "none";
-        
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('Ime').value = row['Ime'] || '';
+        document.getElementById('Prezime').value = row['Prezime'] || '';
+        document.getElementById('Datum').value = normalizeDateForCompare(row['Datum']) || '';
+        document.getElementById('Vreme').value = formatTime(row['Vreme']) || '';
+        document.getElementById('Naziv kompanije').value = row['Naziv kompanije'] || '';
+        document.getElementById('Tablice').value = row['Tablice'] || '';
+        document.getElementById('Broj DDT-a').value = row['Broj DDT-a'] || '';
+        document.getElementById('Utovar/Istovar').value = row['Utovar/Istovar'] || 'Istovar';
+        document.getElementById('Status').value = getStatus(row);
+        document.getElementById('Broj paleta').value = row['Broj paleta'] !== undefined ? row['Broj paleta'] : '';
+        document.getElementById('Tip robe').value = row['Tip robe'] || '';
+
+        openModal();
     }
 
     function cancelEdit() {
-        editIndex = null;
+        editSheetRow = null;
+        document.getElementById('formTitleText').innerText = "Nova najava";
+        document.getElementById('submitBtn').innerText = "Sačuvaj najavu";
+        document.getElementById('cancelEditBtn').style.display = 'none';
         document.getElementById('logisticsForm').reset();
-        document.getElementById('formTitleText').innerText = "Novi Unos Podataka";
-        document.getElementById('submitBtn').innerText = "Sačuvaj u Bazu";
-        document.getElementById('submitBtn').className = "btn btn-primary";
-        document.getElementById('cancelEditBtn').style.display = "none";
-        document.getElementById('resetBtn').style.display = "inline-flex";
-        document.getElementById('status').value = 'Najavljen';
-        setNow();
+    }
+
+    function deleteRow(index) {
+        if(!confirm("Da li ste sigurni da želite da obrišete ovu stavku?")) return;
+
+        const row = database[index];
+        const payload = {
+            action: "delete",
+            rowIndex: row._sheetRow 
+        };
+
+        showLoading("Brisanje stavke...");
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(response => {
+            hideLoading();
+            loadDataFromSheets();
+        })
+        .catch(err => {
+            console.error("Greška pri brisanju:", err);
+            hideLoading();
+        });
     }
 
     document.getElementById('logisticsForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
-        const record = {
-            "Ime": document.getElementById('ime').value,
-            "Prezime": document.getElementById('prezime').value,
-            "Datum": document.getElementById('datum').value,
-            "Vreme": document.getElementById('vreme').value,
-            "Naziv kompanije": document.getElementById('kompanija').value,
-            "Tablice": document.getElementById('tablice').value,
-            "Broj DDT-a": document.getElementById('ddt').value,
-            "Utovar/Istovar": document.getElementById('operacija').value,
-            "Status": document.getElementById('status').value,
-            "Broj paleta": document.getElementById('palete').value, 
-            "Tip robe": document.getElementById('tipRobe').value
+        const formData = {
+            'Ime': document.getElementById('Ime').value,
+            'Prezime': document.getElementById('Prezime').value,
+            'Datum': document.getElementById('Datum').value,
+            'Vreme': document.getElementById('Vreme').value,
+            'Naziv kompanije': document.getElementById('Naziv kompanije').value,
+            'Tablice': document.getElementById('Tablice').value,
+            'Broj DDT-a': document.getElementById('Broj DDT-a').value,
+            'Utovar/Istovar': document.getElementById('Utovar/Istovar').value,
+            'Status': document.getElementById('Status').value,
+            'Broj paleta': document.getElementById('Broj paleta').value,
+            'Tip robe': document.getElementById('Tip robe').value
         };
 
-        if (editIndex !== null) {
-            record.index = (database.length - 1) - editIndex;
-            showLoadingWithTimeout("Ažuriranje podataka u tabeli...");
+        let payload = {};
+        if(editSheetRow !== null) {
+            payload = {
+                action: "update",
+                rowIndex: editSheetRow, 
+                data: formData
+            };
         } else {
-            showLoadingWithTimeout("Upisivanje novog reda u Google Sheets...");
+            payload = {
+                action: "insert",
+                data: formData
+            };
         }
 
+        showLoading("Čuvanje podataka...");
         fetch(SCRIPT_URL, {
             method: 'POST',
-            body: JSON.stringify(record)
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
         })
         .then(res => res.json())
-        .then(res => {
-            cancelEdit();
-            loadDataFromSheets(); 
-        })
-        .catch(err => {
+        .then(response => {
+            hideLoading();
+            closeModal();
             cancelEdit();
             loadDataFromSheets();
+        })
+        .catch(err => {
+            console.error("Greška pri slanju forme:", err);
+            hideLoading();
         });
     });
 
-    function deleteRow(index) {
-        if(confirm('Da li ste sigurni da želite da obrišete ovaj red iz Google Sheets tabele?')) {
-            const realSheetIndex = (database.length - 1) - index;
-            showLoadingWithTimeout("Brisanje reda...");
-            
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'delete', index: realSheetIndex })
-            })
-            .then(res => res.json())
-            .then(res => {
-                if(editIndex === index) cancelEdit();
-                loadDataFromSheets();
-            })
-            .catch(err => {
-                loadDataFromSheets();
-            });
-        }
-    }
-
     function clearEntireDatabase() {
-        if(confirm('UPOZORENJE: Da li ste potpuno sigurni da želite da ISPRAZNITE CELU Google Sheets tabelu? Ova akcija briše sve podatke zauvek.')) {
-            showLoadingWithTimeout("Čišćenje cele tabele...");
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'clearAll' })
-            })
-            .then(res => res.json())
-            .then(res => {
-                cancelEdit();
-                loadDataFromSheets();
-            })
-            .catch(err => {
-                loadDataFromSheets();
-            });
-        }
-    }
+        if(!confirm("PAŽNJA! Da li ste sigurni da želite da obrišete celu bazu podataka sa Google Sheets-a?")) return;
 
-    function clearForm() {
-        document.getElementById('logisticsForm').reset();
-        document.getElementById('status').value = 'Najavljen';
-        setNow();
+        const payload = {
+            action: "clear"
+        };
+
+        showLoading("Brisanje cele baze...");
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(response => {
+            hideLoading();
+            loadDataFromSheets();
+        })
+        .catch(err => {
+            console.error("Greška:", err);
+            hideLoading();
+        });
     }
 
     function exportToExcel() {
-        const header1 = ["UTOVAR / ISTOVAR", "", "", "", "", "", "", "", "", "", ""];
-        const header2 = ["TEAM LEADER", "", "TIMESTAMP", "", "DOBAVLJAC/KUPAC", "KAMION", "DDT", "UTOVAR/ISTOVAR", "STATUS", "PALETE", "TIP ROBE"];
-        const header3 = ["Ime", "Prezime", "Datum", "Vreme", "Naziv kompanije", "Tablice", "Broj DDT-a", "Utovar/Istovar", "Status", "Broj paleta", "Tip robe"];
-        
-        const visibleIndices = getFilteredIndices();
-        const sortedIndices = [...visibleIndices].reverse();
-        const rows = sortedIndices.map(i => {
-            const r = database[i];
-            return [
-                r['Ime'], r['Prezime'], formatDate(r['Datum']), formatTime(r['Vreme']), r['Naziv kompanije'], r['Tablice'],
-                r['Broj DDT-a'], r['Utovar/Istovar'], getStatus(r), r['Broj paleta'] !== "" ? parseInt(r['Broj paleta']) : "-", r['Tip robe']
-            ];
-        });
-
-        const workbookData = [header1, header2, header3, ...rows];
-        const worksheet = XLSX.utils.aoa_to_sheet(workbookData);
-        
-        worksheet['!merges'] = [
-            { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, 
-            { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }, 
-            { s: { r: 1, c: 2 }, e: { r: 1, c: 3 } }  
-        ];
-
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Utovar-Istovar");
-        XLSX.writeFile(workbook, `Logistika_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+        if(!database || database.length === 0) {
+            alert("Nema podataka za izvoz.");
+            return;
+        }
+        const ws = XLSX.utils.json_to_sheet(database);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Najave");
+        XLSX.writeFile(wb, "Evidencija_Dokova.xlsx");
     }
 
-    document.getElementById('filterDatum').addEventListener('change', renderTable);
-    document.getElementById('filterTip').addEventListener('change', renderTable);
-    document.getElementById('filterStatus').addEventListener('change', renderTable);
+    ['filterSearch', 'filterDatum', 'filterTip', 'filterStatus'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            el.addEventListener('input', renderTable);
+            el.addEventListener('change', renderTable);
+        }
+    });
 
-    setNow();
-    loadDataFromSheets();
+    window.onload = function() {
+        loadDataFromSheets();
+    };
 </script>
-
 </body>
 </html>
