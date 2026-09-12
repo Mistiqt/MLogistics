@@ -62,9 +62,9 @@
 
         .slider-section { margin-top: 35px; }
         .slider-wrapper { background: var(--panel); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border-soft); position: relative; height: 620px; }
-        .custom-slider-inner { display: flex; width: 300%; height: 100%; transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1); }
-        .custom-slide { width: 33.3333%; height: 100%; }
-        .custom-slide img { width: 100%; height: 100%; object-fit: cover; }
+        .custom-slider-inner { display: flex; width: 300%; height: 100%; transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+        .custom-slide { width: 33.333333%; height: 100%; flex-shrink: 0; overflow: hidden; }
+        .custom-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
         .content-section { margin-top: 40px; }
         .section-heading { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--brand-light); display: flex; align-items: center; justify-content: space-between; }
@@ -74,7 +74,6 @@
         .clean-card label { display: block !important; width: 100% !important; text-align: left !important; margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; }
         .clean-card .form-control, .clean-card select, .clean-card textarea { display: block !important; width: 100% !important; height: auto; padding: 10px 14px; font-size: 14px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
 
-        /* dark overrides for bootstrap form controls used anywhere on the page (login, admin form, dynamic edit fields) */
         .form-control, textarea.form-control, select.form-control, .form-control-file {
             background-color: var(--panel-2) !important;
             color: var(--text) !important;
@@ -288,7 +287,7 @@
         function nextSlide() {
             currentIndex++;
             if (currentIndex >= slides.length) currentIndex = 0;
-            scroller.style.transform = `translateX(-${currentIndex * 33.3333}%)`;
+            scroller.style.transform = `translateX(-${currentIndex * (100 / slides.length)}%)`;
         }
         setInterval(nextSlide, 7000);
 
