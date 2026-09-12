@@ -853,7 +853,6 @@
                     database = data.map((row, idx) => {
                         let rawP = row['Prioritet'];
                         let pNum = parseInt(rawP, 10);
-                        // Ako vrednost nije validan pozitivan broj, očistimo je da bude prazna
                         let cleanP = (!isNaN(pNum) && pNum > 0) ? pNum : '';
                         
                         return {
@@ -1055,13 +1054,11 @@
         renderTable();
     }
 
-    // Funkcija za upravljanje prioritetom (klik na prioritet dugme)
     function togglePriority(index) {
         let currentRow = database[index];
         let currentPriority = parseInt(currentRow['Prioritet'], 10);
 
         if (isNaN(currentPriority) || currentPriority <= 0) {
-            // Pronađi najveći postojeći prioritet u bazi da dodelimo sledeći redni broj
             let maxP = 0;
             database.forEach(r => {
                 let p = parseInt(r['Prioritet'], 10);
@@ -1069,7 +1066,6 @@
             });
             currentRow['Prioritet'] = maxP + 1;
         } else {
-            // Ukloni prioritet ukoliko je već bio postavljen
             currentRow['Prioritet'] = "";
         }
 
@@ -1088,7 +1084,6 @@
 
         const visibleIndices = getFilteredIndices();
         
-        // Sortiramo prikaz tako da prioritetna vozila idu na vrh (po rednom broju)
         visibleIndices.sort((a, b) => {
             let pA = parseInt(database[a]['Prioritet'], 10);
             let pB = parseInt(database[b]['Prioritet'], 10);
@@ -1294,7 +1289,7 @@
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify(payload)
         })
-        .then(res: res.json())
+        .then(res => res.json())
         .then(response => {
             hideLoading();
             closeModal();
