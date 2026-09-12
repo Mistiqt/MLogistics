@@ -324,7 +324,6 @@
                         const isMasterAdmin = (userRole === 'MASTER' || userRole === 'ADMIN');
                         
                         document.getElementById('navTransport').style.display = isGuest ? 'none' : 'inline-block';
-                        document.getElementById('navPopis').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navTimeSheet').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navStillServis').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navZaposleni').style.display = isMasterAdmin ? 'inline-block' : 'none';
