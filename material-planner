@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLANER MATERIJALA ERP</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        erpdark: '#0b0f19',
+                        erppanel: '#111827',
+                        erpborder: '#1f2937',
+                        erpsidebar: '#0f172a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #374151; }
+    </style>
+</head>
+<body class="bg-erpdark text-gray-100 font-sans antialiased min-h-screen flex relative">
+
+    <!-- SKRIVENI FILE INPUTI ZA CSV UVOZ -->
+    <input type="file" id="csvMaterialsInput" accept=".csv" class="hidden" onchange="importMaterialsCSV(event)">
+    <input type="file" id="csvPlansInput" accept=".csv" class="hidden" onchange="importPlansCSV(event)">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-erpsidebar border-r border-erpborder flex flex-col justify-between shrink-0 select-none z-10">
+        <div>
+            <!-- Logo / Brand -->
+            <div class="p-6 border-b border-erpborder flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg flex items-center justify-center">
+                    <i data-lucide="box" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold tracking-wide text-sm text-white">PLANER</h1>
+                    <p class="text-[10px] text-gray-400 tracking-wider">MATERIJALA ERP</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="p-4 space-y-1.5">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors bg-blue-600/20 text-blue-400 border border-blue-500/30">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span>Kontrolna Tabla</span>
+                </button>
+                <button onclick="switchTab('materials')" id="nav-materials" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:bg-gray-800 hover:text-gray-200">
+                    <i data-lucide="package" class="w-4 h-4"></i>
+                    <span>Materijali</span>
+                </button>
+                <button onclick="switchTab('suppliers')" id="nav-suppliers" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:bg-gray-800 hover:text-gray-200">
+                    <i data-lucide="truck" class="w-4 h-4"></i>
+                    <span>Dobavljači</span>
+                </button>
+                <button onclick="switchTab('plans')" id="nav-plans" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:bg-gray-800 hover:text-gray-200">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    <span>Proizvodni Planovi</span>
+                </button>
+                <button onclick="switchTab('matrix')" id="nav-matrix" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:bg-gray-800 hover:text-gray-200">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i>
+                    <span>Matrica Pokrivenosti</span>
+                </button>
+                <button onclick="switchTab('csv')" id="nav-csv" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:bg-gray-800 hover:text-gray-200">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                    <span>CSV Uvoz / Izvoz</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- User Profile Footer -->
+        <div class="p-4 border-t border-erpborder">
+            <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Prijavljen</p>
+            <p class="text-xs font-semibold text-gray-200 truncate">Dušan Kostić</p>
+            <p class="text-[11px] text-gray-400 truncate mb-3">dusan.kostic@zf.com</p>
+            <button class="w-full flex items-center justify-center space-x-2 text-xs text-red-400 bg-red-500/10 hover:bg-red-500/20 py-2 rounded-lg transition-colors border border-red-500/20">
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                <span>Odjava</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 overflow-y-auto p-10">
+
+        <!-- 1. KONTROLNA TABLA -->
+        <section id="tab-dashboard" class="space-y-6 tab-content">
+            <div>
+                <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Kontrolna Tabla</h2>
+                <p class="text-sm text-gray-400">Realno stanje pokrivenosti materijala u odnosu na proizvodne planove (uključujući tranzit)</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-erppanel border border-erpborder rounded-xl p-5 relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-semibold tracking-wider text-gray-400 uppercase">Ukupno Materijala</span>
+                        <i data-lucide="box" class="w-5 h-5 text-gray-500"></i>
+                    </div>
+                    <div id="statTotalMaterials" class="text-4xl font-extrabold text-white mt-4">0</div>
+                    <div class="absolute bottom-0 left-0 right-0 h-1 bg-blue-500"></div>
+                </div>
+
+                <div class="bg-erppanel border border-erpborder rounded-xl p-5 relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-semibold tracking-wider text-red-400 uppercase">Kritično (&lt;3 dana)</span>
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i>
+                    </div>
+                    <div id="statCritical" class="text-4xl font-extrabold text-white mt-4">0</div>
+                    <div class="absolute bottom-0 left-0 right-0 h-1 bg-red-500"></div>
+                </div>
+
+                <div class="bg-erppanel border border-erpborder rounded-xl p-5 relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-semibold tracking-wider text-amber-400 uppercase">Upozorenje (3–7 dana)</span>
+                        <i data-lucide="trending-down" class="w-5 h-5 text-amber-400"></i>
+                    </div>
+                    <div id="statWarning" class="text-4xl font-extrabold text-white mt-4">0</div>
+                    <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
+                </div>
+
+                <div class="bg-erppanel border border-erpborder rounded-xl p-5 relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Optimalno (&gt;7 dana)</span>
+                        <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+                    </div>
+                    <div id="statOptimal" class="text-4xl font-extrabold text-white mt-4">0</div>
+                    <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500"></div>
+                </div>
+            </div>
+
+            <div class="bg-erppanel border border-erpborder rounded-xl overflow-hidden shadow-xl">
+                <div class="p-5 border-b border-erpborder flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Alert Lista</p>
+                        <h3 class="text-base font-bold text-white">Kritični materijali</h3>
+                    </div>
+                    <button onclick="switchTab('matrix')" class="text-xs text-blue-400 hover:text-blue-300 font-semibold tracking-wide flex items-center space-x-1">
+                        <span>PUNA MATRICA</span>
+                        <span>&rarr;</span>
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-900/50 text-[11px] text-gray-400 uppercase tracking-wider border-b border-erpborder">
+                            <tr>
+                                <th class="py-3 px-5">Part Broj</th>
+                                <th class="py-3 px-5">Opis</th>
+                                <th class="py-3 px-5">Dobavljač</th>
+                                <th class="py-3 px-5">Stanje</th>
+                                <th class="py-3 px-5">U tranzitu</th>
+                                <th class="py-3 px-5">Dani Pokrića</th>
+                                <th class="py-3 px-5">Prvi Manjak</th>
+                                <th class="py-3 px-5">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardAlertsTable" class="divide-y divide-erpborder text-gray-300">
+                            <!-- Dinamički popunjeno -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. MATERIJALI -->
+        <section id="tab-materials" class="space-y-6 tab-content hidden">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Materijali</h2>
+                    <p class="text-sm text-gray-400">Registar svih šifri, opisa, stanja i količina u tranzitu</p>
+                </div>
+                <button onclick="openModal('materialModal')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 transition-colors">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Novi materijal</span>
+                </button>
+            </div>
+
+            <div class="relative max-w-md">
+                <i data-lucide="search" class="w-4 h-4 text-gray-500 absolute left-3.5 top-3"></i>
+                <input type="text" id="materialSearchInput" oninput="renderMaterials()" placeholder="Pretraga po Part Broju ili opisu..." class="w-full bg-erppanel border border-erpborder rounded-lg pl-10 pr-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500">
+            </div>
+
+            <div class="bg-erppanel border border-erpborder rounded-xl overflow-hidden shadow-xl">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-900/50 text-[11px] text-gray-400 uppercase tracking-wider border-b border-erpborder">
+                        <tr>
+                            <th class="py-3 px-5">Part Broj</th>
+                            <th class="py-3 px-5">Opis</th>
+                            <th class="py-3 px-5">Dobavljač</th>
+                            <th class="py-3 px-5">Stanje</th>
+                            <th class="py-3 px-5">U tranzitu</th>
+                            <th class="py-3 px-5">Min</th>
+                            <th class="py-3 px-5 text-right">Akcije</th>
+                        </tr>
+                    </thead>
+                    <tbody id="materialsTableBody" class="divide-y divide-erpborder text-gray-300">
+                        <!-- Dinamički popunjeno -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 3. DOBAVLJAČI -->
+        <section id="tab-suppliers" class="space-y-6 tab-content hidden">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Dobavljači</h2>
+                    <p class="text-sm text-gray-400">Kontakt informacije i vreme isporuke</p>
+                </div>
+                <button onclick="openModal('supplierModal')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 transition-colors">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Novi dobavljač</span>
+                </button>
+            </div>
+
+            <div class="bg-erppanel border border-erpborder rounded-xl overflow-hidden shadow-xl">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-900/50 text-[11px] text-gray-400 uppercase tracking-wider border-b border-erpborder">
+                        <tr>
+                            <th class="py-3 px-5">Naziv</th>
+                            <th class="py-3 px-5">Kontakt</th>
+                            <th class="py-3 px-5">Lead Time</th>
+                            <th class="py-3 px-5">Napomena</th>
+                            <th class="py-3 px-5 text-right">Akcije</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suppliersTableBody" class="divide-y divide-erpborder text-gray-300">
+                        <!-- Dinamički popunjeno -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 4. PROIZVODNI PLANOVI -->
+        <section id="tab-plans" class="space-y-6 tab-content hidden">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Proizvodni Planovi</h2>
+                    <p class="text-sm text-gray-400">Datumi proizvodnje, količine i BOM (materijali po jedinici)</p>
+                </div>
+                <button onclick="openModal('planModal')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 transition-colors">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Novi plan</span>
+                </button>
+            </div>
+
+            <div class="bg-erppanel border border-erpborder rounded-xl overflow-hidden shadow-xl">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-900/50 text-[11px] text-gray-400 uppercase tracking-wider border-b border-erpborder">
+                        <tr>
+                            <th class="py-3 px-5">Datum</th>
+                            <th class="py-3 px-5">Proizvod</th>
+                            <th class="py-3 px-5">Količina</th>
+                            <th class="py-3 px-5">BOM (Materijali)</th>
+                            <th class="py-3 px-5 text-right">Akcije</th>
+                        </tr>
+                    </thead>
+                    <tbody id="plansTableBody" class="divide-y divide-erpborder text-gray-300">
+                        <!-- Dinamički popunjeno -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 5. MATRICA POKRIVENOSTI -->
+        <section id="tab-matrix" class="space-y-6 tab-content hidden">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Matrica Pokrivenosti</h2>
+                    <p class="text-sm text-gray-400">Preostali dani pokrića i dnevna projekcija za svaki materijal</p>
+                </div>
+                <div class="relative">
+                    <select id="matrixDaysSelect" onchange="renderMatrix()" class="bg-erppanel border border-erpborder rounded-lg px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500 cursor-pointer">
+                        <option value="7">7 dana</option>
+                        <option value="14">14 dana</option>
+                        <option value="30" selected>30 dana</option>
+                        <option value="60">60 dana</option>
+                        <option value="90">90 dana</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-erppanel border border-erpborder rounded-xl overflow-hidden shadow-xl">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-900/50 text-[11px] text-gray-400 uppercase tracking-wider border-b border-erpborder">
+                        <tr>
+                            <th class="py-3 px-5">Part Broj</th>
+                            <th class="py-3 px-5">Opis</th>
+                            <th class="py-3 px-5">Dobavljač</th>
+                            <th class="py-3 px-5">Stanje</th>
+                            <th class="py-3 px-5">U tranzitu</th>
+                            <th class="py-3 px-5">Min</th>
+                            <th class="py-3 px-5">Dani Pokrića</th>
+                            <th class="py-3 px-5">Prvi Manjak</th>
+                            <th class="py-3 px-5">Status</th>
+                            <th class="py-3 px-5 text-right">Projekcija</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matrixTableBody" class="divide-y divide-erpborder text-gray-300">
+                        <!-- Dinamički popunjeno -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 6. CSV UVOZ / IZVOZ -->
+        <section id="tab-csv" class="space-y-6 tab-content hidden">
+            <div>
+                <h2 class="text-2xl font-bold tracking-tight text-white uppercase">CSV Uvoz / Izvoz</h2>
+                <p class="text-sm text-gray-400">Masovni unos materijala i proizvodnih planova</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-erppanel border border-erpborder rounded-xl p-6 flex flex-col justify-between shadow-xl">
+                    <div>
+                        <div class="flex items-center space-x-2 mb-2 text-white font-semibold">
+                            <i data-lucide="file-spreadsheet" class="w-5 h-5 text-blue-400"></i>
+                            <h3>Uvoz materijala</h3>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-4">CSV format bez kolone za jedinicu mere.</p>
+                        
+                        <div class="bg-gray-950 border border-erpborder rounded-lg p-3 font-mono text-xs text-gray-400 mb-5 overflow-x-auto space-y-1">
+                            <p class="text-gray-300">part_number;description;supplier_name;current_stock;in_transit;min_stock</p>
+                            <p>M-001;Zavrtanj M8;TestSup;1200;100;300</p>
+                        </div>
+                    </div>
+                    <button onclick="document.getElementById('csvMaterialsInput').click()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center space-x-2 transition-colors">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <span>Uvezi CSV</span>
+                    </button>
+                </div>
+
+                <div class="bg-erppanel border border-erpborder rounded-xl p-6 flex flex-col justify-between shadow-xl">
+                    <div>
+                        <div class="flex items-center space-x-2 mb-2 text-white font-semibold">
+                            <i data-lucide="file-spreadsheet" class="w-5 h-5 text-blue-400"></i>
+                            <h3>Uvoz proizvodnih planova</h3>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-4">Svaki red = jedan BOM element sa pripadajućom količinom po jedinici.</p>
+                        
+                        <div class="bg-gray-950 border border-erpborder rounded-lg p-3 font-mono text-xs text-gray-400 mb-5 overflow-x-auto space-y-1">
+                            <p class="text-gray-300">product_name;plan_date;quantity;part_number;qty_per_unit</p>
+                            <p>Sklop-A;2026-09-15;100;222333;2</p>
+                        </div>
+                    </div>
+                    <button onclick="document.getElementById('csvPlansInput').click()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center space-x-2 transition-colors">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <span>Uvezi CSV</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                <div class="bg-erppanel border border-erpborder rounded-xl p-6 flex items-center justify-between shadow-xl">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">IZVOZ</p>
+                        <h3 class="text-base font-bold text-white">Registar materijala</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Sve šifre, stanja, tranzit i dobavljači</p>
+                    </div>
+                    <button onclick="exportMaterialsCSV()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 transition-colors">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Preuzmi</span>
+                    </button>
+                </div>
+
+                <div class="bg-erppanel border border-erpborder rounded-xl p-6 flex items-center justify-between shadow-xl">
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">IZVOZ</p>
+                        <h3 class="text-base font-bold text-white">Izveštaj pokrivenosti</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Dani pokrića, statusi, datumi manjka</p>
+                    </div>
+                    <button onclick="exportMatrixCSV()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 transition-colors">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Preuzmi</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODALNI PROZORI -->
+
+    <!-- 1. MODAL: Novi materijal -->
+    <div id="materialModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-erppanel border border-erpborder rounded-xl w-full max-w-lg p-6 relative shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-erpborder pb-3">
+                <h3 class="font-bold text-lg text-white">Novi materijal</h3>
+                <button onclick="closeModal('materialModal')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="handleSaveMaterial(event)" class="space-y-4 text-sm">
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Part broj *</label>
+                    <input type="text" id="newMatPart" required class="w-full bg-erpdark border border-blue-500/60 rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Opis</label>
+                    <input type="text" id="newMatDesc" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Dobavljač</label>
+                    <select id="newMatSupplier" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                        <option value="">Bez dobavljača</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-gray-300 text-xs font-semibold mb-1">Stanje</label>
+                        <input type="number" id="newMatStock" value="0" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 text-xs font-semibold mb-1">U tranzitu</label>
+                        <input type="number" id="newMatTransit" value="0" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Minimalna zaliha</label>
+                    <input type="number" id="newMatMin" value="0" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-erpborder">
+                    <button type="button" onclick="closeModal('materialModal')" class="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300">Otkaži</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white">Sačuvaj</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 1.b MODAL: Izmena materijala -->
+    <div id="editMaterialModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-erppanel border border-erpborder rounded-xl w-full max-w-lg p-6 relative shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-erpborder pb-3">
+                <h3 class="font-bold text-lg text-white">Izmena materijala</h3>
+                <button onclick="closeModal('editMaterialModal')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="handleUpdateMaterial(event)" class="space-y-4 text-sm">
+                <input type="hidden" id="editOriginalPart">
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Part broj *</label>
+                    <input type="text" id="editPartNumber" required class="w-full bg-erpdark border border-blue-500/60 rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Opis</label>
+                    <input type="text" id="editDescription" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Dobavljač</label>
+                    <select id="editSupplier" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                        <option value="">Bez dobavljača</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-gray-300 text-xs font-semibold mb-1">Stanje</label>
+                        <input type="number" id="editStock" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 text-xs font-semibold mb-1">U tranzitu</label>
+                        <input type="number" id="editTransit" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Minimalna zaliha</label>
+                    <input type="number" id="editMinStock" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-erpborder">
+                    <button type="button" onclick="closeModal('editMaterialModal')" class="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300">Otkaži</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white">Sačuvaj izmene</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. MODAL: Novi dobavljač -->
+    <div id="supplierModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-erppanel border border-erpborder rounded-xl w-full max-w-lg p-6 relative shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-erpborder pb-3">
+                <h3 class="font-bold text-lg text-white">Novi dobavljač</h3>
+                <button onclick="closeModal('supplierModal')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="handleSaveSupplier(event)" class="space-y-4 text-sm">
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Naziv *</label>
+                    <input type="text" id="newSupName" required class="w-full bg-erpdark border border-blue-500/60 rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Kontakt</label>
+                    <input type="text" id="newSupContact" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Lead time (dana)</label>
+                    <input type="number" id="newSupLead" value="0" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Napomena</label>
+                    <textarea id="newSupNote" rows="3" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500 resize-none"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-erpborder">
+                    <button type="button" onclick="closeModal('supplierModal')" class="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300">Otkaži</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white">Sačuvaj</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2.b MODAL: Izmena dobavljača -->
+    <div id="editSupplierModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-erppanel border border-erpborder rounded-xl w-full max-w-lg p-6 relative shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-erpborder pb-3">
+                <h3 class="font-bold text-lg text-white">Izmena dobavljača</h3>
+                <button onclick="closeModal('editSupplierModal')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="handleUpdateSupplier(event)" class="space-y-4 text-sm">
+                <input type="hidden" id="editOriginalSupName">
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Naziv *</label>
+                    <input type="text" id="editSupName" required class="w-full bg-erpdark border border-blue-500/60 rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Kontakt</label>
+                    <input type="text" id="editSupContact" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Lead time (dana)</label>
+                    <input type="number" id="editSupLead" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Napomena</label>
+                    <textarea id="editSupNote" rows="3" class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500 resize-none"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-erpborder">
+                    <button type="button" onclick="closeModal('editSupplierModal')" class="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300">Otkaži</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white">Sačuvaj izmene</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. MODAL: Novi proizvodni plan -->
+    <div id="planModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-erppanel border border-erpborder rounded-xl w-full max-w-2xl p-6 relative shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-erpborder pb-3">
+                <h3 class="font-bold text-lg text-white">Novi proizvodni plan</h3>
+                <button onclick="closeModal('planModal')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="handleSavePlan(event)" class="space-y-4 text-sm">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-300 text-xs font-semibold mb-1">Naziv proizvoda *</label>
+                        <input type="text" id="newPlanProduct" required class="w-full bg-erpdark border border-blue-500/60 rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 text-xs font-semibold mb-1">Datum *</label>
+                        <input type="date" id="newPlanDate" required class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Količina proizvoda</label>
+                    <input type="number" id="newPlanQty" value="1" min="1" required class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+
+                <div class="pt-2">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-gray-300 text-xs font-semibold">BOM – Materijali po jedinici proizvoda</label>
+                        <button type="button" onclick="addBomRow('bomList')" class="bg-transparent hover:bg-gray-800 text-gray-200 border border-erpborder px-3 py-1 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-colors">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Dodaj materijal</span>
+                        </button>
+                    </div>
+                    <div id="bomList" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        <!-- Dinamičke stavke BOM-a -->
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-erpborder">
+                    <button type="button" onclick="closeModal('planModal')" class="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300">Otkaži</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white">Sačuvaj</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3.b MODAL: Izmena proizvodnog plana -->
+    <div id="editPlanModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-erppanel border border-erpborder rounded-xl w-full max-w-2xl p-6 relative shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-erpborder pb-3">
+                <h3 class="font-bold text-lg text-white">Izmena proizvodnog plana</h3>
+                <button onclick="closeModal('editPlanModal')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="handleUpdatePlan(event)" class="space-y-4 text-sm">
+                <input type="hidden" id="editPlanId">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-300 text-xs font-semibold mb-1">Naziv proizvoda *</label>
+                        <input type="text" id="editPlanProduct" required class="w-full bg-erpdark border border-blue-500/60 rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 text-xs font-semibold mb-1">Datum *</label>
+                        <input type="date" id="editPlanDate" required class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-300 text-xs font-semibold mb-1">Količina proizvoda</label>
+                    <input type="number" id="editPlanQty" min="1" required class="w-full bg-erpdark border border-erpborder rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+
+                <div class="pt-2">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-gray-300 text-xs font-semibold">BOM – Materijali po jedinici proizvoda</label>
+                        <button type="button" onclick="addBomRow('editBomList')" class="bg-transparent hover:bg-gray-800 text-gray-200 border border-erpborder px-3 py-1 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-colors">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Dodaj materijal</span>
+                        </button>
+                    </div>
+                    <div id="editBomList" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        <!-- Dinamičke stavke BOM-a za izmenu -->
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-erpborder">
+                    <button type="button" onclick="closeModal('editPlanModal')" class="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300">Otkaži</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white">Sačuvaj izmene</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. MODAL: Projekcija pokrivenosti -->
+    <div id="projectionModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-erppanel border border-erpborder rounded-xl w-full max-w-4xl p-6 relative shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-erpborder pb-3">
+                <h3 id="projectionTitle" class="font-bold text-lg text-white">Projekcija</h3>
+                <button onclick="closeModal('projectionModal')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div class="bg-erpdark border border-erpborder rounded-xl p-4">
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Stanje</p>
+                    <p id="projCardStock" class="text-xl font-bold text-white">0</p>
+                </div>
+                <div class="bg-erpdark border border-erpborder rounded-xl p-4">
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider mb-1">U tranzitu</p>
+                    <p id="projCardTransit" class="text-xl font-bold text-blue-300">0</p>
+                </div>
+                <div class="bg-erpdark border border-erpborder rounded-xl p-4">
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Dani pokrića</p>
+                    <p id="projCardDays" class="text-xl font-bold text-emerald-400">0</p>
+                </div>
+            </div>
+
+            <div class="bg-erpdark border border-erpborder rounded-xl overflow-hidden max-h-72 overflow-y-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-gray-900/80 text-[10px] text-gray-400 uppercase tracking-wider sticky top-0 border-b border-erpborder">
+                        <tr>
+                            <th class="py-2.5 px-4">Datum</th>
+                            <th class="py-2.5 px-4 text-right">Početno Stanje</th>
+                            <th class="py-2.5 px-4 text-right">Potrošnja</th>
+                            <th class="py-2.5 px-4 text-right">Dolazak Tranzita</th>
+                            <th class="py-2.5 px-4 text-right">Krajnje Stanje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projectionTableBody" class="divide-y divide-erpborder text-gray-300 font-mono">
+                        <!-- Dinamički popunjeno -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logika sa LocalStorage i CSV uvozom -->
+    <script>
+        const defaultMaterials = [
+            { partNumber: '222333', description: 'Test', supplier: 'TestSup', stock: 1200, transit: 100, minStock: 50 },
+            { partNumber: 'IMP-001', description: 'Imported Part 1', supplier: 'TestSup', stock: 500, transit: 0, minStock: 20 },
+            { partNumber: 'IMP-002', description: 'Imported Part 2', supplier: 'TestSup', stock: 250, transit: 50, minStock: 15 },
+            { partNumber: 'T-1789168316', description: 'TestMat', supplier: 'TestSup', stock: 100, transit: 0, minStock: 10 }
+        ];
+
+        const defaultSuppliers = [
+            { name: 'TestSup', contact: 'a@b.com', leadTime: 5, note: '' }
+        ];
+
+        const defaultPlans = [
+            { id: 1, date: '2026-09-15', product: 'UIProdA', quantity: 5, bom: [{ partNumber: '222333', qty: 2 }] },
+            { id: 2, date: '2026-09-16', product: 'branik', quantity: 90, bom: [{ partNumber: '222333', qty: 1 }] },
+            { id: 3, date: '2026-09-16', product: 'Instrument tabla', quantity: 200, bom: [{ partNumber: 'T-1789168316', qty: 1 }, { partNumber: 'IMP-002', qty: 1 }] }
+        ];
+
+        let materials = JSON.parse(localStorage.getItem('erp_materials')) || defaultMaterials;
+        let suppliers = JSON.parse(localStorage.getItem('erp_suppliers')) || defaultSuppliers;
+        let plans = JSON.parse(localStorage.getItem('erp_plans')) || defaultPlans;
+
+        function saveData() {
+            localStorage.setItem('erp_materials', JSON.stringify(materials));
+            localStorage.setItem('erp_suppliers', JSON.stringify(suppliers));
+            localStorage.setItem('erp_plans', JSON.stringify(plans));
+            initApp();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+            document.querySelectorAll('aside nav button').forEach(btn => {
+                btn.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors text-gray-400 hover:bg-gray-800 hover:text-gray-200";
+            });
+            document.getElementById('nav-' + tabId).className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors bg-blue-600/20 text-blue-400 border border-blue-500/30";
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            if(modalId === 'materialModal' || modalId === 'editMaterialModal') populateSupplierDropdowns();
+            if(modalId === 'planModal') renderBomRowsInit('bomList');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function populateSupplierDropdowns() {
+            const selects = ['newMatSupplier', 'editSupplier'];
+            selects.forEach(id => {
+                const sel = document.getElementById(id);
+                if(!sel) return;
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">Bez dobavljača</option>';
+                suppliers.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.name;
+                    opt.textContent = s.name;
+                    sel.appendChild(opt);
+                });
+                sel.value = currentVal;
+            });
+        }
+
+        function calculateMaterialProjection(m, daysCount = 30) {
+            let sup = suppliers.find(s => s.name === m.supplier);
+            let leadTime = sup ? Number(sup.leadTime) : 0;
+
+            let currentStock = Number(m.stock);
+            let transitQty = Number(m.transit);
+            let today = new Date();
+
+            let projectionDays = [];
+            let firstDeficitDate = null;
+            let daysCoverCount = 0;
+            let hasConsumptionPlan = false;
+
+            for(let i = 0; i < daysCount; i++) {
+                let d = new Date(today);
+                d.setDate(today.getDate() + i);
+                let dateStr = d.toISOString().split('T')[0];
+
+                let consumption = 0;
+                plans.forEach(p => {
+                    if(p.date === dateStr) {
+                        p.bom.forEach(b => {
+                            if(b.partNumber === m.partNumber) {
+                                consumption += (b.qty * p.quantity);
+                            }
+                        });
+                    }
+                });
+
+                if (consumption > 0) hasConsumptionPlan = true;
+
+                let transitArrival = 0;
+                if(i === leadTime && transitQty > 0) {
+                    transitArrival = transitQty;
+                }
+
+                let startStock = currentStock;
+                let endStock = startStock - consumption + transitArrival;
+                currentStock = endStock;
+
+                projectionDays.push({
+                    dateStr,
+                    startStock,
+                    consumption,
+                    transitArrival,
+                    endStock
+                });
+
+                if (endStock >= 0) {
+                    daysCoverCount++;
+                } else if (!firstDeficitDate) {
+                    firstDeficitDate = dateStr;
+                }
+            }
+
+            let status = 'NEMA PLANA';
+            let statusClass = 'bg-gray-500/10 border-gray-500/30 text-gray-400';
+            
+            if (hasConsumptionPlan) {
+                if (daysCoverCount < 3) {
+                    status = 'KRITIČNO';
+                    statusClass = 'bg-red-500/10 border-red-500/30 text-red-400';
+                } else if (daysCoverCount <= 7) {
+                    status = 'UPOZORENJE';
+                    statusClass = 'bg-amber-500/10 border-amber-500/30 text-amber-400';
+                } else {
+                    status = 'OPTIMALNO';
+                    statusClass = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+                }
+            }
+
+            return {
+                daysCoverCount: hasConsumptionPlan ? daysCoverCount : null,
+                firstDeficitDate: firstDeficitDate || '—',
+                status,
+                statusClass,
+                projectionDays
+            };
+        }
+
+        function calculateAnalytics() {
+            return materials.map(m => {
+                let proj = calculateMaterialProjection(m, 30);
+                return { 
+                    ...m, 
+                    dCover: proj.daysCoverCount !== null ? proj.daysCoverCount : null,
+                    firstDeficit: proj.firstDeficitDate,
+                    status: proj.status, 
+                    statusClass: proj.statusClass 
+                };
+            });
+        }
+
+        function initApp() {
+            renderMaterials();
+            renderSuppliers();
+            renderPlans();
+            renderMatrix();
+            renderDashboard();
+            lucide.createIcons();
+        }
+
+        function renderDashboard() {
+            let analytics = calculateAnalytics();
+            let total = materials.length;
+            let critical = analytics.filter(a => a.status === 'KRITIČNO').length;
+            let warning = analytics.filter(a => a.status === 'UPOZORENJE').length;
+            let optimal = analytics.filter(a => a.status === 'OPTIMALNO').length;
+
+            document.getElementById('statTotalMaterials').textContent = total;
+            document.getElementById('statCritical').textContent = critical;
+            document.getElementById('statWarning').textContent = warning;
+            document.getElementById('statOptimal').textContent = optimal;
+
+            let tbody = document.getElementById('dashboardAlertsTable');
+            tbody.innerHTML = '';
+            analytics.filter(a => a.status === 'KRITIČNO').forEach(a => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-800/40">
+                        <td class="py-3.5 px-5 font-mono text-xs text-blue-400 underline cursor-pointer" onclick="openProjectionModal('${a.partNumber} • ${a.description}')">${a.partNumber}</td>
+                        <td class="py-3.5 px-5">${a.description}</td>
+                        <td class="py-3.5 px-5">${a.supplier || '—'}</td>
+                        <td class="py-3.5 px-5">${a.stock}</td>
+                        <td class="py-3.5 px-5 text-blue-300 font-semibold">${a.transit}</td>
+                        <td class="py-3.5 px-5 font-bold text-red-400">${a.dCover !== null ? a.dCover + ' dana' : '—'}</td>
+                        <td class="py-3.5 px-5 text-red-400 font-mono text-xs">${a.firstDeficit}</td>
+                        <td class="py-3.5 px-5"><span class="border text-[10px] font-bold px-2.5 py-1 rounded ${a.statusClass}">${a.status}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderMaterials() {
+            let search = document.getElementById('materialSearchInput').value.toLowerCase();
+            let tbody = document.getElementById('materialsTableBody');
+            tbody.innerHTML = '';
+            materials.filter(m => m.partNumber.toLowerCase().includes(search) || m.description.toLowerCase().includes(search)).forEach(m => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-800/40">
+                        <td class="py-3.5 px-5 font-mono text-xs text-blue-400">${m.partNumber}</td>
+                        <td class="py-3.5 px-5">${m.description}</td>
+                        <td class="py-3.5 px-5">${m.supplier || '—'}</td>
+                        <td class="py-3.5 px-5">${m.stock}</td>
+                        <td class="py-3.5 px-5 text-blue-300 font-semibold">${m.transit}</td>
+                        <td class="py-3.5 px-5">${m.minStock}</td>
+                        <td class="py-3.5 px-5 text-right space-x-2">
+                            <button onclick="openEditMaterialModal('${m.partNumber}')" class="text-gray-400 hover:text-blue-400" title="Izmeni materijal"><i data-lucide="pencil" class="w-4 h-4 inline"></i></button>
+                            <button onclick="deleteMaterial('${m.partNumber}')" class="text-gray-400 hover:text-red-400" title="Obriši"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function renderSuppliers() {
+            let tbody = document.getElementById('suppliersTableBody');
+            tbody.innerHTML = '';
+            suppliers.forEach(s => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-800/40">
+                        <td class="py-3.5 px-5 font-semibold text-white">${s.name}</td>
+                        <td class="py-3.5 px-5 text-blue-400">${s.contact || '—'}</td>
+                        <td class="py-3.5 px-5">${s.leadTime} dana</td>
+                        <td class="py-3.5 px-5 text-gray-500">${s.note || '—'}</td>
+                        <td class="py-3.5 px-5 text-right space-x-2">
+                            <button onclick="openEditSupplierModal('${s.name}')" class="text-gray-400 hover:text-blue-400" title="Izmeni dobavljača"><i data-lucide="pencil" class="w-4 h-4 inline"></i></button>
+                            <button onclick="deleteSupplier('${s.name}')" class="text-gray-400 hover:text-red-400" title="Obriši"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function renderPlans() {
+            let tbody = document.getElementById('plansTableBody');
+            tbody.innerHTML = '';
+            plans.forEach(p => {
+                let bomStr = p.bom.map(b => `${b.partNumber} &times; ${b.qty}`).join(' &bull; ');
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-800/40">
+                        <td class="py-3.5 px-5 font-mono text-xs text-gray-400">${p.date}</td>
+                        <td class="py-3.5 px-5 font-bold text-white">${p.product}</td>
+                        <td class="py-3.5 px-5 font-semibold">${p.quantity}</td>
+                        <td class="py-3.5 px-5 font-mono text-xs text-gray-400">${bomStr}</td>
+                        <td class="py-3.5 px-5 text-right space-x-2">
+                            <button onclick="openEditPlanModal(${p.id})" class="text-gray-400 hover:text-blue-400" title="Izmeni plan"><i data-lucide="pencil" class="w-4 h-4 inline"></i></button>
+                            <button onclick="deletePlan(${p.id})" class="text-gray-400 hover:text-red-400" title="Obriši plan"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function renderMatrix() {
+            let daysLimit = Number(document.getElementById('matrixDaysSelect').value);
+            let analytics = materials.map(m => {
+                let proj = calculateMaterialProjection(m, daysLimit);
+                return {
+                    ...m,
+                    dCover: proj.daysCoverCount !== null ? proj.daysCoverCount : null,
+                    firstDeficit: proj.firstDeficitDate,
+                    status: proj.status,
+                    statusClass: proj.statusClass
+                };
+            });
+
+            let tbody = document.getElementById('matrixTableBody');
+            tbody.innerHTML = '';
+            analytics.forEach(a => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-800/40">
+                        <td class="py-3.5 px-5 font-mono text-xs text-blue-400">${a.partNumber}</td>
+                        <td class="py-3.5 px-5">${a.description}</td>
+                        <td class="py-3.5 px-5">${a.supplier || '—'}</td>
+                        <td class="py-3.5 px-5">${a.stock}</td>
+                        <td class="py-3.5 px-5 text-blue-300 font-semibold">${a.transit}</td>
+                        <td class="py-3.5 px-5">${a.minStock}</td>
+                        <td class="py-3.5 px-5 font-bold ${a.dCover !== null ? 'text-emerald-400' : 'text-gray-500'}">${a.dCover !== null ? a.dCover + ' dana' : '—'}</td>
+                        <td class="py-3.5 px-5 font-mono text-xs ${a.firstDeficit !== '—' ? 'text-red-400 font-bold' : 'text-gray-500'}">${a.firstDeficit}</td>
+                        <td class="py-3.5 px-5"><span class="border text-[10px] font-bold px-2.5 py-1 rounded ${a.statusClass}">${a.status}</span></td>
+                        <td class="py-3.5 px-5 text-right"><button onclick="openProjectionModal('${a.partNumber} • ${a.description}')" class="text-xs text-blue-400 hover:underline flex items-center justify-end space-x-1 ml-auto"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i><span>Projekcija</span></button></td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function handleSaveMaterial(e) {
+            e.preventDefault();
+            let part = document.getElementById('newMatPart').value;
+            if(materials.some(m => m.partNumber === part)) {
+                alert('Materijal sa ovim part brojem već postoji!');
+                return;
+            }
+            materials.push({
+                partNumber: part,
+                description: document.getElementById('newMatDesc').value,
+                supplier: document.getElementById('newMatSupplier').value,
+                stock: Number(document.getElementById('newMatStock').value),
+                transit: Number(document.getElementById('newMatTransit').value),
+                minStock: Number(document.getElementById('newMatMin').value)
+            });
+            saveData();
+            closeModal('materialModal');
+            e.target.reset();
+        }
+
+        function openEditMaterialModal(partNum) {
+            let m = materials.find(x => x.partNumber === partNum);
+            if(!m) return;
+            populateSupplierDropdowns();
+            document.getElementById('editOriginalPart').value = m.partNumber;
+            document.getElementById('editPartNumber').value = m.partNumber;
+            document.getElementById('editDescription').value = m.description;
+            document.getElementById('editSupplier').value = m.supplier;
+            document.getElementById('editStock').value = m.stock;
+            document.getElementById('editTransit').value = m.transit;
+            document.getElementById('editMinStock').value = m.minStock;
+            openModal('editMaterialModal');
+        }
+
+        function handleUpdateMaterial(e) {
+            e.preventDefault();
+            let orig = document.getElementById('editOriginalPart').value;
+            let idx = materials.findIndex(x => x.partNumber === orig);
+            if(idx !== -1) {
+                materials[idx] = {
+                    partNumber: document.getElementById('editPartNumber').value,
+                    description: document.getElementById('editDescription').value,
+                    supplier: document.getElementById('editSupplier').value,
+                    stock: Number(document.getElementById('editStock').value),
+                    transit: Number(document.getElementById('editTransit').value),
+                    minStock: Number(document.getElementById('editMinStock').value)
+                };
+                saveData();
+                closeModal('editMaterialModal');
+            }
+        }
+
+        function deleteMaterial(partNum) {
+            if(confirm('Da li ste sigurni da želite da obrišete materijal?')) {
+                materials = materials.filter(m => m.partNumber !== partNum);
+                saveData();
+            }
+        }
+
+        function handleSaveSupplier(e) {
+            e.preventDefault();
+            let name = document.getElementById('newSupName').value;
+            if(suppliers.some(s => s.name === name)) {
+                alert('Dobavljač sa ovim nazivom već postoji!');
+                return;
+            }
+            suppliers.push({
+                name: name,
+                contact: document.getElementById('newSupContact').value,
+                leadTime: Number(document.getElementById('newSupLead').value),
+                note: document.getElementById('newSupNote').value
+            });
+            saveData();
+            closeModal('supplierModal');
+            e.target.reset();
+        }
+
+        function openEditSupplierModal(supName) {
+            let s = suppliers.find(x => x.name === supName);
+            if(!s) return;
+            document.getElementById('editOriginalSupName').value = s.name;
+            document.getElementById('editSupName').value = s.name;
+            document.getElementById('editSupContact').value = s.contact;
+            document.getElementById('editSupLead').value = s.leadTime;
+            document.getElementById('editSupNote').value = s.note;
+            openModal('editSupplierModal');
+        }
+
+        function handleUpdateSupplier(e) {
+            e.preventDefault();
+            let orig = document.getElementById('editOriginalSupName').value;
+            let idx = suppliers.findIndex(x => x.name === orig);
+            if(idx !== -1) {
+                suppliers[idx] = {
+                    name: document.getElementById('editSupName').value,
+                    contact: document.getElementById('editSupContact').value,
+                    leadTime: Number(document.getElementById('editSupLead').value),
+                    note: document.getElementById('editSupNote').value
+                };
+                saveData();
+                closeModal('editSupplierModal');
+            }
+        }
+
+        function deleteSupplier(supName) {
+            if(confirm('Da li ste sigurni da želite da obrišete dobavljača?')) {
+                suppliers = suppliers.filter(s => s.name !== supName);
+                saveData();
+            }
+        }
+
+        function handleSavePlan(e) {
+            e.preventDefault();
+            let bomRows = [];
+            document.querySelectorAll('#bomList .bom-row').forEach(row => {
+                let part = row.querySelector('.bom-part').value;
+                let qty = Number(row.querySelector('.bom-qty').value);
+                bomRows.push({ partNumber: part, qty: qty });
+            });
+
+            plans.push({
+                id: Date.now(),
+                product: document.getElementById('newPlanProduct').value,
+                date: document.getElementById('newPlanDate').value,
+                quantity: Number(document.getElementById('newPlanQty').value),
+                bom: bomRows
+            });
+            saveData();
+            closeModal('planModal');
+            e.target.reset();
+        }
+
+        function openEditPlanModal(planId) {
+            let p = plans.find(x => x.id === planId);
+            if(!p) return;
+            document.getElementById('editPlanId').value = p.id;
+            document.getElementById('editPlanProduct').value = p.product;
+            document.getElementById('editPlanDate').value = p.date;
+            document.getElementById('editPlanQty').value = p.quantity;
+
+            const list = document.getElementById('editBomList');
+            list.innerHTML = '';
+            p.bom.forEach(b => {
+                addBomRow('editBomList', b.partNumber, b.qty);
+            });
+            openModal('editPlanModal');
+        }
+
+        function handleUpdatePlan(e) {
+            e.preventDefault();
+            let planId = Number(document.getElementById('editPlanId').value);
+            let idx = plans.findIndex(x => x.id === planId);
+            if(idx !== -1) {
+                let bomRows = [];
+                document.querySelectorAll('#editBomList .bom-row').forEach(row => {
+                    let part = row.querySelector('.bom-part').value;
+                    let qty = Number(row.querySelector('.bom-qty').value);
+                    bomRows.push({ partNumber: part, qty: qty });
+                });
+
+                plans[idx] = {
+                    id: planId,
+                    product: document.getElementById('editPlanProduct').value,
+                    date: document.getElementById('editPlanDate').value,
+                    quantity: Number(document.getElementById('editPlanQty').value),
+                    bom: bomRows
+                };
+                saveData();
+                closeModal('editPlanModal');
+            }
+        }
+
+        function deletePlan(id) {
+            if(confirm('Da li ste sigurni da želite da obrišete proizvodni plan?')) {
+                plans = plans.filter(p => p.id !== id);
+                saveData();
+            }
+        }
+
+        function renderBomRowsInit(containerId) {
+            const list = document.getElementById(containerId);
+            list.innerHTML = '';
+            addBomRow(containerId, '', 1);
+        }
+
+        function addBomRow(containerId, selectedPart = '', qtyVal = 1) {
+            const list = document.getElementById(containerId);
+            const row = document.createElement('div');
+            row.className = "flex items-center space-x-2 bg-erpdark p-2 rounded-lg border border-erpborder bom-row";
+            
+            let optionsHtml = materials.map(m => `<option value="${m.partNumber}" ${m.partNumber === selectedPart ? 'selected' : ''}>${m.partNumber} • ${m.description}</option>`).join('');
+
+            row.innerHTML = `
+                <select class="flex-1 bg-gray-900 border border-erpborder rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none bom-part">
+                    ${optionsHtml}
+                </select>
+                <input type="number" value="${qtyVal}" min="1" class="w-20 bg-gray-900 border border-erpborder rounded-lg px-3 py-1.5 text-xs text-white text-center focus:outline-none bom-qty">
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+            `;
+            list.appendChild(row);
+            lucide.createIcons();
+        }
+
+        function openProjectionModal(titleText) {
+            document.getElementById('projectionTitle').innerText = titleText;
+            let partNum = titleText.split(' • ')[0];
+            let m = materials.find(x => x.partNumber === partNum);
+            if(!m) return;
+
+            document.getElementById('projCardStock').innerText = m.stock;
+            document.getElementById('projCardTransit').innerText = m.transit;
+
+            let proj = calculateMaterialProjection(m, 30);
+            document.getElementById('projCardDays').innerText = proj.daysCoverCount !== null ? proj.daysCoverCount + ' dana' : '—';
+
+            let tbody = document.getElementById('projectionTableBody');
+            tbody.innerHTML = '';
+
+            proj.projectionDays.forEach(day => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-800/40">
+                        <td class="py-2.5 px-4 font-mono">${day.dateStr}</td>
+                        <td class="py-2.5 px-4 text-right">${day.startStock}</td>
+                        <td class="py-2.5 px-4 text-right text-amber-400">${day.consumption > 0 ? '-' + day.consumption : '0'}</td>
+                        <td class="py-2.5 px-4 text-right text-blue-400">${day.transitArrival > 0 ? '+' + day.transitArrival : '—'}</td>
+                        <td class="py-2.5 px-4 text-right font-semibold ${day.endStock < 0 ? 'text-red-400 font-bold' : 'text-white'}">${day.endStock}</td>
+                    </tr>
+                `;
+            });
+
+            openModal('projectionModal');
+        }
+
+        // --- CSV UVOZ FUNKCIJE ---
+        function importMaterialsCSV(event) {
+            let file = event.target.files[0];
+            if (!file) return;
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let text = e.target.result;
+                let lines = text.split(/\r\n|\n/);
+                let importedCount = 0;
+
+                for (let i = 1; i < lines.length; i++) {
+                    let line = lines[i].trim();
+                    if (!line) continue;
+
+                    let cols = line.split(';');
+                    if (cols.length >= 6) {
+                        let partNumber = cols[0].trim();
+                        let description = cols[1].trim();
+                        let supplier_name = cols[2].trim();
+                        let current_stock = Number(cols[3].trim()) || 0;
+                        let in_transit = Number(cols[4].trim()) || 0;
+                        let min_stock = Number(cols[5].trim()) || 0;
+
+                        if (supplier_name && !suppliers.some(s => s.name === supplier_name)) {
+                            suppliers.push({ name: supplier_name, contact: '', leadTime: 3, note: 'Automatski dodat iz CSV-a' });
+                        }
+
+                        let existingIndex = materials.findIndex(m => m.partNumber === partNumber);
+                        if (existingIndex !== -1) {
+                            materials[existingIndex] = { partNumber, description, supplier: supplier_name, stock: current_stock, transit: in_transit, minStock: min_stock };
+                        } else {
+                            materials.push({ partNumber, description, supplier: supplier_name, stock: current_stock, transit: in_transit, minStock: min_stock });
+                        }
+                        importedCount++;
+                    }
+                }
+
+                saveData();
+                alert(`Uspešno uvezeno ${importedCount} materijala!`);
+                event.target.value = '';
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function importPlansCSV(event) {
+            let file = event.target.files[0];
+            if (!file) return;
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let text = e.target.result;
+                let lines = text.split(/\r\n|\n/);
+                let rawRows = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                    let line = lines[i].trim();
+                    if (!line) continue;
+
+                    let cols = line.split(';');
+                    if (cols.length >= 5) {
+                        rawRows.push({
+                            product_name: cols[0].trim(),
+                            plan_date: cols[1].trim(),
+                            quantity: Number(cols[2].trim()) || 1,
+                            part_number: cols[3].trim(),
+                            qty_per_unit: Number(cols[4].trim()) || 1
+                        });
+                    }
+                }
+
+                let groupedMap = {};
+                rawRows.forEach(row => {
+                    let key = `${row.product_name}_${row.plan_date}`;
+                    if (!groupedMap[key]) {
+                        groupedMap[key] = {
+                            id: Date.now() + Math.random(),
+                            product: row.product_name,
+                            date: row.plan_date,
+                            quantity: row.quantity,
+                            bom: []
+                        };
+                    }
+                    groupedMap[key].bom.push({
+                        partNumber: row.part_number,
+                        qty: row.qty_per_unit
+                    });
+                });
+
+                let addedPlansCount = 0;
+                Object.values(groupedMap).forEach(plan => {
+                    let existing = plans.find(p => p.product === plan.product && p.date === plan.date);
+                    if (existing) {
+                        existing.bom = plan.bom;
+                        existing.quantity = plan.quantity;
+                    } else {
+                        plans.push(plan);
+                    }
+                    addedPlansCount++;
+                });
+
+                saveData();
+                alert(`Uspešno obrađeno i uvezeno ${addedPlansCount} proizvodnih planova!`);
+                event.target.value = '';
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function exportMaterialsCSV() {
+            let csv = "part_number;description;supplier_name;current_stock;in_transit;min_stock\n";
+            materials.forEach(m => {
+                csv += `${m.partNumber};${m.description};${m.supplier};${m.stock};${m.transit};${m.minStock}\n`;
+            });
+            downloadCSV(csv, "materijali.csv");
+        }
+
+        function exportMatrixCSV() {
+            let analytics = materials.map(m => {
+                let proj = calculateMaterialProjection(m, 30);
+                return { ...m, dCover: proj.daysCoverCount, firstDeficit: proj.firstDeficitDate, status: proj.status };
+            });
+            let csv = "part_number;description;supplier;stock;in_transit;min_stock;days_cover;first_deficit;status\n";
+            analytics.forEach(a => {
+                csv += `${a.partNumber};${a.description};${a.supplier};${a.stock};${a.transit};${a.minStock};${a.dCover !== null ? a.dCover : ''};${a.firstDeficit};${a.status}\n`;
+            });
+            downloadCSV(csv, "izvestaj_pokrivenosti.csv");
+        }
+
+        function downloadCSV(csv, filename) {
+            let blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+        }
+
+        window.onload = function() {
+            initApp();
+        };
+    </script>
+</body>
+</html>
