@@ -141,7 +141,6 @@
             .slider-wrapper { height: 250px !important; }
             .login-card { margin: 15px; }
             .brand-logo { font-size: 20px; letter-spacing: 3px; }
-            /* Izmenjeno ovde: zadržavamo poziciju desno i na mobilnom ekranu, prilagođavamo razmake */
             .logout-wrapper { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); margin-top: 0; }
             .custom-container { padding: 0 10px; }
         }
@@ -177,6 +176,10 @@
         <div class="custom-container">
             <nav class="nav-clean-tabs">
                 <a href="#sekcijaSadrzaj" class="nav-tab-item">Gemba</a>
+                
+                <!-- PLANIRANJE KAO KARTICA -->
+                <a href="material-planner.html" target="_blank" class="nav-tab-item" id="navPlaniranje">Planiranje</a>
+
                 <div class="dropdown" id="navTransport">
                     <a class="nav-tab-item">Transport ▾</a>
                     <div class="dropdown-menu">
@@ -234,6 +237,7 @@
                                         <option value="I Smena">I Smena</option>
                                         <option value="II Smena">II Smena</option>
                                         <option value="III Smena">III Smena</option>
+                                        <option value="IV Smena">IV Smena</option>
                                     </select>
                                 </div>
                                 <div class="form-group"><label>Team Leader</label><input type="text" id="newLeader" class="form-control" required></div>
@@ -388,6 +392,7 @@
                         const isGuest = (userRole === 'GUEST');
                         const isMasterAdmin = (userRole === 'MASTER' || userRole === 'ADMIN');
                         
+                        document.getElementById('navPlaniranje').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navTransport').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navPopis').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navTimeSheet').style.display = isGuest ? 'none' : 'inline-block';
