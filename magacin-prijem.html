@@ -397,7 +397,6 @@
     box-shadow:0 0 0 3px rgba(255,199,44,0.15);
   }
 
-  /* Uklanjanje AM/PM oznake */
   input[type="time"]::-webkit-datetime-edit-ampm-field {
     display: none;
   }
@@ -914,13 +913,19 @@
         return `${year}-${month}-${day}`;
     }
 
-    // Fiksna funkcija za prikaz vremena bez ikakvog pomeranja zona
+    // Ažurirana funkcija za formatiranje vremena sa korekcijom zone
     function formatTime(timeStr) {
         if(!timeStr) return '-';
         try {
             let str = String(timeStr).trim();
             if(str.includes('T')) {
-                str = str.split('T')[1];
+                const d = new Date(str);
+                if(!isNaN(d.getTime())) {
+                    let hours = d.getUTCHours() + 1;
+                    if (hours >= 24) hours = 0;
+                    const minutes = d.getUTCMinutes();
+                    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                }
             }
             if(str.includes(':')) {
                 const parts = str.split(':');
