@@ -913,20 +913,21 @@
         return `${year}-${month}-${day}`;
     }
 
-    // Ažurirana funkcija za formatiranje vremena sa korekcijom zone
+    // Ažurirana funkcija za formatiranje vremena - čuva tačno 24h format i eliminiše UTC pomeraje
     function formatTime(timeStr) {
         if(!timeStr) return '-';
         try {
             let str = String(timeStr).trim();
+            // Ako Google Sheets vrati ISO datum/vreme (sa 'T'), parsiramo preko lokalnih sati
             if(str.includes('T')) {
                 const d = new Date(str);
                 if(!isNaN(d.getTime())) {
-                    let hours = d.getUTCHours() + 1;
-                    if (hours >= 24) hours = 0;
-                    const minutes = d.getUTCMinutes();
-                    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                    const hours = String(d.getHours()).padStart(2, '0');
+                    const minutes = String(d.getMinutes()).padStart(2, '0');
+                    return `${hours}:${minutes}`;
                 }
             }
+            // Ako je već u formatu "HH:MM" ili slično
             if(str.includes(':')) {
                 const parts = str.split(':');
                 if(parts.length >= 2) {
