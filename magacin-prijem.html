@@ -493,9 +493,6 @@
     letter-spacing:0.5px;
     font-size:12px;
     border:2px solid #1a1a1a;
-    max-width: 150px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
     vertical-align: middle;
   }
@@ -913,12 +910,10 @@
         return `${year}-${month}-${day}`;
     }
 
-    // Ažurirana funkcija za formatiranje vremena - čuva tačno 24h format i eliminiše UTC pomeraje
     function formatTime(timeStr) {
         if(!timeStr) return '-';
         try {
             let str = String(timeStr).trim();
-            // Ako Google Sheets vrati ISO datum/vreme (sa 'T'), parsiramo preko lokalnih sati
             if(str.includes('T')) {
                 const d = new Date(str);
                 if(!isNaN(d.getTime())) {
@@ -927,7 +922,6 @@
                     return `${hours}:${minutes}`;
                 }
             }
-            // Ako je već u formatu "HH:MM" ili slično
             if(str.includes(':')) {
                 const parts = str.split(':');
                 if(parts.length >= 2) {
