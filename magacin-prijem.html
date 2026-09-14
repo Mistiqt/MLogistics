@@ -397,6 +397,11 @@
     box-shadow:0 0 0 3px rgba(255,199,44,0.15);
   }
 
+  /* Uklanjanje AM/PM oznake i podešavanje za 24h format */
+  input[type="time"]::-webkit-datetime-edit-ampm-field {
+    display: none;
+  }
+
   input[type="date"]::-webkit-calendar-picker-indicator,
   input[type="time"]::-webkit-calendar-picker-indicator {
     filter: invert(1) brightness(2);
@@ -665,7 +670,8 @@
                         </div>
                         <div class="form-group">
                             <label>Vreme</label>
-                            <input type="time" id="Vreme" required>
+                            <!-- Dodat je step="60" radi čistijeg 24h formata minuta -->
+                            <input type="time" id="Vreme" step="60" required>
                         </div>
 
                         <div class="form-group" style="grid-column: 1 / -1;">
@@ -941,7 +947,6 @@
         if (editSheetRow !== null) return; 
         document.getElementById('Datum').value = getLocalDateString();
         const now = new Date();
-        // Korišćenje lokalnih metoda obezbeđuje da se preuzme tačno vreme sa uređaja (Beogradsko vreme)
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         document.getElementById('Vreme').value = `${hours}:${minutes}`;
