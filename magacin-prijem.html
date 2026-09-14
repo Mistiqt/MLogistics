@@ -919,7 +919,6 @@
         if(!timeStr) return '-';
         try {
             let str = String(timeStr).trim();
-            // Ako je u formatu sa datumom (ISO), izvuci samo HH:mm deo direktno iz stringa
             if(str.includes('T')) {
                 str = str.split('T')[1];
             }
@@ -1248,14 +1247,11 @@
             if (found) existingPriority = found['Prioritet'] || "";
         }
 
-        // Uzimamo čistu vrednost stringa iz unosa bez korišćenja new Date() objekta
-        const rawTimeInput = document.getElementById('Vreme').value; 
-
         const formData = {
             'Ime': document.getElementById('Ime').value,
             'Prezime': document.getElementById('Prezime').value,
             'Datum': document.getElementById('Datum').value,
-            'Vreme': rawTimeInput,
+            'Vreme': document.getElementById('Vreme').value,
             'Naziv kompanije': document.getElementById('Naziv kompanije').value,
             'Tablice': document.getElementById('Tablice').value,
             'Broj DDT-a': document.getElementById('Broj DDT-a').value,
