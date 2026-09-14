@@ -397,7 +397,7 @@
     box-shadow:0 0 0 3px rgba(255,199,44,0.15);
   }
 
-  /* Uklanjanje AM/PM oznake i podešavanje za 24h format */
+  /* Uklanjanje AM/PM oznake */
   input[type="time"]::-webkit-datetime-edit-ampm-field {
     display: none;
   }
@@ -670,7 +670,6 @@
                         </div>
                         <div class="form-group">
                             <label>Vreme</label>
-                            <!-- Dodat je step="60" radi čistijeg 24h formata minuta -->
                             <input type="time" id="Vreme" step="60" required>
                         </div>
 
@@ -839,9 +838,7 @@
         }
     }
 
-    let loadingTimeout;
     function hideLoading() {
-        clearTimeout(loadingTimeout);
         const overlay = document.getElementById('loadingOverlay');
         if(overlay) overlay.style.display = 'none';
     }
@@ -917,27 +914,22 @@
         return `${year}-${month}-${day}`;
     }
 
+    // Fiksna funkcija za prikaz vremena bez ikakvog pomeranja zona
     function formatTime(timeStr) {
         if(!timeStr) return '-';
         try {
-            let hours, minutes;
-            if(String(timeStr).includes('T')) {
-                const timePart = String(timeStr).split('T')[1];
-                const parts = timePart.split(':');
-                hours = parseInt(parts[0], 10);
-                minutes = parseInt(parts[1], 10);
-            } else if(String(timeStr).includes(':')) {
-                const parts = String(timeStr).split(':');
-                hours = parseInt(parts[0], 10);
-                minutes = parseInt(parts[1], 10);
-            } else {
-                return timeStr;
+            let str = String(timeStr).trim();
+            // Ako je u formatu sa datumom (ISO), izvuci samo HH:mm deo direktno iz stringa
+            if(str.includes('T')) {
+                str = str.split('T')[1];
             }
-
-            if(!isNaN(hours) && !isNaN(minutes)) {
-                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            if(str.includes(':')) {
+                const parts = str.split(':');
+                if(parts.length >= 2) {
+                    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+                }
             }
-            return timeStr;
+            return str;
         } catch(e) {
             return timeStr;
         }
@@ -1256,11 +1248,14 @@
             if (found) existingPriority = found['Prioritet'] || "";
         }
 
+        // Uzimamo čistu vrednost stringa iz unosa bez korišćenja new Date() objekta
+        const rawTimeInput = document.getElementById('Vreme').value; 
+
         const formData = {
             'Ime': document.getElementById('Ime').value,
             'Prezime': document.getElementById('Prezime').value,
             'Datum': document.getElementById('Datum').value,
-            'Vreme': document.getElementById('Vreme').value,
+            'Vreme': rawTimeInput,
             'Naziv kompanije': document.getElementById('Naziv kompanije').value,
             'Tablice': document.getElementById('Tablice').value,
             'Broj DDT-a': document.getElementById('Broj DDT-a').value,
