@@ -941,7 +941,10 @@
         if (editSheetRow !== null) return; 
         document.getElementById('Datum').value = getLocalDateString();
         const now = new Date();
-        document.getElementById('Vreme').value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        // Korišćenje lokalnih metoda obezbeđuje da se preuzme tačno vreme sa uređaja (Beogradsko vreme)
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('Vreme').value = `${hours}:${minutes}`;
     }
 
     function getStatus(row) {
@@ -1097,7 +1100,6 @@
 
         const visibleIndices = getFilteredIndices();
         
-        // Zadržavamo originalni redosled unosa u bazi (bez automatskog premeštanja na vrh)
         document.getElementById('filterCount').innerText = `${visibleIndices.length} od ${database.length} stavki`;
 
         if(visibleIndices.length === 0) {
