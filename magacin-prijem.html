@@ -272,38 +272,43 @@
     font-weight: 500;
   }
 
+  /* MODALNI PROZOR - SREĐENO ZA MANJE REZOLUCIJE */
   .modal-overlay {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(10, 12, 15, 0.6);
+    background: rgba(10, 12, 15, 0.7);
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
     display: none;
     justify-content: center;
     align-items: center;
     z-index: 99999;
-    padding: 20px;
+    padding: 15px;
   }
   .modal-overlay.active { display: flex !important; }
+  
   .modal-container {
     background: #181b20;
     border: 1px solid var(--border);
     border-radius: 8px;
     width: 100%;
     max-width: 680px;
-    max-height: 90vh;
+    max-height: 90vh; /* Ograničavanje visine na maksimalno 90% ekrana */
     display: flex;
     flex-direction: column;
     box-shadow: 0 12px 40px rgba(0,0,0,0.8);
     position: relative;
     z-index: 100000;
+    overflow: hidden; /* Sprečava curenje sadržaja van granica */
   }
+
   .modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 24px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border-soft);
+    flex-shrink: 0; /* Sprečava sažimanje zaglavlja */
   }
   .modal-title {
     font-family: 'Oswald', sans-serif;
@@ -326,13 +331,16 @@
     transition: background 0.1s, color 0.1s;
   }
   .modal-close:hover { background: var(--panel-2); color: #fff; }
+
+  /* Deo sa formom koji se skroluje kada je ekran mali */
   .modal-body {
-    padding: 24px;
-    overflow-y: auto;
-    flex: 1;
+    padding: 20px;
+    overflow-y: auto; /* Omogućava skrolovanje samo unutar forme */
+    flex: 1;          /* Zauzima raspoloživi prostor */
   }
+
   .modal-footer {
-    padding: 16px 24px;
+    padding: 14px 20px;
     border-top: 1px solid var(--border-soft);
     display: flex;
     justify-content: flex-end;
@@ -340,6 +348,8 @@
     background: #14161a;
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
+    flex-shrink: 0; /* Osigurava da dugmad nikad ne budu isečena ili gurnuta van ekrana */
+    flex-wrap: wrap;
   }
 
   .card{
@@ -366,8 +376,8 @@
 
   .form-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
-    gap:16px;
+    grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+    gap:14px;
   }
   .form-group{
     display:flex;
@@ -647,7 +657,7 @@
                 <button type="button" class="modal-close" id="closeModalBtn">✕</button>
             </div>
             
-            <form id="logisticsForm">
+            <form id="logisticsForm" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
                 <div class="modal-body" style="position:relative;">
                     <div class="loading-overlay" id="loadingOverlay">Učitavanje podataka...</div>
                     <div class="form-grid">
