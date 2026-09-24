@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <title id="stranaNaslov">PROFORMA</title>
+    <style>
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            body { 
+                background: #fff !important; 
+                padding: 0 !important; 
+                margin: 0 !important;
+                display: block !important; 
+            }
+            .sidebar { display: none !important; }
+            .tabs-container { display: none !important; }
+            .no-print { display: none !important; }
+
+            input, textarea, [contenteditable="true"] {
+                background: transparent !important;
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+            }
+            
+            .sheet {
+                display: none !important;
+                box-shadow: none !important;
+                margin: 0 auto !important;
+                position: static !important;
+                page-break-after: always;
+            }
+
+            body.printing-glavni #proformaTab.sheet,
+            body.printing-glavni #ddtTab.sheet,
+            body.printing-glavni #cmrTab.sheet {
+                display: block !important;
+            }
+
+            body.printing-otpremnica #otpremnicaTab.sheet {
+                display: block !important;
+            }
+
+            @page proformaPage {
+                size: A4 portrait;
+                margin: 10mm;
+            }
+            #proformaTab.sheet {
+                page: proformaPage;
+                width: 190mm !important;
+                max-width: 100% !important;
+                padding: 10mm 0 0 0 !important;
+                margin: 0 auto !important;
+            }
+            
+            @page ddtPage {
+                size: A4 landscape;
+                margin: 6mm;
+            }
+            #ddtTab.sheet {
+                page: ddtPage;
+                width: 285mm !important;
+                max-width: none !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+                margin: 0 auto !important;
+            }
+            #ddtTab tr {
+                max-height: 14px !important;
+            }
+            #ddtTab td {
+                padding: 1px 3px !important;
+                font-size: 7.5px !important;
+            }
+
+            @page cmrPage {
+                size: A4 portrait;
+                margin: 10mm;
+            }
+            #cmrTab.sheet {
+                page: cmrPage;
+                width: 190mm !important;
+                max-width: 190mm !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+                margin: 0 auto !important;
+            }
+
+            @page otpremnicaPage {
+                size: A4 portrait;
+                margin: 10mm;
+            }
+            #otpremnicaTab.sheet {
+                page: otpremnicaPage;
+                width: 190mm !important;
+                max-width: 190mm !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+                margin: 0 auto !important;
+            }
+
+            .sakrij-pri-stampanju { display: none !important; }
+        }
+
+        @media screen {
+            #cmrTab, #otpremnicaTab {
+                width: 210mm;
+                max-width: 210mm;
+                min-height: 297mm;
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 8px;
+            color: #000;
+            background-color: #555;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .sidebar h3 {
+            margin-top: 0;
+            font-size: 13px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 3px;
+            font-size: 10px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+            font-size: 11px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .ddt-flex {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-stampaj {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        .btn-stampaj:hover {
+            background: #0056b3;
+        }
+        .btn-sacuvaj {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+        .btn-sacuvaj:hover {
+            background: #218838;
+        }
+
+        .main-container {
+            width: 800px;
+        }
+
+        .tabs-container {
+            max-width: 800px;
+            margin: 0 auto 10px auto;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 10px 15px;
+            background: #ddd;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab-btn.active {
+            background: #fff;
+            border-bottom: 2px solid #fff;
+        }
+        .sheet {
+            max-width: 800px;
+            margin: 0 auto 30px auto;
+            background: #fff;
+            padding: 12px;
+            box-sizing: border-box;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            display: none;
+        }
+        .sheet.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0px;
+            table-layout: fixed;
+        }
+        table, th, td {
+            border: 1px solid #000;
+            overflow: hidden;
+            word-wrap: break-word;
+        }
+        th, td {
+            padding: 2px 4px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .no-border, .no-border td, .no-border th {
+            border: none !important;
+        }
+        .highlight {
+            background-color: #ffff00 !important;
+            font-weight: bold;
+            font-size: 10px !important;
+        }
+        .right { text-align: right; }
+        .center { text-align: center; }
+        
+        .din-vrednost {
+            font-size: 10px !important;
+            font-weight: bold !important;
+        }
+
+        .input-kod {
+            width: 60px;
+            padding: 2px;
+            font-size: 9px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .input-kol, .input-cena, .input-tezina, .input-tekst {
+            width: 100%;
+            padding: 2px;
+            font-size: 9px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+        }
+        .input-kol, .input-cena, .input-tezina {
+            text-align: center;
+        }
+        .btn-akcija {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 3px;
+        }
+        .btn-brisi {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 2px 5px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 9px;
+        }
+
+        .cmr-vert {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            font-size: 5px;
+            line-height: 1.3;
+            white-space: nowrap;
+            color: #444;
+            text-align: center;
+        }
+        .cmr-red {
+            display: inline-block;
+            color: #cc0000;
+            font-weight: bold;
+            font-size: 18px;
+            letter-spacing: 1px;
+            border: 2px solid #cc0000;
+            padding: 0 5px;
+            border-radius: 3px;
+        }
+        .cmr-lbl { font-size: 6px; color: #555; }
+        .cmr-legal { font-size: 6px; line-height: 1.25; color: #000; }
+        .cmr-cell-flex {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            min-height: 105px;
+        }
+        .cmr-num { font-size: 7px; font-weight: bold; }
+        
+        .editable-field {
+            border: 1px dashed #007bff;
+            background: #fffbe6;
+            padding: 1px 3px;
+            outline: none;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar no-print" id="sidebarGlavna">
+        <h3>Kontrolna tabla (PF/DDT/CMR)</h3>
+        <div class="form-group">
+            <label>Izaberi kupca:</label>
+            <select id="selectKupac" onchange="promeniKupca()">
+                <option value="slovacka">Plastic Omnium Slovacka</option>
+                <option value="ad_plastik_solin">AD Plastik Solin</option>
+                <option value="ad_plastik_zagreb">AD Plastik Zagreb</option>
+                <option value="ad_plastik_mladenovac">Ad Plastik Mladenovac</option>
+                <option value="atessa">Atessa</option>
+                <option value="pomigliano">Pomigliano</option>
+                <option value="san_benigno">San Benigno</option>
+                <option value="leva">Leva Hungary KFT</option>
+                <option value="itw_pronovia">ITW Pronovia</option>
+                <option value="itw_slovakia">ITW Slovakia</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>DDT Broj / Proforma No.:</label>
+            <div class="ddt-flex">
+                <input type="text" id="inputDdtBroj" value="973" placeholder="Broj" oninput="azurirajBrojeve()" style="flex: 2;">
+                <select id="selectDdtGodina" onchange="azurirajBrojeve()" style="flex: 1;">
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>CMR Broj:</label>
+            <input type="text" id="inputCmrBroj" value="973" oninput="azurirajBrojeve()">
+        </div>
+        <div class="form-group">
+            <label>Datum / Date:</label>
+            <input type="date" id="inputDatum" value="2026-09-22" oninput="azurirajBrojeve()">
+        </div>
+        <div class="form-group">
+            <label>Tablice kamiona / Vehicle Plate:</label>
+            <input type="text" id="inputTabliceKamiona" value="" placeholder="Unesi tablice" oninput="azurirajTablice()">
+        </div>
+        <div class="form-group">
+            <label>Incoterm:</label>
+            <select id="selectIncoterm" onchange="promeniIncoterm()">
+                <option value="FCA Kragujevac">FCA Kragujevac</option>
+                <option value="DAP">DAP</option>
+            </select>
+        </div>
+        <div class="form-group" id="groupDapGrad" style="display: none;">
+            <label>DAP Grad:</label>
+            <input type="text" id="inputDapGrad" value="Zagreb" placeholder="Unesi grad" oninput="azurirajIncoterm()">
+        </div>
+        <button class="btn-stampaj" onclick="stampajGlavneDokumente()">🖨️ Štampaj PF, DDT, CMR</button>
+        <button class="btn-sacuvaj" onclick="sacuvajGlavneDokumente()">💾 Sačuvaj PF, DDT, CMR (Izaberi folder)</button>
+    </div>
+
+    <div class="sidebar no-print" id="sidebarOtpremnica" style="display: none;">
+        <h3>Kontrolna tabla (Otpremnica)</h3>
+        <div class="form-group">
+            <label>Broj otpremnice:</label>
+            <div class="ddt-flex">
+                <input type="text" id="inputBrojOtpremnice" value="271" oninput="azurirajOtpremnicuKontrole()" style="flex: 2;">
+                <select id="selectGodinaOtpremnice" onchange="azurirajOtpremnicuKontrole()" style="flex: 1;">
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Datum isporuke:</label>
+            <input type="date" id="inputDatumOtpremnice" value="2026-09-22" oninput="azurirajOtpremnicuKontrole()">
+        </div>
+        <div class="form-group">
+            <label>Dobavljač / Kupac:</label>
+            <select id="selectDobavljacOtpremnica" onchange="promeniDobavljacaOtpremnice()">
+                <option value="pmc">PMC Automotive</option>
+                <option value="sigit">SIGIT</option>
+                <option value="custom">Unesi ručno</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Vozač:</label>
+            <select id="selectVozacOtpremnica" onchange="promeniVozacaOtpremnice()" style="margin-bottom: 5px;">
+                <option value="DRAGISA KRAGOVIC">DRAGISA KRAGOVIC</option>
+                <option value="SRECKO ZIVANOVIC">SRECKO ZIVANOVIC</option>
+                <option value="DRAGISA AVRAMOVIC">DRAGISA AVRAMOVIC</option>
+                <option value="SRDJAN JOVANOVIC">SRDJAN JOVANOVIC</option>
+                <option value="custom">Unesi ručno...</option>
+            </select>
+            <input type="text" id="inputVozacRucno" value="DRAGISA KRAGOVIC" placeholder="Unesi ime vozača" oninput="azurirajVozacaRucno()" style="display: none; margin-top: 5px;">
+        </div>
+        <div class="form-group">
+            <label>Broj vozila / Tablice:</label>
+            <select id="selectTabliceOtpremnica" onchange="promeniTabliceOtpremnice()" style="margin-bottom: 5px;">
+                <option value="KG 380 BT">KG 380 BT</option>
+                <option value="KG 366 MC">KG 366 MC</option>
+                <option value="KG 366 MD">KG 366 MD</option>
+                <option value="custom">Unesi ručno...</option>
+            </select>
+            <input type="text" id="inputTabliceOtpremnica" value="KG 380 BT" placeholder="Unesi tablice" oninput="azurirajOtpremnicuKontrole()" style="display: none; margin-top: 5px;">
+        </div>
+        <button class="btn-stampaj" onclick="stampajOtpremnicu()">🖨️ Štampaj Otpremnicu</button>
+        <button class="btn-sacuvaj" onclick="sacuvajOtpremnicu()">💾 Sačuvaj Otpremnicu (Izaberi folder)</button>
+    </div>
+
+    <div class="main-container">
+        <div class="tabs-container no-print">
+            <button class="tab-btn active" onclick="otvoriTab(event, 'proformaTab', 'PROFORMA')">PROFORMA</button>
+            <button class="tab-btn" onclick="otvoriTab(event, 'ddtTab', 'DDT')">DDT</button>
+            <button class="tab-btn" onclick="otvoriTab(event, 'cmrTab', 'CMR')">CMR</button>
+            <button class="tab-btn" onclick="otvoriTab(event, 'otpremnicaTab', 'OTPREMNICA')">OTPREMNICA</button>
+        </div>
+
+        <div id="proformaTab" class="sheet active">
+            <table class="no-border" style="margin-bottom: 8px;">
+                <tbody><tr>
+                    <td style="width: 35%; vertical-align: top; font-size: 8px;">
+                        <span style="font-size: 8px; color: #333;">Posiljalac/Sender:</span><br>
+                        <span class="din-vrednost">FCA SRBIJA DOO<br>
+                        KOSOVSKA 4<br>
+                        34000 Kragujevac Srbija<br>
+                        MB:20468122<br>
+                        PIB:105808309</span>
+                    </td>
+                    <td style="width: 30%; text-align: center; vertical-align: middle;">
+                        <img src="logo.jpg" alt="Stellantis Logo" style="max-width: 130px; height: auto;">
+                    </td>
+                    <td style="width: 35%; vertical-align: top; font-size: 8px;">
+                        <div id="prikazKupacProforma" style="margin-bottom: 6px;">
+                            <span style="font-size: 8px; color: #333;">Kupac/Customer:</span><br>
+                            <span class="din-vrednost">PLASTIC OMNIUM AUTO<br>
+                            PRIEMYSELNA 1, 920 03 HLOHOVEC, SLOVACKA</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 8px; color: #333;">Delivery address:</span><br>
+                            <span class="din-vrednost editable-field" id="prikazDeliveryProforma" contenteditable="true" oninput="azurirajDelivery()" style="min-width: 90%;">PLASTIC OMNIUM AUTO<br>PRIEMYSELNA 1, 920 03 HLOHOVEC, SLOVACKA</span>
+                        </div>
+                    </td>
+                </tr>
+            </tbody></table>
+
+            <table style="font-size: 8px;">
+                <tbody><tr>
+                    <td class="highlight" style="width: 65%;">DDT BROJ / DDT NUMBER : &nbsp;&nbsp; <span id="prikazDdtBroj" class="din-vrednost" style="font-size: 10px;">973 / 2026</span></td>
+                    <td class="highlight" style="width: 35%;">Datum/Date: <span id="prikazDatum" class="din-vrednost" style="font-size: 10px;">22.09.2026.</span></td>
+                </tr>
+                <tr>
+                    <td class="highlight">Proforma-Invoce No. : &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span id="prikazProformaBroj" class="din-vrednost" style="font-size: 10px;">973 / 2026</span></td>
+                    <td class="highlight"></td>
+                </tr>
+            </tbody></table>
+
+            <div style="margin: 5px 0;" class="no-print">
+                <button class="btn-akcija" onclick="dodajRed()">+ Dodaj red ambalaže</button>
+                <span style="font-size: 9px; margin-left: 10px; color: #555;">(Unesite podatke u redove)</span>
+            </div>
+
+            <table style="margin-top: 3px; font-size: 8px;" id="tabelaArtikalaProforma">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="width: 8%; text-align: center;" class="sakrij-pri-stampanju">Br. Am<br><span style="font-size: 8px; font-weight: normal;">Code</span></th>
+                        <th style="width: 22%; text-align: center;">Kod ambalaže<br><span style="font-size: 8px; font-weight: normal;">Packaging Number</span></th>
+                        <th style="width: 40%; text-align: center;">Opis dobara<br><span style="font-size: 8px; font-weight: normal;">Description</span></th>
+                        <th style="width: 7%; text-align: center;">Kolicina<br><span style="font-size: 8px; font-weight: normal;">Quantity</span></th>
+                        <th style="width: 7%; text-align: center;">Jedinicna cena<br><span style="font-size: 8px; font-weight: normal;">Price</span></th>
+                        <th style="width: 6%; text-align: center;">Total<br><span style="font-size: 8px; font-weight: normal;">(EUR)</span></th>
+                        <th style="width: 6%; text-align: center;">Tezina bruto<br><span style="font-size: 8px; font-weight: normal;">( KG )</span></th>
+                        <th style="width: 4%; text-align: center;" class="no-print"></th>
+                    </tr>
+                </thead>
+                <tbody id="redoviTabelaProforma"></tbody>
+            </table>
+
+            <div style="font-weight: bold; margin: 4px 0; font-size: 8px;">TEMPORARY EXPORT</div>
+
+            <table style="font-size: 8px;">
+                <tbody><tr>
+                    <td style="width: 8%; border-right: none;" class="sakrij-pri-stampanju"></td>
+                    <td style="width: 22%; border-left: none; border-right: none;"></td>
+                    <td style="width: 40%; border-left: none; border-right: none; text-align: right;"></td>
+                    <td style="width: 7%; border-left: none; border-right: none; text-align: center;" id="zbirKolicina" class="din-vrednost">0</td>
+                    <td style="width: 7%; border-left: none; border-right: none;"></td>
+                    <td style="width: 6%; border-left: none; border-right: none; text-align: center;" id="zbirCena" class="din-vrednost">0.00</td>
+                    <td style="width: 6%; border-left: none; text-align: right;" id="zbirBruto" class="din-vrednost">0.00</td>
+                    <td style="width: 4%; border-left: none;" class="no-print"></td>
+                </tr>
+            </tbody></table>
+
+            <table style="font-size: 8px;">
+                <tbody><tr>
+                    <td style="width: 78%; text-align: right; border-right: none;"><strong>Weight Netto :</strong></td>
+                    <td style="width: 12%; border-left: none; border-right: none;" class="right din-vrednost" id="ukupnoNeto">0.00</td>
+                    <td style="width: 10%; border-left: none;" class="right"><strong>KG</strong></td>
+                </tr>
+                <tr>
+                    <td style="text-align: right; border-right: none;"><strong>Weight Gross :</strong></td>
+                    <td style="border-left: none; border-right: none;" class="right din-vrednost" id="ukupnoBruto">0.00</td>
+                    <td style="border-left: none;" class="right"><strong>KG</strong></td>
+                </tr>
+            </tbody></table>
+
+            <div style="font-size: 8px; margin-top: 5px; line-height: 1.2;" id="prikazIncoterm">
+                Incoterm: <span class="din-vrednost">FCA Kragujevac</span><br>
+                Origin: <span class="din-vrednost">EU</span><br>
+                Notice : free of charge
+            </div>
+
+            <div style="font-size: 7.5px; margin-top: 4px; border: 1px solid #000; padding: 4px; line-height: 1.1;">
+                Procedure to be used for import clearance: Re-importation as returned goods Upon re-importation into the EU, empty packaging shall be customs cleared into free circulation as returned goods with full relief from import duties and import VAT according to Art. 203 UCC in conjunction with Art. 253 (3) and (4) (Implementing Act (IA)). Import declarations shall be made either orally or by conduct based on Art. 135 (2) in conjunction with Art. 136 (1) a) and j) UCC-Delegated Act (DA) or Art. 253 (4) UCC-IA. Conditions as per Art. 203 (6) UCC, Art. 209, Art. 218 b) UCC-IA are fulfilled
+            </div>
+
+            <div style="margin-top: 4px; text-align: left;">
+                <img src="kontakt.jpg" alt="Kontakt" style="max-width: 100%; height: auto;">
+            </div>
+        </div>
+
+        <div id="ddtTab" class="sheet">
+            <table>
+                <tbody><tr>
+                    <td style="width: 32%; vertical-align: top; font-size: 8px; line-height: 1.2;">
+                        <span class="din-vrednost" id="ddtPosiljalacInfo">
+                        FCA Srbija d.o.o.<br>
+                        Kosovska 4<br>
+                        34 000 Kragujevac<br>
+                        Srbija<br>
+                        matični broj: 20468122<br>
+                        PIB: 105808309
+                        </span>
+                    </td>
+                    <td style="width: 43%; text-align: center; vertical-align: middle; font-weight: bold; font-size: 11px;">
+                        DOCUMENT OF TRANSPORTATION ASSY
+                    </td>
+                    <td style="width: 25%; vertical-align: top; font-size: 8px; height: 50px; background: #fff; border: 1px solid #000;">
+                    </td>
+                </tr>
+            </tbody></table>
+
+            <table>
+                <tbody><tr>
+                    <td style="width: 100%; vertical-align: top; font-size: 8px;">
+                        <span style="font-size: 7px; color: #333;">ADDRESS SEAT SECONDARY OR DEPENDENCE (PLACE OF WITHDRAWAL OF GOODS)</span><br>
+                        <span class="din-vrednost">FCA Serbia ---KOSOVSKA 4---34000 KRAGUJEVAC--SERBIA</span>
+                    </td>
+                </tr>
+            </tbody></table>
+
+            <table>
+                <tbody><tr>
+                    <td style="width: 75%; vertical-align: top; font-size: 8px; height: 16px;">
+                        <span style="font-size: 7px; color: #333;">IDENTITY OF THE RECIPIENT - RESIDENCE OR ADDRESS</span>
+                    </td>
+                    <td style="width: 25%; vertical-align: top; font-size: 8px; height: 16px;">
+                        INFORMATION MANAGEMENT
+                    </td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: middle; font-size: 9px; font-weight: bold; text-align: left; height: 22px; padding-left: 5px;" class="din-vrednost">
+                        <span style="font-size: 7px; font-weight: normal; color: #555; display: inline-block; width: 65px; vertical-align: top;">Importer:</span> <span id="ddtPrikazNazivKupca" contenteditable="true" style="display: inline-block; outline: none; border: 1px dashed #bbb; padding: 1px 3px; min-width: 70%; background: #fffbe6;">PLASTIC OMNIUM AUTO, PRIEMYSELNA 1, 920 03 HLOHOVEC, SLOVACKA</span>
+                    </td>
+                    <td style="padding: 0; vertical-align: top;">
+                        <table class="no-border" style="width: 100%; font-size: 8px; margin: 0;">
+                            <tbody><tr>
+                                <td style="width: 50%; border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 2px; text-align: center; vertical-align: middle;">
+                                    DOCUMENT RELEASE DATE<br><span id="ddtPrikazDatumRelease" class="din-vrednost">9/22/2026</span>
+                                </td>
+                                <td style="width: 50%; border-bottom: 1px solid #000; padding: 2px; text-align: center; vertical-align: middle;">
+                                    No. PROGRESSIVE SHIPPING<br>
+                                    <div style="font-weight: bold; text-align: center; font-size: 9px; margin-top: 2px;">
+                                        <span id="ddtBroj1" class="din-vrednost">973</span><span id="ddtBroj2" class="din-vrednost"> / 2026</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody></table>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: middle; font-size: 9px; font-weight: bold; text-align: left; height: 22px; padding-left: 5px;" class="din-vrednost">
+                        <span style="font-size: 7px; font-weight: normal; color: #555; display: inline-block; width: 65px; vertical-align: top;">Delivery adress:</span> <span id="ddtPrikazAdresaKupca" contenteditable="true" style="display: inline-block; outline: none; border: 1px dashed #bbb; padding: 1px 3px; min-width: 70%; background: #fffbe6;">PLASTIC OMNIUM AUTO, PRIEMYSELNA 1, 920 03 HLOHOVEC, SLOVACKA</span>
+                    </td>
+                    <td style="padding: 0; vertical-align: top;">
+                        <table class="no-border" style="width: 100%; font-size: 8px; margin: 0;">
+                            <tbody><tr>
+                                <td style="width: 50%; border-right: 1px solid #000; padding: 2px; text-align: center; vertical-align: middle;">
+                                    REASON CODE ENTRY MATERIAL
+                                </td>
+                                <td style="width: 50%; padding: 2px; text-align: center; vertical-align: middle;">
+                                    POINT OF SUPPLY &nbsp;&nbsp; PIER<br>&nbsp;
+                                </td>
+                            </tr>
+                        </tbody></table>
+                    </td>
+                </tr>
+            </tbody></table>
+
+            <table>
+                <tbody><tr>
+                    <td style="text-align: center; font-weight: bold; background: #f9f9f9; font-size: 9px;">CHANGE OF DESTINATION / PLACE OF DESTINATION</td>
+                </tr>
+            </tbody></table>
+
+            <table>
+                <colgroup>
+                    <col style="width: 12%;">
+                    <col style="width: 33%;">
+                    <col style="width: 7%;">
+                    <col style="width: 4%;">
+                    <col style="width: 9%;">
+                    <col style="width: 9%;">
+                    <col style="width: 7%;">
+                    <col style="width: 9%;">
+                    <col style="width: 5%;">
+                    <col style="width: 5%;">
+                </colgroup>
+                <tbody><tr>
+                    <td style="font-size: 8px;">CUSTOMER CODE</td>
+                    <td style="font-size: 8px;">N. CONTAINER</td>
+                    <td colspan="2" style="font-size: 8px;">VEHICLE PLATE OR SHUTTLE</td>
+                    <td colspan="2" style="font-size: 8px;">SHIPMENT MADE ON BEHALF OF</td>
+                    <td colspan="2" style="font-size: 8px;">DELIVERED IN PORT</td>
+                    <td colspan="2" style="font-size: 8px;">ORDER NUMBER</td>
+                </tr>
+                <tr>
+                    <td style="height: 14px;"></td>
+                    <td></td>
+                    <td colspan="2" style="text-align: center;" id="ddtPrikazTablice" class="din-vrednost"></td>
+                    <td colspan="2"></td>
+                    <td colspan="2"></td>
+                    <td colspan="2"></td>
+                </tr>
+            </tbody></table>
+
+            <table style="margin-top: 0px;" id="tabelaArtikalaDdt">
+                <colgroup>
+                    <col style="width: 12%;">
+                    <col style="width: 33%;">
+                    <col style="width: 7%;">
+                    <col style="width: 4%;">
+                    <col style="width: 9%;">
+                    <col style="width: 9%;">
+                    <col style="width: 7%;">
+                    <col style="width: 9%;">
+                    <col style="width: 5%;">
+                    <col style="width: 5%;">
+                </colgroup>
+                <thead>
+                    <tr style="background-color: #f2f2f2; font-size: 8px; text-align: center;">
+                        <th>DESIGN</th>
+                        <th>NATURE - QUALITY OF GOODS</th>
+                        <th>N. LOT OF PRODUCTION</th>
+                        <th>U.M.</th>
+                        <th>QUANTITY TOTAL DESIGN</th>
+                        <th>QUANTITY FOR SINGLE BY COLLECTION</th>
+                        <th colspan="4">EMPTY PACKAGING AND USED (MEDIA COLLECTION)</th>
+                    </tr>
+                    <tr style="background-color: #f9f9f9; font-size: 7.5px; text-align: center;">
+                        <th colspan="6"></th>
+                        <th style="vertical-align: middle;">DESIGN</th>
+                        <th style="vertical-align: middle;">DESCRIPTION</th>
+                        <th style="vertical-align: middle; font-size: 7px; white-space: nowrap;">NUMBER</th>
+                        <th style="vertical-align: middle;">C.M.</th>
+                    </tr>
+                </thead>
+                <tbody id="redoviTabelaDdt" style="font-size: 9px;"></tbody>
+            </table>
+
+            <table>
+                <colgroup>
+                    <col style="width: 12%;">
+                    <col style="width: 33%;">
+                    <col style="width: 7%;">
+                    <col style="width: 4%;">
+                    <col style="width: 9%;">
+                    <col style="width: 9%;">
+                    <col style="width: 7%;">
+                    <col style="width: 9%;">
+                    <col style="width: 5%;">
+                    <col style="width: 5%;">
+                </colgroup>
+                <tbody><tr style="height: 14px;"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr style="height: 14px;"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr style="height: 14px;"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr style="height: 14px;"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr style="height: 14px;"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr style="height: 14px;"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr style="height: 14px;"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr style="height: 14px;"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr style="height: 14px;"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            </tbody></table>
+
+            <table>
+                <tbody><tr>
+                    <td style="width: 42%; vertical-align: top; font-size: 7.5px; line-height: 1.1;">
+                        <strong>NOTES</strong><br>
+                        Procedure to be used for import clearance: Re-importation as returned goods upon re-importation into the EU, empty packaging shall be customs cleared into free circulation as returned goods with full relief from import duties and import VAT according to Art. 203 UCC in conjunction with Art. 253 (3) and (4) (Implementing ACT(IA)). Import declarations shall be made either orally or by conduct based on Art. 135 (2) in conjunction with Art. 136(1) a) and j) UCC-Delegated Act (DA) or Art. 253 (4) UCC-IA. Conditions as per Art. 203 (6) UCC, Art. 209, Art. 218 b) UCC-IA are fulfilled.
+                    </td>
+                    <td style="width: 15%; vertical-align: top; font-size: 8px;">
+                        <strong>GROSS WEIGHT KG.</strong><br><span id="ddtUkupnoBruto" class="din-vrednost" style="font-size: 11px;">0.00</span><br><br>
+                        <strong>TARA KG.</strong><br><span class="din-vrednost" style="font-size: 10px;">0.00</span>
+                    </td>
+                    <td style="width: 18%; vertical-align: top; font-size: 8px;">
+                        <strong>NET WEIGHT KG.</strong><br><span id="ddtUkupnoNeto" class="din-vrednost" style="font-size: 11px;">0.00</span><br><br>
+                        <strong>VOLUME</strong><br><span class="din-vrednost" style="font-size: 10px;">0.00</span>
+                    </td>
+                    <td style="width: 25%; vertical-align: top; font-size: 8px;">
+                        <strong>VISA AUTHORIZATION MATERIAL OUT - VEHICLE DEPARTURE</strong>
+                    </td>
+                </tr>
+            </tbody></table>
+
+            <table>
+                <colgroup>
+                    <col style="width: 5%;">
+                    <col style="width: 15%;">
+                    <col style="width: 15%;">
+                    <col style="width: 15%;">
+                    <col style="width: 16%;">
+                    <col style="width: 17%;">
+                    <col style="width: 17%;">
+                </colgroup>
+                <tbody><tr>
+                    <td colspan="2" style="vertical-align: top; font-size: 7.5px;">
+                        DONE WITH THE TRANSPORTATION EQUITY:<br>
+                        <div style="margin-top: 4px; margin-bottom: 4px;">
+                            SENDER &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DESTINATION
+                        </div>
+                    </td>
+                    <td style="vertical-align: top; font-size: 7.5px;">
+                        VEHICLE LICENSE PLATE<br><span id="prikazUkupnoKolicina1" class="din-vrednost" style="font-size: 10px;">0</span> <strong style="font-size: 10px;">KOMADA</strong>
+                    </td>
+                    <td style="vertical-align: top; font-size: 7.5px;">
+                        DATA/ORA INIZIO TRASPORTO &nbsp; GG &nbsp; MM &nbsp; AA &nbsp; ORA &nbsp; MIN<br>
+                        <span id="prikazUkupnoKolicina2" class="din-vrednost" style="font-size: 10px;">0</span> <strong style="font-size: 10px;">KOM / PRAZNA SREDSTVA</strong>
+                    </td>
+                    <td style="vertical-align: top; font-size: 7.5px;">
+                        SIGNATURE
+                    </td>
+                    <td style="vertical-align: top; font-size: 7.5px;">
+                        N. HILLS
+                    </td>
+                    <td style="vertical-align: top; font-size: 7.5px; font-weight: bold; text-align: center;">
+                        STAMP OF SURVEILLANCE
+                    </td>
+                </tr>
+            </tbody></table>
+
+            <table>
+                <colgroup>
+                    <col style="width: 5%;">
+                    <col style="width: 15%;">
+                    <col style="width: 15%;">
+                    <col style="width: 15%;">
+                    <col style="width: 16%;">
+                    <col style="width: 17%;">
+                    <col style="width: 17%;">
+                </colgroup>
+                <tbody><tr>
+                    <td style="vertical-align: middle; text-align: center; font-size: 7px; font-weight: bold; background: #f9f9f9;" rowspan="2">
+                        V<br>E<br>C<br>T<br>O<br>R<br>S
+                    </td>
+                    <td style="vertical-align: top; font-size: 8px; height: 18px;">
+                        2
+                    </td>
+                    <td style="vertical-align: top; font-size: 7px; padding: 2px;" rowspan="2">
+                        <div style="font-size: 6.5px; font-weight: bold; line-height: 1.1; white-space: nowrap;">
+                            VEHICLE LICENSE PLATE
+                        </div>
+                        <div style="margin-top: 2px;" id="prikazTabliceDdtDno" class="din-vrednost" style="font-size: 10px;"></div>
+                        <div style="height: 25px;"></div>
+                    </td>
+                    <td style="vertical-align: top; font-size: 7px; padding: 2px;" rowspan="2">
+                        <div style="font-size: 5.5px; font-weight: bold; line-height: 1.1; white-space: nowrap;">
+                            DATA/ORA INIZIO TRASPORTO GG MM AA ORA MIN
+                        </div>
+                        <div style="height: 25px;"></div>
+                    </td>
+                    <td style="vertical-align: top; font-size: 7px; padding: 2px;" rowspan="2">
+                        <div style="font-size: 6.5px; font-weight: bold; line-height: 1.1; white-space: nowrap;">
+                            SIGNATURE
+                        </div>
+                        <div style="height: 25px;"></div>
+                    </td>
+                    <td style="vertical-align: top; padding: 3px; font-size: 8px;" rowspan="2">
+                        <strong>SENDER</strong><br>
+                        <span class="din-vrednost">Dusan Kostic</span><br><br>
+                        <span class="din-vrednost">FCA Srbija<br>
+                        Plastics Shop<br>
+                        Kosovska 4, 34000 Kragujevac<br>
+                        Mobile: +381668580089<br>
+                        Email:<br>
+                        dusan.kostic@stellantis.com</span>
+                    </td>
+                    <td style="vertical-align: top; padding: 3px; font-size: 8px;" rowspan="2" id="ddtPrikazDestinationKontakt"><div style="text-align: left;"><strong>DESTINATION</strong></div><div style="text-align: center; margin-top: 4px;"><span class="din-vrednost">Mária KAČINECOVÁ<br>+421 918 712 070</span></div></td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: top; font-size: 8px; height: 18px;"></td>
+                </tr>
+            </tbody></table>
+
+            <table>
+                <colgroup>
+                    <col style="width: 25%;">
+                    <col style="width: 35%;">
+                    <col style="width: 11%;">
+                    <col style="width: 29%;">
+                </colgroup>
+                <tbody><tr>
+                    <td style="vertical-align: top; padding: 3px; font-size: 8px;">
+                        THE COMPILER<br>
+                        <span class="din-vrednost">Dusan Kostic<br>
+                        167</span>
+                    </td>
+                    <td style="vertical-align: top; padding: 3px; font-size: 8px;">
+                        DRIVER NAME<br><br>
+                        INTERNAL NUMBER
+                    </td>
+                    <td style="vertical-align: top; padding: 3px; font-size: 8px;">
+                        APPLICANT ORGANIZATION
+                    </td>
+                    <td style="vertical-align: top; padding: 3px; font-size: 8px; text-align: center;">
+                    </td>
+                </tr>
+            </tbody></table>
+        </div>
+
+        <div id="cmrTab" class="sheet">
+            <h3 style="text-align: center; margin-bottom: 8px; font-size: 13px;" class="no-print">CMR - MEĐUNARODNI TOVARNI LIST</h3>
+
+            <table style="height: 100%;">
+                <colgroup><col style="width: 3%;"><col style="width: 97%;"></colgroup>
+                <tbody><tr>
+                    <td style="vertical-align: middle; text-align: center; padding: 0;">
+                        <div class="cmr-vert">INTERNATIONALER FRACHTBRIEF &nbsp; INTERNATIONAL CONSIGNMENT NOTE &nbsp; CMR &nbsp; 1–15 &nbsp; 16–24</div>
+                    </td>
+                    <td style="padding: 0; vertical-align: top;">
+
+                        <table>
+                            <colgroup><col style="width: 55%;"><col style="width: 45%;"></colgroup>
+                            <tbody><tr>
+                                <td style="padding: 0; vertical-align: top;">
+                                    <table style="width: 100%;">
+                                        <tbody>
+                                        <tr><td style="height: 72px; vertical-align: top; font-size: 8px;" id="cmrPrikazPosiljalac">
+                                            <span class="cmr-lbl">1 Absender (Name, Anschrift, Land) / Sender (name, address, country)</span><br>
+                                            <span class="din-vrednost">FCA SRBIJA DOO<br>KOSOVSKA 4<br>34000 KRAGUJEVAC - SRBIJA</span>
+                                        </td></tr>
+                                        <tr><td style="height: 72px; vertical-align: top; font-size: 8px;" id="cmrPrikazKupac">
+                                            <span class="cmr-lbl">2 Empfänger (Name, Anschrift, Land) / Consignee</span><br>
+                                            <span class="din-vrednost">PLASTIC OMNIUM AUTO<br>PRIEMYSELNA 1, 920 03 HLOHOVEC, SLOVACKA</span>
+                                        </td></tr>
+                                        <tr><td style="height: 58px; vertical-align: top; font-size: 8px;" id="cmrPrikazMestoIstovara">
+                                            <span class="cmr-lbl">3 Auslieferungsort / Place of delivery</span><br>
+                                            <span class="din-vrednost">PLASTIC OMNIUM AUTO<br>PRIEMYSELNA 1, 920 03 HLOHOVEC, SLOVACKA</span>
+                                        </td></tr>
+                                        <tr><td style="height: 52px; vertical-align: top; font-size: 8px;">
+                                            <span class="cmr-lbl">4 Ort und Tag der Übernahme des Gutes / Place and date of taking over the goods</span><br>
+                                            <span class="din-vrednost">KRAGUJEVAC - SRBIJA &nbsp; <span id="cmrPrikazDatum">22.09.2026.</span></span>
+                                        </td></tr>
+                                        <tr><td style="height: 58px; vertical-align: top; font-size: 8px;">
+                                            <span class="cmr-lbl">5 Beigefügte Dokumente / Documents attached</span><br>
+                                            Faktura: <span id="cmrPrikazFaktura" class="din-vrednost">973 / 2026</span><br>
+                                            DDT: <span id="cmrPrikazDdt" class="din-vrednost">973 / 2026</span>
+                                        </td></tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                                <td style="padding: 0; vertical-align: top;">
+                                    <table style="width: 100%;">
+                                        <tbody>
+                                        <tr>
+                                            <td style="font-size: 6px; vertical-align: top; width: 60%;">INTERNATIONALER FRACHTBRIEF<br>INTERNATIONAL CONSIGNMENT NOTE</td>
+                                            <td style="text-align: center; vertical-align: middle;">
+                                                <span class="cmr-red">CMR</span><br>
+                                                <div style="font-size: 10px; font-weight: bold; margin-top: 6px;">Nr. <span id="cmrPrikazCmrBroj" class="din-vrednost" style="font-size: 10px;">973 / 2026</span></div>
+                                            </td>
+                                        </tr>
+                                        <tr><td colspan="2" style="font-size: 5px; line-height: 1.2; color: #333;">
+                                            Diese Beförderung unterliegt trotz einer gegenteiligen Abmachung den Bestimmungen des Übereinkommens über den Beförderungsvertrag im internationalen Straßengüterverkehr (CMR). / This carriage is subject, notwithstanding any clause to the contrary, to the Convention on the Contract for the International Carriage of Goods by Road (CMR).
+                                        </td></tr>
+                                        <tr><td colspan="2" style="height: 44px; vertical-align: top; text-align: left; font-size: 8px; padding: 2px 4px; border-bottom: none !important;">
+                                            <div style="display: flex; flex-direction: column; justify-content: flex-start; height: 100%;">
+                                                <span class="cmr-lbl" style="margin-bottom: 2px;">16 Frachtführer (Name, Anschrift, Land) / Carrier</span>
+                                                <div style="flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;">
+                                                    <span id="cmrPrikazTablica" class="din-vrednost" style="font-size: 14px;"></span>
+                                                </div>
+                                            </div>
+                                        </td></tr>
+                                        <tr><td colspan="2" style="height: 40px; vertical-align: top; font-size: 8px; border-top: none !important;">
+                                            <span class="cmr-lbl">17 Nachfolgender Frachtführer / Successive carrier</span>
+                                        </td></tr>
+                                        <tr><td colspan="2" style="height: 130px; vertical-align: top; font-size: 8px;">
+                                            <span class="cmr-lbl">18 Vorbehalte und Bemerkungen der Frachtführer / Carrier's reservations and observations</span>
+                                            <div class="cmr-legal" style="margin-top: 6px;">
+                                                Jakość i stan towarów nie sprawdzany przez przewoźnika. Bez odpowiedzialności za faktyczną zawartość opakowań. Temperatura towaru mierzona przy załadunku.<br><br>
+                                                Qualität und Zustand der Ware durch Frachtführer nicht kontrolliert. Ohne Verantwortung für tatsächlichen Inhalt der Verpackungen. Warentemperatur gemessen bei der Verladung.<br><br>
+                                                Quality and condition of goods not examined by the carrier. Without responsibility for the real contents of package. Temperature of goods examined at the time of loading.
+                                            </div>
+                                        </td></tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tbody></table>
+                        </table>
+
+                        <table>
+                            <colgroup>
+                                <col style="width: 14%;"><col style="width: 10%;"><col style="width: 10%;">
+                                <col style="width: 30%;"><col style="width: 12%;"><col style="width: 16%;"><col style="width: 8%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="background: #f2f2f2; font-size: 6px; text-align: left; vertical-align: top;">
+                                    <th>6 Kennzeichen u. Nr.<br>Marks and Nos</th>
+                                    <th>7 Anzahl der Packstücke<br>Number of packages</th>
+                                    <th>8 Art der Verpackung<br>Method of packing</th>
+                                    <th>9 Bezeichnung des Gutes<br>Nature of the goods</th>
+                                    <th>10 Statistiknummer<br>Statistical number</th>
+                                    <th>11 Bruttogewicht kg<br>Gross weight</th>
+                                    <th>12 Umfang m³<br>Volume</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="4" style="text-align: center; vertical-align: top; font-weight: bold; font-size: 12px; height: 170px; padding-top: 40px;">
+                                        <span id="cmrUkupnoKolicina" class="din-vrednost" style="font-size: 12px;">0</span> Prazna ambalaza
+                                    </td>
+                                    <td style="vertical-align: top; text-align: center; padding-top: 40px; font-size: 9px;">
+                                        <span id="cmrUkupnoKolicinaKom" class="din-vrednost" style="font-size: 10px;">0</span> <strong style="font-size: 9px;">kom</strong>
+                                    </td>
+                                    <td style="vertical-align: top; text-align: center; font-size: 9px; padding-top: 40px;">
+                                        <span id="cmrUkupnoBruto" class="din-vrednost" style="font-size: 10px;">0.00</span> <strong style="font-size: 9px;">kgs</strong>
+                                    </td>
+                                    <td style="vertical-align: top;"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table>
+                            <tbody><tr>
+                                <td style="text-align: left; font-weight: bold; font-size: 8px;">ROBA JE OSLOBOĐENA OD VEZIVANJA / GOODS ARE FREE OF BINDING</td>
+                            </tr></tbody>
+                        </table>
+
+                        <table>
+                            <colgroup><col style="width: 25%;"><col style="width: 25%;"><col style="width: 25%;"><col style="width: 25%;"></colgroup>
+                            <tbody><tr style="font-size: 6px; height: 22px; vertical-align: top;">
+                                <td>Klasa<br>Class</td>
+                                <td>Nr UN<br>Number</td>
+                                <td>GP<br>PG</td>
+                                <td>(ADR*)</td>
+                            </tr></tbody>
+                        </table>
+
+                        <table>
+                            <colgroup><col style="width: 60%;"><col style="width: 40%;"></colgroup>
+                            <tbody><tr>
+                                <td style="padding: 0; vertical-align: top;">
+                                    <table style="width: 100%;">
+                                        <tbody>
+                                        <tr><td style="height: 150px; vertical-align: top; font-size: 7px;">
+                                            <span class="cmr-lbl">13 Anweisungen des Absenders / Sender's instructions</span>
+                                        </td></tr>
+                                        <tr><td style="height: 78px; vertical-align: top; font-size: 7px;">
+                                            <span class="cmr-lbl">14 Postanowienia odnośnie przewoźnego / Instruction as to payment carriage</span><br><br>
+                                            Przewoźne zapłacone / Carriage paid<br>
+                                            Przewoźne nieopłacone / Carriage forward
+                                        </td></tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                                <td style="padding: 0; vertical-align: top;">
+                                    <table style="width: 100%;">
+                                        <tbody>
+                                        <tr><td style="height: 100px; vertical-align: top; font-size: 7px;">
+                                            <span class="cmr-lbl">19 Besondere Vereinbarungen / Special agreements</span>
+                                        </td></tr>
+                                        <tr><td style="padding: 0; vertical-align: top;">
+                                            <table style="width: 100%; font-size: 6px;">
+                                                <colgroup><col style="width: 40%;"><col style="width: 20%;"><col style="width: 20%;"><col style="width: 20%;"></colgroup>
+                                                <tbody>
+                                                <tr style="background: #f2f2f2; font-weight: bold; vertical-align: top;">
+                                                    <td style="height: 20px;">20 Do zapłacenia<br>To be paid by</td>
+                                                    <td>Nadawca<br>Sender</td>
+                                                    <td>Waluta<br>Currency</td>
+                                                    <td>Odbiorca<br>Consignee</td>
+                                                </tr>
+                                                <tr><td style="height: 15px;">Przewoźne / Carriage</td><td></td><td></td><td></td></tr>
+                                                <tr><td style="height: 15px;">Bonifikaty / Deductions</td><td></td><td></td><td></td></tr>
+                                                <tr><td style="height: 15px;">Saldo / Balance</td><td></td><td></td><td></td></tr>
+                                                <tr><td style="height: 15px;">Dopłaty / Supplem. charges</td><td></td><td></td><td></td></tr>
+                                                <tr><td style="height: 15px;">Koszty dodatkowe / Miscellaneous +</td><td></td><td></td><td></td></tr>
+                                                <tr style="font-weight: bold;"><td style="height: 15px;">Razem / Total to be paid</td><td></td><td></td><td></td></tr>
+                                                </tbody>
+                                            </table>
+                                        </td></tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr></tbody>
+                        </table>
+
+                        <table>
+                            <colgroup><col style="width: 60%;"><col style="width: 40%;"></colgroup>
+                            <tbody><tr>
+                                <td style="height: 40px; vertical-align: top; font-size: 7px;">
+                                    <span class="cmr-lbl">21 Wystawiono w / Established in &nbsp;&nbsp;&nbsp; dnia / on</span>
+                                    <div style="text-align: center; font-size: 11px; margin-top: 6px;">
+                                        <span class="din-vrednost" style="font-size: 11px;">KRAGUJEVAC &nbsp;&nbsp;&nbsp;&nbsp; <span id="cmrPrikazDatum2">22.09.2026.</span></span>
+                                    </div>
+                                </td>
+                                <td style="height: 40px; vertical-align: top; font-size: 7px;">
+                                    <span class="cmr-lbl">15 Zapłata / Cash on delivery</span>
+                                </td>
+                            </tr></tbody>
+                        </table>
+
+                        <table>
+                            <colgroup><col style="width: 34%;"><col style="width: 33%;"><col style="width: 33%;"></colgroup>
+                            <tbody><tr>
+                                <td style="height: 115px; vertical-align: top; padding: 3px;" id="cmrPrikazPotpisAbsender">
+                                    <div class="cmr-cell-flex">
+                                        <div class="cmr-num">22</div>
+                                        <div style="flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;">
+                                            <span class="din-vrednost" style="font-size: 13px;">FCA SRBIJA DOO&nbsp;&nbsp;&nbsp;KRAGUJEVAC</span>
+                                        </div>
+                                        <div class="cmr-lbl">Unterschrift und Stempel des Absenders /<br>Signature and stamp of the sender</div>
+                                    </div>
+                                </td>
+                                <td style="height: 115px; vertical-align: top; padding: 3px;">
+                                    <div class="cmr-cell-flex">
+                                        <div class="cmr-num">23</div>
+                                        <div style="flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;">
+                                            <span id="cmrPrikazTablicaPotpis" class="din-vrednost" style="font-size: 14px;"></span>
+                                        </div>
+                                        <div class="cmr-lbl">Unterschrift und Stempel des Frachtführers /<br>Signature and stamp of the carrier</div>
+                                    </div>
+                                </td>
+                                <td style="height: 115px; vertical-align: top; padding: 3px;">
+                                    <div class="cmr-cell-flex">
+                                        <div style="display: flex; justify-content: space-between;">
+                                            <span class="cmr-lbl">24 Gut und Dokumente empfangen /<br>Goods received</span>
+                                            <span style="font-size: 7px; font-weight: bold;">1</span>
+                                        </div>
+                                        <div style="flex: 1;"></div>
+                                        <div class="cmr-lbl">Unterschrift und Stempel des Absender Empfängers /<br>Signature and stamp of the consignee</div>
+                                    </div>
+                                </td>
+                            </tr></tbody>
+                        </table>
+
+                    </td>
+                </tr></tbody>
+            </table>
+        </div>
+
+        <div id="otpremnicaTab" class="sheet">
+            <table class="no-border" style="margin-bottom: 8px;">
+                <tbody>
+                    <tr>
+                        <td colspan="2" style="padding-bottom: 6px;">
+                            <img src="logo.jpg" alt="Stellantis Logo" style="max-width: 160px; height: auto;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 50%; vertical-align: top; font-size: 8px; padding-left: 20px;">
+                            <span style="font-size: 8px; color: #333;">Posiljalac robe(sender):</span><br>
+                            <span class="din-vrednost" id="otpPosiljalacNaziv" contenteditable="true">FCA Srbija d.o.o Plastic Shop</span><br>
+                            <span class="din-vrednost" id="otpPosiljalacAdresa" contenteditable="true">Kosovska 4, 3400 Kragujevac, Srbija</span>
+                        </td>
+                        <td style="width: 50%; vertical-align: top; font-size: 8px; padding-left: 90px;">
+                            <span style="font-size: 8px; color: #333;">Primalac robe(Delivery Recipient):</span><br>
+                            <span class="din-vrednost" id="otpPrimalacNaziv" contenteditable="true">PMC AUTOMOTIVE D.O.O KRAGUJEVAC</span>,<br>
+                            <span class="din-vrednost" id="otpPrimalacAdresa1" contenteditable="true">Oktobarskih zrtava bb</span><br>
+                            <span class="din-vrednost" id="otpPrimalacAdresa2" contenteditable="true">34113 KRAGUJEVAC</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="text-align: center; margin: 15px 0;">
+                <span style="font-size: 16px; font-weight: bold;">OTPREMNICA &nbsp;&nbsp;</span>
+                <span style="font-size: 16px; font-weight: bold;" class="din-vrednost"><span id="otpPrikazBroj">271</span> / <span id="otpPrikazGodina">2026</span></span><br>
+                <span style="font-size: 9px; color: #555;">delivery note numb &nbsp;&nbsp; <span id="otpPrikazBrojSub">271</span> / <span id="otpPrikazGodinaSub">2026</span></span>
+                <div style="text-align: right; font-size: 9px; margin-top: 5px;">
+                    Datum isporuke( Delivery date ) <span id="otpPrikazDatumIsporuke" class="din-vrednost" contenteditable="true">9/22/2026</span>
+                </div>
+            </div>
+
+            <table style="margin-top: 10px; font-size: 9px;" id="tabelaArtikalaOtpremnica">
+                <thead>
+                    <tr style="background-color: #f2f2f2; text-align: center;">
+                        <th style="width: 10%;">Item n°</th>
+                        <th style="width: 60%;">Opis Description</th>
+                        <th style="width: 25%;">Količina-Qty</th>
+                        <th style="width: 5%;" class="no-print"></th>
+                    </tr>
+                </thead>
+                <tbody id="redoviTabelaOtpremnica">
+                </tbody>
+            </table>
+
+            <div style="margin: 8px 0;" class="no-print">
+                <button class="btn-akcija" onclick="dodajRedOtpremnica()">+ Dodaj red stavke</button>
+            </div>
+
+            <table style="margin-top: 15px; font-size: 9px;">
+                <tbody>
+                    <tr>
+                        <td colspan="2" style="font-weight: bold; background: #f9f9f9;">Podaci o vozilu(data about transportation):</td>
+                    </tr>
+                    <tr>
+                        <td style="width: 30%;">Ime i prezime vozaca:</td>
+                        <td style="width: 70%;" class="din-vrednost"><span id="otpPrikazVozac" contenteditable="true">DRAGISA KRAGOVIC</span></td>
+                    </tr>
+                    <tr>
+                        <td>Broj vozila:</td>
+                        <td class="din-vrednost"><span id="otpPrikazVozilo" contenteditable="true">KG 380 BT</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table class="no-border" style="margin-top: 40px; font-size: 9px;">
+                <tbody>
+                    <tr>
+                        <td style="width: 50%;">
+                            U Kragujevcu, <span id="otpPrikazDatumMesto" class="din-vrednost" contenteditable="true">9/22/2026</span>
+                        </td>
+                        <td style="width: 50%; text-align: center;">
+                            <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 3px;">
+                                <strong>Pecat I potpis posiljaoca</strong><br>
+                                <span style="font-size: 7.5px; color: #555;">Stamp and signature of the sender</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    const bazeAmbalaze = {
+        "slovacka": {
+            "1713": { oznaka: "X6866", opis: "RACK CC21 FR UPPER", tezina: 380, cena: 1.00 },
+            "1709": { oznaka: "X6872", opis: "KTP CC21 FR SOFTNOSE", tezina: 70, cena: 1.00 },
+            "1711": { oznaka: "X6854", opis: "RACK CC21 FR BUMPER", tezina: 340, cena: 1.00 },
+            "1375": { oznaka: "X6849", opis: "KLT 6280 - 0600X0400", tezina: 2.67, cena: 1.00 },
+            "1374": { oznaka: "X6855", opis: "KLT 4213 - 0400X0300", tezina: 1.42, cena: 1.00 },
+            "1399": { oznaka: "X6823", opis: "KTP 1210 + 1200X1000", tezina: 50, cena: 1.00 },
+            "1210": { oznaka: "X6876", opis: "KTP SCARS FR DEFLECTOR", tezina: 60, cena: 1.00 },
+            "1712": { oznaka: "X6861", opis: "RACK CC21 FR BUMPER", tezina: 360, cena: 1.00 },
+            "1400": { oznaka: "X6837", opis: "KTP 1210 + 1200X1000", tezina: 50, cena: 1.00 },
+            "1481": { oznaka: "X6846", opis: "KLT 4213 - 0400X0300", tezina: 1.42, cena: 1.00 },
+            "1209": { oznaka: "X6862", opis: "KTP CC21 SKIDPLATE FRONT", tezina: 60, cena: 1.00 },
+            "1395": { oznaka: "X6842", opis: "KLT 6280 + 0600X0400", tezina: 2.67, cena: 1.00 },
+            "1396": { oznaka: "X6847", opis: "KLT 6280 + 0600X0400", tezina: 2.67, cena: 1.00 },
+            "1714": { oznaka: "X6856", opis: "RACK CC21 RR BUMPER", tezina: 300, cena: 1.00 },
+            "1710": { oznaka: "X6838", opis: "KTP CC21 RR BUMPER", tezina: 50, cena: 1.00 },
+            "1482": { oznaka: "X6827", opis: "KLT 6280 + 0600X0400", tezina: 2.67, cena: 1.00 },
+            "1305": { oznaka: "X6889", opis: "KTP CC21 SKIDPLATE FRONT", tezina: 60, cena: 1.00 },
+            "9453": { oznaka: "BND09", opis: "KLT 4213 - 0400X0300X0213", tezina: 1.42, cena: 1.00 },
+            "X8010": { oznaka: "X8010", opis: "IMBALLO ARMR RETURN", tezina: 1.7, cena: 1.00 },
+            "X8011": { oznaka: "X8011", opis: "IMBALLO PLAN RETURN", tezina: 1.93, cena: 1.00 },
+            "X8013": { oznaka: "X8013", opis: "Plastic pallets", tezina: 19, cena: 1.00 },
+            "X8012": { oznaka: "X8012", opis: "Plastic covers", tezina: 7.2, cena: 1.00 },
+            "X6600": { oznaka: "X6600", opis: "Ambalaža za Ukrasni element", tezina: 58.5, cena: 1.00 },
+            "X6601": { oznaka: "X6601", opis: "Spec. metalna paleta za branik", tezina: 150.5, cena: 1.00 },
+            "X6602": { oznaka: "X6602", opis: "Plastični BAC-centralni panel", tezina: 121.5, cena: 1.00 },
+            "X6603": { oznaka: "X6603", opis: "Plastični BAC-bočni panel", tezina: 69, cena: 1.00 },
+            "X6605": { oznaka: "X6605", opis: "Ambalaža za gornju rešetku", tezina: 58.5, cena: 1.00 },
+            "00124": { oznaka: "00124", opis: "Metalna paleta STLA C-SUV", tezina: 141.5, cena: 1.00 },
+            "00870": { oznaka: "00870", opis: "Standardna STLA plastična paleta", tezina: 45, cena: 1.00 },
+            "R6280": { oznaka: "R6280", opis: "KLT R6280 Hnede", tezina: 2.8, cena: 1.00 },
+            "PSA 1210": { oznaka: "PSA 1210", opis: "PSA1210 Plastikova paleta", tezina: 18, cena: 1.00 },
+            "1210": { oznaka: "1210", opis: "1210 Plastikova vikovo", tezina: 6.2, cena: 1.00 },
+            "376": { oznaka: "376", opis: "376 Panda Side -lateral", tezina: 1.08, cena: 1.00 },
+            "377": { oznaka: "377", opis: "377 PANDA PALLET 1200X800", tezina: 13, cena: 1.00 },
+            "378": { oznaka: "378", opis: "378 PANDA COVER 1200X800", tezina: 8, cena: 1.00 },
+            "120": { oznaka: "120", opis: "Paleta", tezina: 23.5, cena: 1.00 },
+            "2120": { oznaka: "2120", opis: "Poklopac", tezina: 6.75, cena: 1.00 }
+        },
+        "ad_plastik_solin": {
+            "00124": { oznaka: "00124", opis: "Metalna paleta STLA 00124 / LOWER GRILLE BEV ASSY", tezina: 141.5, cena: 1.00 }
+        },
+        "ad_plastik_zagreb": {
+            "X6600": { oznaka: "X6600", opis: "Ambalaža za Ukrasni element prednjeg branika F1H", tezina: 58.5, cena: 1.00 },
+            "X6601": { oznaka: "X6601", opis: "Spec. metalna paleta za zadnji ukr.element F1H", tezina: 150.5, cena: 1.00 },
+            "X6602": { oznaka: "X6602", opis: "Plastični BAC-centralni poklopac donje rešetke F1H", tezina: 121.5, cena: 1.00 },
+            "X6603": { oznaka: "X6603", opis: "Plastični BAC-bočni poklopac donje rešetke F1H", tezina: 69, cena: 1.00 },
+            "X6605": { oznaka: "X6605", opis: "Ambalaža za gornja rešetka F1H Panda", tezina: 58.5, cena: 1.00 },
+            "120": { oznaka: "120", opis: "Paleta", tezina: 23.5, cena: 1.00 },
+            "2120": { oznaka: "2120", opis: "Poklopac", tezina: 6.75, cena: 1.00 }
+        },
+        "ad_plastik_mladenovac": {
+            "00870": { oznaka: "00870", opis: "Standardna STLA plastična paleta 00870 / CENTER SLOT", tezina: 45, cena: 1.00 }
+        },
+        "atessa": {},
+        "pomigliano": {},
+        "san_benigno": {},
+        "leva": {
+            "X8010": { oznaka: "X8010", opis: "IMBALLO ARMR RETURNABLE", tezina: 1.7, cena: 1.00 },
+            "X8011": { oznaka: "X8011", opis: "IMBALLO PLAN RETURNABLE", tezina: 1.93, cena: 1.00 },
+            "X8013": { oznaka: "X8013", opis: "Plastic pallets", tezina: 19, cena: 1.00 },
+            "X8012": { oznaka: "X8012", opis: "Plastic covers", tezina: 7.2, cena: 1.00 }
+        },
+        "itw_pronovia": {
+            "R6280": { oznaka: "R6280", opis: "KLT R6280 Hnede", tezina: 2.8, cena: 1.00 },
+            "PSA 1210": { oznaka: "PSA 1210", opis: "PSA1210 Plastikova paleta", tezina: 18, cena: 1.00 },
+            "1210": { oznaka: "1210", opis: "1210 Plastikova vikovo", tezina: 6.2, cena: 1.00 }
+        },
+        "itw_slovakia": {
+            "376": { oznaka: "376", opis: "376 Panda Side -lateral EPP box", tezina: 1.08, cena: 7.50 },
+            "377": { oznaka: "377", opis: "377 PANDA PALLET 120X100 HDPE", tezina: 13, cena: 14.76 },
+            "378": { oznaka: "378", opis: "378 PANDA COVER 120X100", tezina: 8, cena: 14.88 }
+        }
+    };
+
+
+    const podaciKupaca = {
+        "slovacka": {
+            naziv: "PLASTIC OMNIUM AUTO",
+            adresa: "PRIEMYSELNA 1, 920 03 HLOHOVEC, SLOVACKA",
+            kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Mária KAČINECOVÁ<br>+421 918 712 070</span></div>"
+        },
+        "ad_plastik_solin": {
+            naziv: "AD PLASTIK",
+            adresa: "Matoseva 8, 21210 Solin, Hrvatska",
+            kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Kontakt osoba<br>Telefon</span></div>"
+        },
+        "ad_plastik_zagreb": {
+            naziv: "AD PLASTIK",
+            adresa: "Jankomir 5, 10000 Zagreb, Hrvatska",
+            kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Kontakt osoba<br>Telefon</span></div>"
+        },
+        "ad_plastik_mladenovac": {
+            naziv: "ADP Mladenovac D.O.O.",
+            adresa: "334 Kralja Petra, 11400 Mladenovac, Srbija",
+            kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Kontakt osoba<br>Telefon</span></div>"
+        },
+        "atessa": {
+            naziv: "Atessa",
+            adresa: "Zona Ind.le Via Aosta, 12-14 66041 Atessa (CH) Italy",
+            kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Kontakt osoba<br>Telefon</span></div>"
+        },
+        "pomigliano": {
+            naziv: "Pomigliano Unità Plastica",
+            adresa: "Via ex Aeroporto snc 80038 Pomigliano d'Arco (NA) Italy",
+            kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Kontakt osoba<br>Telefon</span></div>"
+        },
+        "san_benigno": {
+            naziv: "STELLANTIS EUROPE S.P.A. – A142",
+            adresa: "Via Chivasso, 120 San Benigno Canavese Torino",
+            kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Kontakt osoba<br>Telefon</span></div>"
+        },
+        "leva": {
+            naziv: "LEVA HUNGARY KFT",
+            adresa: "HUSZAR ANDOR UT 10, 3580 TISAUJVAROS, MADJARSKA",
+            kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Kontakt osoba<br>Telefon</span></div>"
+        },
+        "itw_pronovia": {
+            naziv: "ITW PRONOVIA Vlkovska 595",
+            adresa: "ITW Pronovia s.r.o., Vlkovska 595, CZ – 595 01 Velka Bites",
+            kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Kontakt osoba<br>Telefon</span></div>"
+        },
+        "itw_slovakia": {
+            naziv: "ITW SLVAKIA S.R.O.",
+            adresa: "1384 HLAVNA, 014 01 BYTCA-SLOVAQUE",
+            kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Kontakt osoba<br>Telefon</span></div>"
+        }
+    };
+
+
+    const podaciDobavljaca = {
+        naziv: "FCA SRBIJA DOO",
+        adresa: "Kosovska 4, 34000 Kragujevac, Srbija",
+        mb: "MB: 20468122",
+        pib: "PIB: 105808309"
+    };
+
+
+    function otvoriTab(evt, tabNaziv, nazivNaslova) {
+        let sheets = document.getElementsByClassName("sheet");
+        for (let s of sheets) { s.classList.remove("active"); }
+        let buttons = document.getElementsByClassName("tab-btn");
+        for (let b of buttons) { b.classList.remove("active"); }
+        document.getElementById(tabNaziv).classList.add("active");
+        evt.currentTarget.classList.add("active");
+        document.getElementById("stranaNaslov").innerText = nazivNaslova;
+        if (tabNaziv === 'otpremnicaTab') {
+            document.getElementById('sidebarGlavna').style.display = 'none';
+            document.getElementById('sidebarOtpremnica').style.display = 'block';
+        } else {
+            document.getElementById('sidebarGlavna').style.display = 'block';
+            document.getElementById('sidebarOtpremnica').style.display = 'none';
+        }
+    }
+
+
+    function stampajGlavneDokumente() {
+        document.body.classList.remove("printing-otpremnica");
+        document.body.classList.add("printing-glavni");
+        window.print();
+    }
+
+
+    function stampajOtpremnicu() {
+        document.body.classList.remove("printing-glavni");
+        document.body.classList.add("printing-otpremnica");
+        window.print();
+    }
+
+
+    function pripremiZaCuvanje(sheet) {
+        sheet.querySelectorAll(".no-print").forEach(el => {
+            if (el.tagName === "TD" || el.tagName === "TH") {
+                el.innerHTML = "";
+            } else {
+                el.remove();
+            }
+        });
+        sheet.querySelectorAll("button").forEach(b => b.remove());
+        sheet.querySelectorAll("input").forEach(inp => {
+            let span = document.createElement("span");
+            span.textContent = (inp.value || "").toString().trim();
+            inp.replaceWith(span);
+        });
+        sheet.querySelectorAll("textarea").forEach(ta => {
+            let span = document.createElement("span");
+            span.textContent = ta.value || "";
+            ta.replaceWith(span);
+        });
+        sheet.querySelectorAll("select").forEach(sel => {
+            let span = document.createElement("span");
+            span.textContent = sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].text : "";
+            sel.replaceWith(span);
+        });
+        sheet.querySelectorAll("[contenteditable], .polje-izmena").forEach(el => {
+            el.removeAttribute("contenteditable");
+            el.classList.remove("polje-izmena");
+            el.style.border = "none";
+            el.style.background = "transparent";
+            el.style.outline = "none";
+            el.style.padding = "0";
+        });
+        sheet.querySelectorAll("[onclick],[oninput],[onchange]").forEach(el => {
+            el.removeAttribute("onclick");
+            el.removeAttribute("oninput");
+            el.removeAttribute("onchange");
+        });
+    }
+
+
+    async function ugradiLogoUKlon() {
+        let sheets = Array.prototype.slice.call(arguments);
+        async function uDataURL(url) {
+            try {
+                let resp = await fetch(url, { cache: "force-cache" });
+                if (!resp || !resp.ok) return null;
+                let blob = await resp.blob();
+                return await new Promise((res, rej) => {
+                    let fr = new FileReader();
+                    fr.onload = () => res(fr.result);
+                    fr.onerror = rej;
+                    fr.readAsDataURL(blob);
+                });
+            } catch (e) { return null; }
+        }
+        function canvasDataURL(imgEl) {
+            try {
+                if (imgEl && imgEl.complete && imgEl.naturalWidth) {
+                    let c = document.createElement("canvas");
+                    c.width = imgEl.naturalWidth;
+                    c.height = imgEl.naturalHeight;
+                    c.getContext("2d").drawImage(imgEl, 0, 0);
+                    return c.toDataURL("image/png");
+                }
+            } catch (e) {}
+            return null;
+        }
+        for (let sheet of sheets) {
+            let imgs = sheet.querySelectorAll("img");
+            for (let img of imgs) {
+                let src = img.getAttribute("src") || "";
+                if (!src || src.indexOf("data:") === 0) continue;
+                let live = null;
+                document.querySelectorAll("img").forEach(li => {
+                    let liSrc = li.getAttribute("src") || "";
+                    if (!live && (liSrc === src || (li.src && li.src.indexOf(src) !== -1))) live = li;
+                });
+                let absUrl = live && live.src ? live.src : src;
+                let dataURL = await uDataURL(absUrl);
+                if (!dataURL) dataURL = canvasDataURL(live);
+                if (dataURL) img.setAttribute("src", dataURL);
+            }
+        }
+    }
+
+
+    async function preuzmiFajlSaBiranjemFoldera(sadrzajHTML, nazivFajla) {
+        let blob = new Blob(['<!DOCTYPE html>\n<html lang="sr">\n' + sadrzajHTML + '\n</html>'], { type: 'text/html;charset=utf-8' });
+        if (window.showSaveFilePicker) {
+            try {
+                let opts = {
+                    suggestedName: nazivFajla,
+                    types: [{
+                        description: 'HTML Dokument',
+                        accept: { 'text/html': ['.html'] },
+                    }],
+                };
+                let handle = await window.showSaveFilePicker(opts);
+                let writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                return;
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.log("Greška pri čuvanju:", err);
+                } else {
+                    return;
+                }
+            }
+        }
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = nazivFajla;
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+
+    async function sacuvajGlavneDokumente() {
+        let ddtBr = document.getElementById("inputDdtBroj").value.trim() || "973";
+        let godina = document.getElementById("selectDdtGodina").value;
+        let nazivFajla = `Proforma_DDT_CMR_${ddtBr}_${godina}.html`;
+
+
+        let headHtml = document.head.innerHTML;
+
+
+        let pfSheet = document.getElementById("proformaTab").cloneNode(true);
+        pfSheet.className = "sheet";
+        pfSheet.style.cssText = "display: block !important; margin: 0 auto 30px auto !important; max-width: 190mm !important; padding: 10mm 0 0 0 !important; background: #fff !important; box-shadow: none !important; page-break-after: always !important;";
+
+
+        let ddtSheet = document.getElementById("ddtTab").cloneNode(true);
+        ddtSheet.className = "sheet";
+        ddtSheet.style.cssText = "display: block !important; width: 285mm !important; max-width: none !important; margin: 0 auto 30px auto !important; padding: 0 !important; box-sizing: border-box !important; background: #fff !important; box-shadow: none !important; page-break-after: always !important;";
+
+
+        let ddtRows = ddtSheet.querySelectorAll("tr");
+        ddtRows.forEach(tr => tr.style.maxHeight = "14px");
+        let ddtTds = ddtSheet.querySelectorAll("td");
+        ddtTds.forEach(td => {
+            if(!td.style.padding) td.style.padding = "1px 3px";
+            td.style.fontSize = "7.5px";
+        });
+
+
+        let cmrSheet = document.getElementById("cmrTab").cloneNode(true);
+        cmrSheet.className = "sheet";
+        cmrSheet.style.cssText = "display: block !important; width: 190mm !important; max-width: 190mm !important; margin: 0 auto !important; padding: 0 !important; box-sizing: border-box !important; background: #fff !important; box-shadow: none !important;";
+
+
+        let cmrH3 = cmrSheet.querySelector("h3");
+        if(cmrH3) cmrH3.remove();
+
+
+        pripremiZaCuvanje(pfSheet);
+        pripremiZaCuvanje(ddtSheet);
+        pripremiZaCuvanje(cmrSheet);
+        await ugradiLogoUKlon(pfSheet, ddtSheet, cmrSheet);
+
+
+        let kompletanSadrzaj = `<head>${headHtml}</head><body style="background:#fff !important; margin:0 !important; padding:20px !important; display:block !important;">${pfSheet.outerHTML}${ddtSheet.outerHTML}${cmrSheet.outerHTML}</body>`;
+        preuzmiFajlSaBiranjemFoldera(kompletanSadrzaj, nazivFajla);
+    }
+
+
+    async function sacuvajOtpremnicu() {
+        let otpBr = document.getElementById("inputBrojOtpremnice").value.trim() || "271";
+        let godina = document.getElementById("selectGodinaOtpremnice").value;
+        let nazivFajla = `Otpremnica_${otpBr}_${godina}.html`;
+
+
+        let headHtml = document.head.innerHTML;
+        let otpSheet = document.getElementById("otpremnicaTab").cloneNode(true);
+        otpSheet.className = "sheet";
+        otpSheet.style.cssText = "display: block !important; width: 190mm !important; max-width: 190mm !important; margin: 0 auto !important; padding: 0 !important; box-sizing: border-box !important; background: #fff !important; box-shadow: none !important;";
+
+
+        pripremiZaCuvanje(otpSheet);
+        await ugradiLogoUKlon(otpSheet);
+
+
+        let kompletanSadrzaj = `<head>${headHtml}</head><body style="background:#fff !important; margin:0 !important; padding:0 !important;">${otpSheet.outerHTML}</body>`;
+        preuzmiFajlSaBiranjemFoldera(kompletanSadrzaj, nazivFajla);
+    }
+
+
+    function azurirajDelivery() {
+        let el = document.getElementById("prikazDeliveryProforma");
+        if (!el) return;
+        let htmlDelivery = el.innerHTML;
+        let plain = (el.innerText || "")
+            .split("\n")
+            .map(s => s.trim())
+            .filter(s => s.length)
+            .join(", ");
+        let ddtDel = document.getElementById("ddtPrikazAdresaKupca");
+        if (ddtDel) ddtDel.innerText = plain;
+        let cmr3 = document.getElementById("cmrPrikazMestoIstovara");
+        if (cmr3) cmr3.innerHTML = `<span class="cmr-lbl">3 Auslieferungsort / Place of delivery</span><br><span class="din-vrednost">${htmlDelivery}</span>`;
+    }
+
+
+    function promeniKupca() {
+        let izabraniKupac = document.getElementById("selectKupac").value;
+        let kupacInfo = podaciKupaca[izabraniKupac];
+        let htmlKupac = `
+            <span style="font-size: 8px; color: #333;">Kupac/Customer:</span><br>
+            <span class="din-vrednost"><strong>${kupacInfo.naziv}</strong><br>${kupacInfo.adresa}</span>
+        `;
+        document.getElementById("prikazKupacProforma").innerHTML = htmlKupac;
+        document.getElementById("ddtPrikazNazivKupca").innerText = kupacInfo.naziv + ", " + kupacInfo.adresa;
+        document.getElementById("ddtPrikazAdresaKupca").innerText = kupacInfo.naziv + ", " + kupacInfo.adresa;
+        document.getElementById("ddtPrikazDestinationKontakt").innerHTML = kupacInfo.kontaktDestination;
+        document.getElementById("cmrPrikazKupac").innerHTML = `<span class="cmr-lbl">2 Empfänger (Name, Anschrift, Land) / Consignee</span><br><span class="din-vrednost"><strong>${kupacInfo.naziv}</strong><br>${kupacInfo.adresa}</span>`;
+        document.getElementById("cmrPrikazMestoIstovara").innerHTML = `<span class="cmr-lbl">3 Auslieferungsort / Place of delivery</span><br><span class="din-vrednost"><strong>${kupacInfo.naziv}</strong><br>${kupacInfo.adresa}</span>`;
+
+        let selectIncoterm = document.getElementById("selectIncoterm");
+        let inputDapGrad = document.getElementById("inputDapGrad");
+        if (izabraniKupac === "itw_slovakia") {
+            selectIncoterm.value = "DAP";
+            inputDapGrad.value = "BYTCA";
+        } else {
+            selectIncoterm.value = "FCA Kragujevac";
+        }
+        promeniIncoterm();
+
+        let elDelivery = document.getElementById("prikazDeliveryProforma");
+        if (elDelivery) elDelivery.innerHTML = `<strong>${kupacInfo.naziv}</strong><br>${kupacInfo.adresa}`;
+        azurirajDelivery();
+
+        let htmlDobavljacProforma = `
+            <span style="font-size: 8px; color: #333;">Posiljalac/Sender:</span><br>
+            <span class="din-vrednost">${podaciDobavljaca.naziv}<br>${podaciDobavljaca.adresa}<br>
+            ${podaciDobavljaca.mb}<br>${podaciDobavljaca.pib}</span>
+        `;
+        document.querySelector("#proformaTab table tr td:first-child").innerHTML = htmlDobavljacProforma;
+        let htmlDobavljacDdt = `
+            <span class="din-vrednost">
+            ${podaciDobavljaca.naziv}<br>
+            Kosovska 4<br>
+            34 000 Kragujevac<br>
+            Srbija<br>
+            matični broj: 20468122<br>
+            PIB: 105808309
+            </span>
+        `;
+        document.getElementById("ddtPosiljalacInfo").innerHTML = htmlDobavljacDdt;
+        let htmlDobavljacCmr = `
+            <span class="cmr-lbl">1 Absender (Name, Anschrift, Land) / Sender (name, address, country)</span><br>
+            <span class="din-vrednost">${podaciDobavljaca.naziv}<br>KOSOVSKA 4<br>34000 KRAGUJEVAC - SRBIJA</span>
+        `;
+        document.getElementById("cmrPrikazPosiljalac").innerHTML = htmlDobavljacCmr;
+        document.getElementById("redoviTabelaProforma").innerHTML = "";
+        if (izabraniKupac === "ad_plastik_solin") {
+            dodajRed("00124", "0");
+        } else if (izabraniKupac === "ad_plastik_zagreb") {
+            dodajRed("X6600", "0");
+            dodajRed("X6601", "0");
+            dodajRed("X6602", "0");
+            dodajRed("X6603", "0");
+            dodajRed("X6605", "0");
+            dodajRed("120", "0");
+            dodajRed("2120", "0");
+        } else if (izabraniKupac === "ad_plastik_mladenovac") {
+            dodajRed("00870", "0");
+        } else if (izabraniKupac === "leva") {
+            dodajRed("X8010", "0");
+            dodajRed("X8011", "0");
+            dodajRed("X8013", "0");
+            dodajRed("X8012", "0");
+        } else if (izabraniKupac === "itw_pronovia") {
+            dodajRed("R6280", "0");
+            dodajRed("PSA 1210", "0");
+            dodajRed("1210", "0");
+        } else if (izabraniKupac === "itw_slovakia") {
+            dodajRed("376", "0");
+            dodajRed("377", "0");
+            dodajRed("378", "0");
+        }
+        prebrojUkupno();
+    }
+
+
+    function promeniIncoterm() {
+        let incotermTip = document.getElementById("selectIncoterm").value;
+        let groupDapGrad = document.getElementById("groupDapGrad");
+        if (incotermTip === "DAP") {
+            groupDapGrad.style.display = "block";
+        } else {
+            groupDapGrad.style.display = "none";
+        }
+        azurirajIncoterm();
+    }
+
+
+    function azurirajIncoterm() {
+        let incotermTip = document.getElementById("selectIncoterm").value;
+        let prikazIncotermDiv = document.getElementById("prikazIncoterm");
+        let tekstIncoterm = "FCA Kragujevac";
+        if (incotermTip === "DAP") {
+            let grad = document.getElementById("inputDapGrad").value.trim();
+            tekstIncoterm = "DAP " + (grad ? grad : "");
+        }
+        prikazIncotermDiv.innerHTML = `
+            Incoterm: <span class="din-vrednost">${tekstIncoterm}</span><br>
+            Origin: <span class="din-vrednost">EU</span><br>
+            Notice : free of charge
+        `;
+    }
+
+
+    function azurirajTablice() {
+        let tablice = document.getElementById("inputTabliceKamiona").value.trim();
+        document.getElementById("ddtPrikazTablice").innerText = tablice;
+        document.getElementById("cmrPrikazTablica").innerText = tablice;
+        let elDdtDno = document.getElementById("prikazTabliceDdtDno");
+        if (elDdtDno) elDdtDno.innerText = tablice;
+        let elCmrPotpis = document.getElementById("cmrPrikazTablicaPotpis");
+        if (elCmrPotpis) elCmrPotpis.innerText = tablice;
+    }
+
+
+    function azurirajBrojeve() {
+        let ddtBroj = document.getElementById("inputDdtBroj").value.trim();
+        let cmrBroj = document.getElementById("inputCmrBroj").value.trim();
+        let ddtGodina = document.getElementById("selectDdtGodina").value;
+        let datumInput = document.getElementById("inputDatum").value;
+        let formatiranDatum = datumInput;
+        let formatiranDatumSlash = datumInput;
+        if (datumInput) {
+            let delovi = datumInput.split("-");
+            if (delovi.length === 3) {
+                formatiranDatum = delovi[2] + "." + delovi[1] + "." + delovi[0] + ".";
+                formatiranDatumSlash = Number(delovi[1]) + "/" + Number(delovi[2]) + "/" + delovi[0];
+            }
+        }
+        let punDdtProforma = ddtBroj + " / " + ddtGodina;
+        let punCmr = cmrBroj + " / " + ddtGodina;
+        document.getElementById("prikazDdtBroj").innerText = punDdtProforma;
+        document.getElementById("prikazProformaBroj").innerText = punDdtProforma;
+        document.getElementById("prikazDatum").innerText = formatiranDatum;
+        document.getElementById("cmrPrikazDatum").innerText = formatiranDatum;
+        let cmrDatum2 = document.getElementById("cmrPrikazDatum2");
+        if (cmrDatum2) cmrDatum2.innerText = formatiranDatum;
+        let elF = document.getElementById("cmrPrikazFaktura");
+        if (elF) elF.innerText = punDdtProforma;
+        let elD = document.getElementById("cmrPrikazDdt");
+        if (elD) elD.innerText = punDdtProforma;
+        let elC = document.getElementById("cmrPrikazCmrBroj");
+        if (elC) elC.innerText = punCmr;
+        document.getElementById("ddtPrikazDatumRelease").innerText = formatiranDatumSlash;
+        document.getElementById("ddtBroj1").innerText = ddtBroj;
+        document.getElementById("ddtBroj2").innerText = " / " + ddtGodina;
+    }
+
+
+    function promeniDobavljacaOtpremnice() {
+        let tip = document.getElementById("selectDobavljacOtpremnica").value;
+        let tbody = document.getElementById("redoviTabelaOtpremnica");
+        tbody.innerHTML = "";
+        
+        if (tip === "pmc") {
+            document.getElementById("otpPrimalacNaziv").innerText = "PMC AUTOMOTIVE D.O.O KRAGUJEVAC";
+            document.getElementById("otpPrimalacAdresa1").innerText = "Oktobarskih zrtava bb";
+            document.getElementById("otpPrimalacAdresa2").innerText = "34113 KRAGUJEVAC";
+            
+            let pmcStavke = [
+                { sifra: "Prazna ambalaza - LHD - x6612", kolicina: "" },
+                { sifra: "Prazna ambalaza - RHD - x5761", kolicina: "" }
+            ];
+            pmcStavke.forEach((stavka, index) => {
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td style="text-align: center;" class="din-vrednost red-broj">${index + 1}</td>
+                    <td><input type="text" class="input-tekst din-vrednost" value="${stavka.sifra}"></td>
+                    <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${stavka.kolicina}" min="0"></td>
+                    <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        } else if (tip === "sigit") {
+            document.getElementById("otpPrimalacNaziv").innerText = "SIGIT D.O.O KRAGUJEVAC";
+            document.getElementById("otpPrimalacAdresa1").innerText = "Oktobarskih zrtava bb";
+            document.getElementById("otpPrimalacAdresa2").innerText = "34113 KRAGUJEVAC";
+            
+            let sigitStavka = { sifra: "Prazna ambalaza", kolicina: "" };
+            let row = document.createElement("tr");
+            row.innerHTML = `
+                <td style="text-align: center;" class="din-vrednost red-broj">1</td>
+                <td><input type="text" class="input-tekst din-vrednost" value="${sigitStavka.sifra}"></td>
+                <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${sigitStavka.kolicina}" min="0"></td>
+                <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
+            `;
+            tbody.appendChild(row);
+        }
+        azurirajRedneBrojeveOtpremnice();
+    }
+
+
+    function promeniVozacaOtpremnice() {
+        let vozacTip = document.getElementById("selectVozacOtpremnica").value;
+        let inputVozacRucno = document.getElementById("inputVozacRucno");
+        if (vozacTip === "custom") {
+            inputVozacRucno.style.display = "block";
+            inputVozacRucno.focus();
+        } else {
+            inputVozacRucno.style.display = "none";
+            inputVozacRucno.value = vozacTip;
+        }
+        azurirajVozacaRucno();
+        azurirajOtpremnicuKontrole();
+    }
+
+
+    function promeniTabliceOtpremnice() {
+        let tabliceTip = document.getElementById("selectTabliceOtpremnica").value;
+        let inputTablice = document.getElementById("inputTabliceOtpremnica");
+        if (tabliceTip === "custom") {
+            inputTablice.style.display = "block";
+            inputTablice.focus();
+        } else {
+            inputTablice.style.display = "none";
+            inputTablice.value = tabliceTip;
+        }
+        azurirajOtpremnicuKontrole();
+    }
+
+
+    function azurirajVozacaRucno() {
+        let vozacTip = document.getElementById("selectVozacOtpremnica").value;
+        let nazivVozaca = vozacTip === "custom" ? document.getElementById("inputVozacRucno").value : vozacTip;
+        document.getElementById("otpPrikazVozac").innerText = nazivVozaca;
+    }
+
+
+    function azurirajOtpremnicuKontrole() {
+        let broj = document.getElementById("inputBrojOtpremnice").value.trim();
+        let godina = document.getElementById("selectGodinaOtpremnice").value;
+        let datumInput = document.getElementById("inputDatumOtpremnice").value;
+        let tabliceTip = document.getElementById("selectTabliceOtpremnica").value;
+        let tablice = tabliceTip === "custom" ? document.getElementById("inputTabliceOtpremnica").value : tabliceTip;
+        let formatiranDatum = datumInput;
+        if (datumInput) {
+            let delovi = datumInput.split("-");
+            if (delovi.length === 3) {
+                formatiranDatum = Number(delovi[1]) + "/" + Number(delovi[2]) + "/" + delovi[0];
+            }
+        }
+        document.getElementById("otpPrikazBroj").innerText = broj;
+        document.getElementById("otpPrikazGodina").innerText = godina;
+        document.getElementById("otpPrikazBrojSub").innerText = broj;
+        document.getElementById("otpPrikazGodinaSub").innerText = godina;
+        document.getElementById("otpPrikazDatumIsporuke").innerText = formatiranDatum;
+        document.getElementById("otpPrikazDatumMesto").innerText = formatiranDatum;
+        document.getElementById("otpPrikazVozilo").innerText = tablice;
+    }
+
+
+    function ucitajInicijalneStavkeOtpremnice() {
+        promeniDobavljacaOtpremnice();
+    }
+
+
+    function dodajRedOtpremnica() {
+        let tbody = document.getElementById("redoviTabelaOtpremnica");
+        let row = document.createElement("tr");
+        let brRedova = tbody.rows.length + 1;
+        row.innerHTML = `
+            <td style="text-align: center;" class="din-vrednost red-broj">${brRedova}</td>
+            <td><input type="text" class="input-tekst din-vrednost" value="" placeholder="Opis stavke"></td>
+            <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="" min="0"></td>
+            <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
+        `;
+        tbody.appendChild(row);
+        azurirajRedneBrojeveOtpremnice();
+    }
+
+
+    function obrisiRedOtpremnica(btn) {
+        btn.closest("tr").remove();
+        azurirajRedneBrojeveOtpremnice();
+    }
+
+
+    function azurirajRedneBrojeveOtpremnice() {
+        let rows = document.querySelectorAll("#redoviTabelaOtpremnica tr");
+        rows.forEach((r, idx) => {
+            let cell = r.querySelector(".red-broj");
+            if (cell) cell.innerText = idx + 1;
+        });
+    }
+
+
+    function dodajRed(kod = "", kol = "0") {
+        let tbody = document.getElementById("redoviTabelaProforma");
+        let row = document.createElement("tr");
+        let izabraniKupac = document.getElementById("selectKupac").value;
+        if (izabraniKupac === "atessa" || izabraniKupac === "pomigliano" || izabraniKupac === "san_benigno") {
+            row.innerHTML = `
+                <td style="text-align: center;" class="sakrij-pri-stampanju"><input type="text" class="input-kod input-oznaka-atessa" value="" placeholder="npr. 123" oninput="izracunajAtessa(this)"></td>
+                <td style="text-align: center;"><input type="text" class="input-tekst input-oznaka" value="" placeholder="Kod ambalaže" oninput="izracunajAtessa(this)"></td>
+                <td><input type="text" class="input-tekst input-opis" value="" placeholder="Opis dobara" oninput="izracunajAtessa(this)"></td>
+                <td style="text-align: center;"><input type="number" class="input-kol" value="0" min="0" oninput="izracunajAtessa(this)"></td>
+                <td style="text-align: center;"><input type="number" class="input-cena" value="1.00" step="0.01" min="0" oninput="izracunajAtessa(this)"></td>
+                <td style="text-align: right;" class="total-celija din-vrednost">0.00</td>
+                <td style="text-align: right;"><input type="number" class="input-tezina" value="0.00" step="0.01" min="0" oninput="izracunajAtessa(this)"></td>
+                <td style="text-align: center; vertical-align: middle;" class="no-print"><button class="btn-brisi" onclick="obrisiRed(this)">X</button></td>
+            `;
+        } else {
+            row.innerHTML = `
+                <td style="text-align: center;" class="sakrij-pri-stampanju"><input type="text" class="input-kod" value="${kod}" oninput="izracunaj(this)" placeholder="npr. X6600"></td>
+                <td style="text-align: center;" class="oznaka-celija din-vrednost">-</td>
+                <td class="opis-celija din-vrednost">-</td>
+                <td style="text-align: center;"><input type="number" class="input-kol" value="${kol}" min="0" oninput="izracunaj(this)"></td>
+                <td style="text-align: center;" class="cena-celija">1.00</td>
+                <td style="text-align: right;" class="total-celija din-vrednost">0.00</td>
+                <td style="text-align: right;" class="bruto-celija din-vrednost">0.00</td>
+                <td style="text-align: center; vertical-align: middle;" class="no-print"><button class="btn-brisi" onclick="obrisiRed(this)">X</button></td>
+            `;
+        }
+        tbody.appendChild(row);
+        let targetInput = row.querySelector('.input-kod');
+        if (targetInput) {
+            targetInput.focus();
+        }
+        if(kod && izabraniKupac !== "atessa" && izabraniKupac !== "pomigliano" && izabraniKupac !== "san_benigno") izracunaj(targetInput);
+    }
+
+
+    function obrisiRed(btn) {
+        btn.closest("tr").remove();
+        prebrojUkupno();
+    }
+
+
+    function izracunaj(element) {
+        let row = element.closest("tr");
+        let kodInput = row.querySelector(".input-kod").value.trim();
+        let kolInput = parseFloat(row.querySelector(".input-kol").value) || 0;
+        let oznakaCelija = row.querySelector(".oznaka-celija");
+        let opisCelija = row.querySelector(".opis-celija");
+        let cenaCelija = row.querySelector(".cena-celija");
+        let totalCelija = row.querySelector(".total-celija");
+        let brutoCelija = row.querySelector(".bruto-celija");
+        let izabraniKupac = document.getElementById("selectKupac").value;
+        let aktivnaBaza = bazeAmbalaze[izabraniKupac] || {};
+        let stavka = aktivnaBaza[kodInput];
+        if (stavka) {
+            oznakaCelija.innerText = stavka.oznaka;
+            opisCelija.innerHTML = stavka.opis;
+            let jedinicnaCena = stavka.cena !== undefined ? stavka.cena : 1.00;
+            if (cenaCelija) cenaCelija.innerText = jedinicnaCena.toFixed(2);
+            let total = kolInput * jedinicnaCena;
+            let bruto = kolInput * stavka.tezina;
+            totalCelija.innerText = total.toFixed(2);
+            brutoCelija.innerText = bruto.toFixed(2);
+        } else {
+            oznakaCelija.innerText = "-";
+            opisCelija.innerHTML = `<span style="color:red;">Nepoznat kod</span>`;
+            if (cenaCelija) cenaCelija.innerText = "1.00";
+            totalCelija.innerText = "0.00";
+            brutoCelija.innerText = "0.00";
+        }
+        prebrojUkupno();
+    }
+
+
+    function izracunajAtessa(element) {
+        let row = element.closest("tr");
+        let kolInput = parseFloat(row.querySelector(".input-kol").value) || 0;
+        let cenaInput = parseFloat(row.querySelector(".input-cena").value) || 0;
+        let totalCelija = row.querySelector(".total-celija");
+        let total = kolInput * cenaInput;
+        totalCelija.innerText = total.toFixed(2);
+        prebrojUkupno();
+    }
+
+
+    function prebrojUkupno() {
+        let rows = document.querySelectorAll("#redoviTabelaProforma tr");
+        let sumBruto = 0;
+        let sumTotal = 0;
+        let sumKol = 0;
+        let sumNeto = 0;
+        let izabraniKupac = document.getElementById("selectKupac").value;
+        let aktivnaBaza = bazeAmbalaze[izabraniKupac] || {};
+        let ddtTbody = document.getElementById("redoviTabelaDdt");
+        ddtTbody.innerHTML = "";
+        rows.forEach(r => {
+            let kol = parseFloat(r.querySelector(".input-kol").value) || 0;
+            sumKol += kol;
+            sumTotal += parseFloat(r.querySelector(".total-celija").innerText) || 0;
+            let kodOznaka = "";
+            let opisTekst = "";
+            let brutoVal = 0;
+            if (izabraniKupac === "atessa" || izabraniKupac === "pomigliano" || izabraniKupac === "san_benigno") {
+                let pojedinacnaTezina = parseFloat(r.querySelector(".input-tezina").value) || 0;
+                brutoVal = kol * pojedinacnaTezina;
+                sumBruto += brutoVal;
+                sumNeto += brutoVal;
+                kodOznaka = r.querySelector(".input-oznaka").value;
+                opisTekst = r.querySelector(".input-opis").value;
+            } else {
+                let kodInput = r.querySelector(".input-kod").value.trim();
+                let stavka = aktivnaBaza[kodInput];
+                brutoVal = parseFloat(r.querySelector(".bruto-celija").innerText) || 0;
+                sumBruto += brutoVal;
+                if (stavka) {
+                    sumNeto += kol * stavka.tezina;
+                    kodOznaka = stavka.oznaka;
+                    opisTekst = stavka.opis;
+                } else {
+                    kodOznaka = kodInput;
+                    opisTekst = "-";
+                }
+            }
+            let ddtRow = document.createElement("tr");
+            ddtRow.innerHTML = `
+                <td style="text-align: center; height: 16px; word-break: break-all;" class="din-vrednost">${kodOznaka}</td>
+                <td style="word-break: break-word; white-space: normal;" class="din-vrednost">${opisTekst}</td>
+                <td style="text-align: center;">-</td>
+                <td style="text-align: center;">KOM</td>
+                <td style="text-align: center;" class="din-vrednost">${kol}</td>
+                <td style="text-align: center;"></td>
+                <td style="text-align: center;"></td>
+                <td></td>
+                <td style="text-align: center;"></td>
+                <td style="text-align: center;"></td>
+            `;
+            ddtTbody.appendChild(ddtRow);
+        });
+        document.getElementById("ukupnoNeto").innerText = sumNeto.toFixed(2);
+        document.getElementById("ukupnoBruto").innerText = sumBruto.toFixed(2);
+        document.getElementById("zbirKolicina").innerText = sumKol;
+        document.getElementById("zbirCena").innerText = sumTotal.toFixed(2);
+        document.getElementById("zbirBruto").innerText = sumBruto.toFixed(2);
+        document.getElementById("ddtUkupnoBruto").innerText = sumBruto.toFixed(2);
+        document.getElementById("ddtUkupnoNeto").innerText = sumNeto.toFixed(2);
+        document.getElementById("prikazUkupnoKolicina1").innerText = sumKol;
+        document.getElementById("prikazUkupnoKolicina2").innerText = sumKol;
+        let cmrKol = document.getElementById("cmrUkupnoKolicina");
+        if (cmrKol) cmrKol.innerText = sumKol;
+        let cmrKolKom = document.getElementById("cmrUkupnoKolicinaKom");
+        if (cmrKolKom) cmrKolKom.innerText = sumKol;
+        let cmrBru = document.getElementById("cmrUkupnoBruto");
+        if (cmrBru) cmrBru.innerText = sumBruto.toFixed(2);
+    }
+
+
+    window.onload = function() {
+        promeniKupca();
+        azurirajBrojeve();
+        promeniIncoterm();
+        azurirajTablice();
+        ucitajInicijalneStavkeOtpremnice();
+        azurirajOtpremnicuKontrole();
+    };
+</script>
+
+</body>
+</html>
