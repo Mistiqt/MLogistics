@@ -186,7 +186,6 @@
                         <a class="dropdown-item" href="magacin-prijem.html" target="_blank">Utovar-Istovar</a>
                         <a class="dropdown-item" href="truck-announcement/truck-login.html" target="_blank">Najava i praćenje kamiona</a>
                         <a class="dropdown-item" href="check_list.html" target="_blank">Ček-lista viljuškara</a>
-                        <a class="dropdown-item" href="dokumentacija.html" target="_blank">Izvozna dokumentacija</a>
                     </div>
                 </div>
                 <div class="dropdown" id="navPopis">
@@ -450,7 +449,8 @@
                                         </button>
                                         <div id="edit-${objava.id}" class="edit-fields">
                                             <input type="file" id="file-${objava.id}" class="form-control-file mt-2" accept="image/*">
-                                            <textarea id="kom-${objava.id}" class="form-control mt-2" placeholder="Unesite komentar...">${objava.komentar \vert{}\vert{} ''}</textarea>${imaDokaz ? `<button class="btn btn-obrisi-sliku" onclick="obrisiDokaz('${objava.id}')">Obriši sliku dokaza</button>` : ''}
+                                            <textarea id="kom-${objava.id}" class="form-control mt-2" placeholder="Unesite komentar...">${objava.komentar || ''}</textarea>
+                                            ${imaDokaz ? `<button class="btn btn-obrisi-sliku" onclick="obrisiDokaz('${objava.id}')">Obriši sliku dokaza</button>` : ''}
                                             <button id="btn-${objava.id}" class="btn btn-zavrseno" onclick="zavrsiObjavu('${objava.id}')">SAČUVAJ IZMENE</button>
                                         </div>
                                     </div>` : ''}
