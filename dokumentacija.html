@@ -417,11 +417,12 @@
         </div>
         <div class="form-group">
             <label>Dobavljač / Kupac:</label>
-            <select id="selectDobavljacOtpremnica" onchange="promeniDobavljacaOtpremnice()">
+            <select id="selectDobavljacOtpremnica" onchange="promeniDobavljacaOtpremnice()" style="margin-bottom: 5px;">
                 <option value="pmc">PMC Automotive</option>
                 <option value="sigit">SIGIT</option>
-                <option value="custom">Unesi ručno</option>
+                <option value="custom">Unesi ručno...</option>
             </select>
+            <input type="text" id="inputDobavljacRucno" value="PMC AUTOMOTIVE D.O.O KRAGUJEVAC" placeholder="Unesi primalca" oninput="azurirajDobavljacaRucno()" style="display: none; margin-top: 5px;">
         </div>
         <div class="form-group">
             <label>Vozač:</label>
@@ -1162,7 +1163,7 @@
                 </tbody>
             </table>
 
-            <table class="no-border" style="margin-top: 40px; font-size: 9px;">
+            <table class="no-border" style="margin-top: 80px; font-size: 9px;">
                 <tbody>
                     <tr>
                         <td style="width: 50%;">
@@ -1713,44 +1714,63 @@
 
     function promeniDobavljacaOtpremnice() {
         let tip = document.getElementById("selectDobavljacOtpremnica").value;
+        let inputDobavljacRucno = document.getElementById("inputDobavljacRucno");
         let tbody = document.getElementById("redoviTabelaOtpremnica");
         tbody.innerHTML = "";
         
-        if (tip === "pmc") {
-            document.getElementById("otpPrimalacNaziv").innerText = "PMC AUTOMOTIVE D.O.O KRAGUJEVAC";
-            document.getElementById("otpPrimalacAdresa1").innerText = "Oktobarskih zrtava bb";
-            document.getElementById("otpPrimalacAdresa2").innerText = "34113 KRAGUJEVAC";
-            
-            let pmcStavke = [
-                { sifra: "Prazna ambalaza - LHD - x6612", kolicina: "" },
-                { sifra: "Prazna ambalaza - RHD - x5761", kolicina: "" }
-            ];
-            pmcStavke.forEach((stavka, index) => {
+        if (tip === "custom") {
+            inputDobavljacRucno.style.display = "block";
+            inputDobavljacRucno.focus();
+            azurirajDobavljacaRucno();
+        } else {
+            inputDobavljacRucno.style.display = "none";
+            if (tip === "pmc") {
+                inputDobavljacRucno.value = "PMC AUTOMOTIVE D.O.O KRAGUJEVAC";
+                document.getElementById("otpPrimalacNaziv").innerText = "PMC AUTOMOTIVE D.O.O KRAGUJEVAC";
+                document.getElementById("otpPrimalacAdresa1").innerText = "Oktobarskih zrtava bb";
+                document.getElementById("otpPrimalacAdresa2").innerText = "34113 KRAGUJEVAC";
+                
+                let pmcStavke = [
+                    { sifra: "Prazna ambalaza - LHD - x6612", kolicina: "" },
+                    { sifra: "Prazna ambalaza - RHD - x5761", kolicina: "" }
+                ];
+                pmcStavke.forEach((stavka, index) => {
+                    let row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td style="text-align: center;" class="din-vrednost red-broj">${index + 1}</td>
+                        <td><input type="text" class="input-tekst din-vrednost" value="${stavka.sifra}"></td>
+                        <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${stavka.kolicina}" min="0"></td>
+                        <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else if (tip === "sigit") {
+                inputDobavljacRucno.value = "SIGIT D.O.O KRAGUJEVAC";
+                document.getElementById("otpPrimalacNaziv").innerText = "SIGIT D.O.O KRAGUJEVAC";
+                document.getElementById("otpPrimalacAdresa1").innerText = "Oktobarskih zrtava bb";
+                document.getElementById("otpPrimalacAdresa2").innerText = "34113 KRAGUJEVAC";
+                
+                let sigitStavka = { sifra: "Prazna ambalaza", kolicina: "" };
                 let row = document.createElement("tr");
                 row.innerHTML = `
-                    <td style="text-align: center;" class="din-vrednost red-broj">${index + 1}</td>
-                    <td><input type="text" class="input-tekst din-vrednost" value="${stavka.sifra}"></td>
-                    <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${stavka.kolicina}" min="0"></td>
+                    <td style="text-align: center;" class="din-vrednost red-broj">1</td>
+                    <td><input type="text" class="input-tekst din-vrednost" value="${sigitStavka.sifra}"></td>
+                    <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${sigitStavka.kolicina}" min="0"></td>
                     <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
                 `;
                 tbody.appendChild(row);
-            });
-        } else if (tip === "sigit") {
-            document.getElementById("otpPrimalacNaziv").innerText = "SIGIT D.O.O KRAGUJEVAC";
-            document.getElementById("otpPrimalacAdresa1").innerText = "Oktobarskih zrtava bb";
-            document.getElementById("otpPrimalacAdresa2").innerText = "34113 KRAGUJEVAC";
-            
-            let sigitStavka = { sifra: "Prazna ambalaza", kolicina: "" };
-            let row = document.createElement("tr");
-            row.innerHTML = `
-                <td style="text-align: center;" class="din-vrednost red-broj">1</td>
-                <td><input type="text" class="input-tekst din-vrednost" value="${sigitStavka.sifra}"></td>
-                <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${sigitStavka.kolicina}" min="0"></td>
-                <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
-            `;
-            tbody.appendChild(row);
+            }
         }
         azurirajRedneBrojeveOtpremnice();
+    }
+
+
+    function azurirajDobavljacaRucno() {
+        let tip = document.getElementById("selectDobavljacOtpremnica").value;
+        if (tip === "custom") {
+            let naziv = document.getElementById("inputDobavljacRucno").value;
+            document.getElementById("otpPrimalacNaziv").innerText = naziv;
+        }
     }
 
 
