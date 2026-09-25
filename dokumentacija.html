@@ -261,7 +261,7 @@
         .center { text-align: center; }
         
         .din-vrednost {
-            font-size: 10px !important;
+            font-size: 12px !important;
             font-weight: bold !important;
         }
 
@@ -417,33 +417,32 @@
         </div>
         <div class="form-group">
             <label>Dobavljač / Kupac:</label>
-            <select id="selectDobavljacOtpremnica" onchange="promeniDobavljacaOtpremnice()" style="margin-bottom: 5px;">
+            <select id="selectDobavljacOtpremnica" onchange="promeniDobavljacaOtpremnice()">
                 <option value="pmc">PMC Automotive</option>
                 <option value="sigit">SIGIT</option>
-                <option value="custom">Unesi ručno...</option>
+                <option value="custom">Unesi ručno</option>
             </select>
-            <input type="text" id="inputDobavljacRucno" value="PMC AUTOMOTIVE D.O.O KRAGUJEVAC" placeholder="Unesi primalca" oninput="azurirajDobavljacaRucno()" style="display: none; margin-top: 5px;">
         </div>
         <div class="form-group">
-            <label>Vozač:</label>
+            <label>Vozač (Odabir ili ručni unos):</label>
             <select id="selectVozacOtpremnica" onchange="promeniVozacaOtpremnice()" style="margin-bottom: 5px;">
-                <option value="DRAGISA KRAGOVIC">DRAGISA KRAGOVIC</option>
-                <option value="SRECKO ZIVANOVIC">SRECKO ZIVANOVIC</option>
-                <option value="DRAGISA AVRAMOVIC">DRAGISA AVRAMOVIC</option>
-                <option value="SRDJAN JOVANOVIC">SRDJAN JOVANOVIC</option>
+                <option value="dragisa">DRAGISA KRAGOVIC</option>
+                <option value="srecko">SRECKO ZIVANOVIC</option>
+                <option value="dragisa_a">DRAGISA AVRAMOVIC</option>
+                <option value="srdjan">SRDJAN JOVANOVIC</option>
                 <option value="custom">Unesi ručno...</option>
             </select>
-            <input type="text" id="inputVozacRucno" value="DRAGISA KRAGOVIC" placeholder="Unesi ime vozača" oninput="azurirajVozacaRucno()" style="display: none; margin-top: 5px;">
+            <input type="text" id="inputVozacRucno" value="DRAGISA KRAGOVIC" placeholder="Unesi ime vozača" oninput="azurirajVozacaRucno()">
         </div>
         <div class="form-group">
             <label>Broj vozila / Tablice:</label>
             <select id="selectTabliceOtpremnica" onchange="promeniTabliceOtpremnice()" style="margin-bottom: 5px;">
-                <option value="KG 380 BT">KG 380 BT</option>
-                <option value="KG 366 MC">KG 366 MC</option>
-                <option value="KG 366 MD">KG 366 MD</option>
+                <option value="kg380bt">KG 380 BT</option>
+                <option value="kg366mc">KG 366 MC</option>
+                <option value="kg366md">KG 366 MD</option>
                 <option value="custom">Unesi ručno...</option>
             </select>
-            <input type="text" id="inputTabliceOtpremnica" value="KG 380 BT" placeholder="Unesi tablice" oninput="azurirajOtpremnicuKontrole()" style="display: none; margin-top: 5px;">
+            <input type="text" id="inputTabliceOtpremnica" value="KG 380 BT" placeholder="Unesi tablice" oninput="azurirajOtpremnicuKontrole()">
         </div>
         <button class="btn-stampaj" onclick="stampajOtpremnicu()">🖨️ Štampaj Otpremnicu</button>
         <button class="btn-sacuvaj" onclick="sacuvajOtpremnicu()">💾 Sačuvaj Otpremnicu (Izaberi folder)</button>
@@ -916,7 +915,7 @@
                                             <td style="font-size: 6px; vertical-align: top; width: 60%;">INTERNATIONALER FRACHTBRIEF<br>INTERNATIONAL CONSIGNMENT NOTE</td>
                                             <td style="text-align: center; vertical-align: middle;">
                                                 <span class="cmr-red">CMR</span><br>
-                                                <div style="font-size: 10px; font-weight: bold; margin-top: 6px;">Nr. <span id="cmrPrikazCmrBroj" class="din-vrednost" style="font-size: 10px;">973 / 2026</span></div>
+                                                <div style="font-size: 10px; font-weight: bold; margin-top: 6px;">Nr. <span id="cmrPrikazCmrBroj" class="din-vrednost" style="font-size: 15px !important;">973 / 2026</span></div>
                                             </td>
                                         </tr>
                                         <tr><td colspan="2" style="font-size: 5px; line-height: 1.2; color: #333;">
@@ -1163,7 +1162,7 @@
                 </tbody>
             </table>
 
-            <table class="no-border" style="margin-top: 80px; font-size: 9px;">
+            <table class="no-border" style="margin-top: 40px; font-size: 9px;">
                 <tbody>
                     <tr>
                         <td style="width: 50%;">
@@ -1319,6 +1318,11 @@
         mb: "MB: 20468122",
         pib: "PIB: 105808309"
     };
+
+
+    const inicijalneStavkeOtpremnice = [
+        { sifra: "Prazna ambalaza", kolicina: "" }
+    ];
 
 
     function otvoriTab(evt, tabNaziv, nazivNaslova) {
@@ -1714,62 +1718,14 @@
 
     function promeniDobavljacaOtpremnice() {
         let tip = document.getElementById("selectDobavljacOtpremnica").value;
-        let inputDobavljacRucno = document.getElementById("inputDobavljacRucno");
-        let tbody = document.getElementById("redoviTabelaOtpremnica");
-        tbody.innerHTML = "";
-        
-        if (tip === "custom") {
-            inputDobavljacRucno.style.display = "block";
-            inputDobavljacRucno.focus();
-            azurirajDobavljacaRucno();
-        } else {
-            inputDobavljacRucno.style.display = "none";
-            if (tip === "pmc") {
-                inputDobavljacRucno.value = "PMC AUTOMOTIVE D.O.O KRAGUJEVAC";
-                document.getElementById("otpPrimalacNaziv").innerText = "PMC AUTOMOTIVE D.O.O KRAGUJEVAC";
-                document.getElementById("otpPrimalacAdresa1").innerText = "Oktobarskih zrtava bb";
-                document.getElementById("otpPrimalacAdresa2").innerText = "34113 KRAGUJEVAC";
-                
-                let pmcStavke = [
-                    { sifra: "Prazna ambalaza - LHD - x6612", kolicina: "" },
-                    { sifra: "Prazna ambalaza - RHD - x5761", kolicina: "" }
-                ];
-                pmcStavke.forEach((stavka, index) => {
-                    let row = document.createElement("tr");
-                    row.innerHTML = `
-                        <td style="text-align: center;" class="din-vrednost red-broj">${index + 1}</td>
-                        <td><input type="text" class="input-tekst din-vrednost" value="${stavka.sifra}"></td>
-                        <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${stavka.kolicina}" min="0"></td>
-                        <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            } else if (tip === "sigit") {
-                inputDobavljacRucno.value = "SIGIT D.O.O KRAGUJEVAC";
-                document.getElementById("otpPrimalacNaziv").innerText = "SIGIT D.O.O KRAGUJEVAC";
-                document.getElementById("otpPrimalacAdresa1").innerText = "Oktobarskih zrtava bb";
-                document.getElementById("otpPrimalacAdresa2").innerText = "34113 KRAGUJEVAC";
-                
-                let sigitStavka = { sifra: "Prazna ambalaza", kolicina: "" };
-                let row = document.createElement("tr");
-                row.innerHTML = `
-                    <td style="text-align: center;" class="din-vrednost red-broj">1</td>
-                    <td><input type="text" class="input-tekst din-vrednost" value="${sigitStavka.sifra}"></td>
-                    <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${sigitStavka.kolicina}" min="0"></td>
-                    <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
-                `;
-                tbody.appendChild(row);
-            }
-        }
-        azurirajRedneBrojeveOtpremnice();
-    }
-
-
-    function azurirajDobavljacaRucno() {
-        let tip = document.getElementById("selectDobavljacOtpremnica").value;
-        if (tip === "custom") {
-            let naziv = document.getElementById("inputDobavljacRucno").value;
-            document.getElementById("otpPrimalacNaziv").innerText = naziv;
+        if (tip === "pmc") {
+            document.getElementById("otpPrimalacNaziv").innerText = "PMC AUTOMOTIVE D.O.O KRAGUJEVAC";
+            document.getElementById("otpPrimalacAdresa1").innerText = "Oktobarskih zrtava bb";
+            document.getElementById("otpPrimalacAdresa2").innerText = "34113 KRAGUJEVAC";
+        } else if (tip === "sigit") {
+            document.getElementById("otpPrimalacNaziv").innerText = "SIGIT D.O.O KRAGUJEVAC";
+            document.getElementById("otpPrimalacAdresa1").innerText = "Oktobarskih zrtava bb";
+            document.getElementById("otpPrimalacAdresa2").innerText = "34113 KRAGUJEVAC";
         }
     }
 
@@ -1777,12 +1733,14 @@
     function promeniVozacaOtpremnice() {
         let vozacTip = document.getElementById("selectVozacOtpremnica").value;
         let inputVozacRucno = document.getElementById("inputVozacRucno");
-        if (vozacTip === "custom") {
-            inputVozacRucno.style.display = "block";
-            inputVozacRucno.focus();
-        } else {
-            inputVozacRucno.style.display = "none";
-            inputVozacRucno.value = vozacTip;
+        if (vozacTip === "dragisa") {
+            inputVozacRucno.value = "DRAGISA KRAGOVIC";
+        } else if (vozacTip === "srecko") {
+            inputVozacRucno.value = "SRECKO ZIVANOVIC";
+        } else if (vozacTip === "dragisa_a") {
+            inputVozacRucno.value = "DRAGISA AVRAMOVIC";
+        } else if (vozacTip === "srdjan") {
+            inputVozacRucno.value = "SRDJAN JOVANOVIC";
         }
         azurirajVozacaRucno();
         azurirajOtpremnicuKontrole();
@@ -1792,20 +1750,19 @@
     function promeniTabliceOtpremnice() {
         let tabliceTip = document.getElementById("selectTabliceOtpremnica").value;
         let inputTablice = document.getElementById("inputTabliceOtpremnica");
-        if (tabliceTip === "custom") {
-            inputTablice.style.display = "block";
-            inputTablice.focus();
-        } else {
-            inputTablice.style.display = "none";
-            inputTablice.value = tabliceTip;
+        if (tabliceTip === "kg380bt") {
+            inputTablice.value = "KG 380 BT";
+        } else if (tabliceTip === "kg366mc") {
+            inputTablice.value = "KG 366 MC";
+        } else if (tabliceTip === "kg366md") {
+            inputTablice.value = "KG 366 MD";
         }
         azurirajOtpremnicuKontrole();
     }
 
 
     function azurirajVozacaRucno() {
-        let vozacTip = document.getElementById("selectVozacOtpremnica").value;
-        let nazivVozaca = vozacTip === "custom" ? document.getElementById("inputVozacRucno").value : vozacTip;
+        let nazivVozaca = document.getElementById("inputVozacRucno").value;
         document.getElementById("otpPrikazVozac").innerText = nazivVozaca;
     }
 
@@ -1814,8 +1771,7 @@
         let broj = document.getElementById("inputBrojOtpremnice").value.trim();
         let godina = document.getElementById("selectGodinaOtpremnice").value;
         let datumInput = document.getElementById("inputDatumOtpremnice").value;
-        let tabliceTip = document.getElementById("selectTabliceOtpremnica").value;
-        let tablice = tabliceTip === "custom" ? document.getElementById("inputTabliceOtpremnica").value : tabliceTip;
+        let tablice = document.getElementById("inputTabliceOtpremnica").value;
         let formatiranDatum = datumInput;
         if (datumInput) {
             let delovi = datumInput.split("-");
@@ -1834,7 +1790,19 @@
 
 
     function ucitajInicijalneStavkeOtpremnice() {
-        promeniDobavljacaOtpremnice();
+        let tbody = document.getElementById("redoviTabelaOtpremnica");
+        tbody.innerHTML = "";
+        inicijalneStavkeOtpremnice.forEach((stavka, index) => {
+            let row = document.createElement("tr");
+            row.innerHTML = `
+                <td style="text-align: center;" class="din-vrednost red-broj">${index + 1}</td>
+                <td><input type="text" class="input-tekst din-vrednost" value="${stavka.sifra}"></td>
+                <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${stavka.kolicina}" min="0"></td>
+                <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+        azurirajRedneBrojeveOtpremnice();
     }
 
 
