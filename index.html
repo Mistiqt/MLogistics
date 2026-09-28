@@ -545,6 +545,60 @@
         function closeZoom() {
             document.getElementById('imageLightbox').classList.remove('active');
         }
+
+        // ===== DODAVANJE NOVE OBJAVE (admin forma) =====
+        document.getElementById('secureAdminForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const form = this;
+            const fileInput = document.getElementById('newFile');
+            const btn = document.getElementById('submitBtn');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("Izaberite sliku.");
+                return;
+            }
+
+            btn.disabled = true;
+            showLoading(true);
+
+            resizeImage(fileInput.files[0], (dataURL) => {
+                if (dataURL.length >= 45000) {
+                    showLoading(false);
+                    btn.disabled = false;
+                    alert("Slika je prevelika. Izaberite manju sliku.");
+                    return;
+                }
+
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        akcija: "dodaj",
+                        id: Date.now().toString(),
+                        naslov: document.getElementById('newTitle').value,
+                        mesto: document.getElementById('newLocation').value,
+                        datum: document.getElementById('newDate').value,
+                        smena: document.getElementById('newShift').value,
+                        leader: document.getElementById('newLeader').value,
+                        tekst: document.getElementById('newText').value,
+                        slika: dataURL,
+                        user: loggedUser
+                    })
+                })
+                .then(res => res.json())
+                .then(() => {
+                    form.reset();
+                    document.getElementById('newDate').valueAsDate = new Date();
+                    btn.disabled = false;
+                    showLoading(false);
+                    ucitajSveObjaveSaGoogleTabele(true);
+                })
+                .catch(() => {
+                    showLoading(false);
+                    btn.disabled = false;
+                    alert("Greška prilikom čuvanja objave.");
+                });
+            });
+        });
     </script>
 </body>
 </html>
