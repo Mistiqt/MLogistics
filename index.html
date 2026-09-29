@@ -503,7 +503,23 @@
 
         function obrisiDokaz(id) {
             if(confirm("Da li želite da obrišete sliku dokaza?")) {
-                zavrsiObjavu(id, true);
+                showLoading(true);
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ akcija: "obrisiDokaz", id: id, user: loggedUser })
+                })
+                .then(res => res.json())
+                .then(() => {
+                    showLoading(false);
+                    isEditing = "";
+                    ucitajSveObjaveSaGoogleTabele(true);
+                })
+                .catch(err => {
+                    showLoading(false);
+                    alert("Greška prilikom brisanja slike.");
+                    isEditing = "";
+                    ucitajSveObjaveSaGoogleTabele(true);
+                });
             }
         }
 
