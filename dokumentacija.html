@@ -446,6 +446,7 @@
             <select id="selectDobavljacOtpremnica" onchange="promeniDobavljacaOtpremnice()" style="margin-bottom: 5px;">
                 <option value="pmc">PMC Automotive</option>
                 <option value="sigit">SIGIT</option>
+                <option value="ADPM">ADP Mladenovac</option>
                 <option value="alzir">Arcese DP World (Adient hala)</option>
                 <option value="custom">Unesi ručno...</option>
             </select>
@@ -2003,6 +2004,22 @@
                     <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
                 `;
                 tbody.appendChild(row);
+                } else if (tip === "ADPM") {
+                inputDobavljacRucno.value = "AADP Mladenovac D.O.O.";
+                document.getElementById("otpPrimalacNaziv").innerText = "ADP Mladenovac D.O.O.";
+                document.getElementById("otpPrimalacAdresa1").innerText = "334 Kralja Petra";
+                document.getElementById("otpPrimalacAdresa2").innerText = "11400 Mladenovac";
+                
+                let ADPMStavka = { sifra: "Standardna STLA plastična paleta 00870 / CENTER SLOT", kolicina: "" };
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td style="text-align: center;" class="din-vrednost red-broj">1</td>
+                    <td><input type="text" class="input-tekst din-vrednost" value="${ADPMStavka.sifra}"></td>
+                    <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${ADPMStavka.kolicina}" min="0"></td>
+                    <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
+                `;
+                tbody.appendChild(row);
+                
             } else if (tip === "alzir") {
                 inputDobavljacRucno.value = "Arcese DP World (Adient hala)";
                 document.getElementById("otpPrimalacNaziv").innerText = "Arcese DP World (Adient hala)";
