@@ -376,7 +376,6 @@
                 <option value="slovacka">Plastic Omnium Slovacka</option>
                 <option value="ad_plastik_solin">AD Plastik Solin</option>
                 <option value="ad_plastik_zagreb">AD Plastik Zagreb</option>
-                <option value="ad_plastik_mladenovac">Ad Plastik Mladenovac</option>
                 <option value="atessa">Atessa</option>
                 <option value="pomigliano">Pomigliano</option>
                 <option value="san_benigno">San Benigno</option>
@@ -1343,9 +1342,6 @@
             "120": { oznaka: "120", opis: "Paleta", tezina: 23.5, cena: 1.00 },
             "2120": { oznaka: "2120", opis: "Poklopac", tezina: 6.75, cena: 1.00 }
         },
-        "ad_plastik_mladenovac": {
-            "00870": { oznaka: "00870", opis: "Standardna STLA plastična paleta 00870 / CENTER SLOT", tezina: 45, cena: 1.00 }
-        },
         "atessa": {},
         "pomigliano": {},
         "san_benigno": {},
@@ -1382,11 +1378,6 @@
         "ad_plastik_zagreb": {
             naziv: "AD PLASTIK",
             adresa: "Jankomir 5, 10000 Zagreb, Hrvatska",
-            kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Kontakt osoba<br>Telefon</span></div>"
-        },
-        "ad_plastik_mladenovac": {
-            naziv: "ADP Mladenovac D.O.O.",
-            adresa: "334 Kralja Petra, 11400 Mladenovac, Srbija",
             kontaktDestination: "<div style=\"text-align: left;\"><strong>DESTINATION</strong></div><div style=\"text-align: center; margin-top: 4px;\"><span class=\"din-vrednost\">Kontakt osoba<br>Telefon</span></div>"
         },
         "atessa": {
@@ -1864,8 +1855,7 @@
             dodajRed("X6605", "0");
             dodajRed("120", "0");
             dodajRed("2120", "0");
-        } else if (izabraniKupac === "ad_plastik_mladenovac") {
-            dodajRed("00870", "0");
+
         } else if (izabraniKupac === "leva") {
             dodajRed("X8010", "0");
             dodajRed("X8011", "0");
