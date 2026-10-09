@@ -56,9 +56,10 @@
         
         label { display: block; font-weight: 700; margin-bottom: 6px; color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
         
-        select, input[type="text"], input[type="date"] { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 14px; background: var(--panel-bg); color: var(--text); }
+        select, input[type="text"], input[type="date"], input[type="time"] { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 14px; background: var(--panel-bg); color: var(--text); }
         select:focus, input:focus { background: var(--panel-3); border-color: var(--brand-light); outline: none; box-shadow: 0 0 0 3px rgba(109,154,224,0.18); }
-        input[type="date"] { color-scheme: dark; }
+        input[type="date"], input[type="time"] { color-scheme: dark; }
+        input.nedostaje { border-color: #f08890; box-shadow: 0 0 0 3px rgba(240,136,144,0.2); }
 
         .btn-refresh-modern { 
             background: var(--panel-bg); border: 1px solid var(--border); cursor: pointer; padding: 10px 16px; font-size: 13px; color: var(--text); border-radius: 6px; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; transition: all 0.2s ease-in-out; height: 41px;
@@ -89,7 +90,23 @@
         .btn-excel:hover { background: var(--border); color: #fff; }
 
         .center { text-align: center; color: var(--text-dim); }
-        #loading { display: none; color: var(--brand-light); font-weight: 600; font-size: 13px; align-self: center; height: 41px; line-height: 41px; margin-left: 5px; }
+        #loading { display: none; align-items: center; gap: 8px; color: var(--brand-light); font-weight: 600; font-size: 13px; align-self: center; height: 41px; margin-left: 5px; }
+
+        /* Animacija rotacije pri učitavanju iz Google Sheets */
+        .rotator {
+            display: inline-block;
+            width: 16px; height: 16px;
+            border: 3px solid rgba(109,154,224,0.25);
+            border-top-color: var(--brand-light);
+            border-radius: 50%;
+            animation: rotacija 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+        .rotator-big { width: 38px; height: 38px; border-width: 5px; }
+        @keyframes rotacija { to { transform: rotate(360deg); } }
+        .loading-cell { padding: 35px 15px !important; }
+        .loading-cell .rotator { display: block; margin: 0 auto 12px; }
+        .btn-refresh-modern.loading svg { animation: rotacija 0.8s linear infinite; }
         
         tr:hover td { background-color: rgba(255, 255, 255, 0.01); }
     </style>
@@ -105,7 +122,7 @@
     <div class="controls">
         <div class="form-group">
             <label for="filter_osoba">Izaberite dobavljača / sheet:</label>
-            <select id="filter_osoba" onchange="ucitajPodatke()">
+            <select id="filter_osoba" onchange="promenaDobavljaca()">
                 <option value="Plastic_Omnium">Plastic Omnium</option>
                 <option value="AD_Plastik">AD Plastik</option>
                 <option value="SIGIT">SIGIT</option>
@@ -135,11 +152,15 @@
             </select>
         </div>
         <div class="form-group" style="flex: 0.6; min-width: 180px;">
-            <label for="datum_popisa">Datum Popisa:</label>
-            <input type="date" id="datum_popisa">
+            <label for="datum_popisa">Datum Popisa: *</label>
+            <input type="date" id="datum_popisa" required>
+        </div>
+        <div class="form-group" style="flex: 0.5; min-width: 140px;">
+            <label for="vreme_popisa">Vreme Popisa: *</label>
+            <input type="time" id="vreme_popisa" required>
         </div>
         <div>
-            <button class="btn-refresh-modern" onclick="ucitajPodatke()" title="Osveži podatke">
+            <button class="btn-refresh-modern" id="btnRefresh" onclick="ucitajPodatke()" title="Osveži podatke">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.65-5.65"></path>
                 </svg>
@@ -147,7 +168,7 @@
             </button>
         </div>
         <div>
-            <span id="loading">Učitavanje...</span>
+            <span id="loading"><span class="rotator"></span><span id="loading-text">Učitavanje...</span></span>
         </div>
     </div>
 
@@ -177,13 +198,99 @@
 <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby7AJvdcxsBsoEGvslb3b76Pu88YBZXi4QN70bvrboyoGhEvKhrlGUJaMycabbXH1R4TQ/exec";
 
+    function postaviLoading(aktivno, tekst) {
+        let loading = document.getElementById('loading');
+        let btn = document.getElementById('btnRefresh');
+        if (tekst) document.getElementById('loading-text').innerText = tekst;
+        loading.style.display = aktivno ? "inline-flex" : "none";
+        btn.classList.toggle('loading', aktivno);
+    }
+
+    // Datum i vreme popisa čuvaju se u Google Sheets-u, posebno za svakog dobavljača (sheet)
+    function osveziOznakeDatumVreme() {
+        let datum = document.getElementById('datum_popisa');
+        let vreme = document.getElementById('vreme_popisa');
+        datum.classList.toggle('nedostaje', !datum.value);
+        vreme.classList.toggle('nedostaje', !vreme.value);
+    }
+
+    function ocistiDatumVreme() {
+        document.getElementById('datum_popisa').value = "";
+        document.getElementById('vreme_popisa').value = "";
+        osveziOznakeDatumVreme();
+    }
+
+    // Šalje datum i vreme popisa u Google Sheets (čim korisnik upiše/promeni vrednost)
+    async function sacuvajDatumVreme() {
+        osveziOznakeDatumVreme();
+        try {
+            await fetch(WEB_APP_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                    action: "set_meta",
+                    sheet: document.getElementById('filter_osoba').value,
+                    datum_popisa: document.getElementById('datum_popisa').value,
+                    vreme_popisa: document.getElementById('vreme_popisa').value
+                })
+            });
+        } catch (e) {
+            console.error("Greška pri čuvanju datuma i vremena:", e);
+        }
+    }
+
+    // Učitava datum i vreme popisa iz Google Sheets-a za izabranog dobavljača
+    async function ucitajDatumVreme(sheetName) {
+        try {
+            let response = await fetch(`${WEB_APP_URL}?sheet=${encodeURIComponent(sheetName)}&meta=1`);
+            let meta = await response.json();
+            // Ignoriši odgovor ako je u međuvremenu izabran drugi dobavljač
+            if (sheetName !== document.getElementById('filter_osoba').value) return;
+            if (meta && !meta.error) {
+                if (meta.datum_popisa) document.getElementById('datum_popisa').value = meta.datum_popisa;
+                if (meta.vreme_popisa) document.getElementById('vreme_popisa').value = meta.vreme_popisa;
+            }
+        } catch (e) {
+            console.error("Greška pri učitavanju datuma i vremena:", e);
+        }
+        osveziOznakeDatumVreme();
+    }
+
+    // Pri promeni dobavljača prikazuje se datum i vreme upisani za tog dobavljača (ili prazno ako još nisu upisani)
+    function promenaDobavljaca() {
+        ocistiDatumVreme();
+        document.getElementById('datum_popisa').focus();
+        ucitajPodatke();
+    }
+
+    // Provera da su datum i vreme popisa upisani
+    function proveriDatumVreme() {
+        let datum = document.getElementById('datum_popisa');
+        let vreme = document.getElementById('vreme_popisa');
+        datum.classList.toggle('nedostaje', !datum.value);
+        vreme.classList.toggle('nedostaje', !vreme.value);
+
+        if (!datum.value) {
+            alert("Morate upisati datum popisa.");
+            datum.focus();
+            return false;
+        }
+        if (!vreme.value) {
+            alert("Morate upisati vreme popisa.");
+            vreme.focus();
+            return false;
+        }
+        return true;
+    }
+
     async function ucitajPodatke() {
         let sheetName = document.getElementById('filter_osoba').value;
-        let loading = document.getElementById('loading');
         let tbody = document.getElementById('tabela-sadrzaj');
         
-        loading.style.display = "inline";
-        tbody.innerHTML = `<tr><td colspan="4" class="center">Učitavanje podataka sa Google Sheets-a...</td></tr>`;
+        postaviLoading(true, "Učitavanje...");
+        tbody.innerHTML = `<tr><td colspan="4" class="center loading-cell"><span class="rotator rotator-big"></span>Učitavanje podataka sa Google Sheets-a...</td></tr>`;
+
+        ucitajDatumVreme(sheetName);
 
         try {
             let response = await fetch(`${WEB_APP_URL}?sheet=${encodeURIComponent(sheetName)}`);
@@ -199,7 +306,7 @@
             console.error("Greška pri učitavanju:", error);
             tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:#f08890;">Greška pri povezivanju sa Google Sheets! Proverite URL.</td></tr>`;
         } finally {
-            loading.style.display = "none";
+            postaviLoading(false);
         }
     }
 
@@ -225,11 +332,15 @@
     }
 
     async function sacuvajUGoggleSheet() {
+        if (!proveriDatumVreme()) return;
+
         if (!confirm("Da li ste sigurni da želite da sačuvate promene u Google Sheets bazu?")) {
             return;
         }
 
         let sheetName = document.getElementById('filter_osoba').value;
+        let datumPopisa = document.getElementById('datum_popisa').value;
+        let vremePopisa = document.getElementById('vreme_popisa').value;
         let inputs = document.querySelectorAll('.qty-input');
         let updates = {};
 
@@ -239,15 +350,13 @@
             updates[partNum] = val !== "" ? Number(val) : "";
         });
 
-        let loading = document.getElementById('loading');
-        loading.innerText = "Čuvanje...";
-        loading.style.display = "inline";
+        postaviLoading(true, "Čuvanje...");
 
         try {
             let response = await fetch(WEB_APP_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ sheet: sheetName, updates: updates })
+                body: JSON.stringify({ sheet: sheetName, datum_popisa: datumPopisa, vreme_popisa: vremePopisa, updates: updates })
             });
             let result = await response.json();
             
@@ -261,25 +370,31 @@
             console.error("Greška:", error);
             alert("Greška u mreži prilikom čuvanja.");
         } finally {
-            loading.style.display = "none";
-            loading.innerText = "Učitavanje...";
+            postaviLoading(false, "Učitavanje...");
         }
     }
 
     function resetujKolicine() {
         if (!confirm("Da li ste sigurni da želite da resetujete sve količine na 0?")) return;
         document.querySelectorAll('.qty-input').forEach(input => input.value = "0");
+
+        // Datum i vreme popisa brišu se tek pri resetovanju količina (samo za izabranog dobavljača, i u Google Sheets-u)
+        ocistiDatumVreme();
+        sacuvajDatumVreme();
     }
 
     function izveziUExcel() {
+        if (!proveriDatumVreme()) return;
         if (!confirm("Da li ste sigurni da želite da izvezete podatke u Excel?")) return;
 
         let datumPopisa = document.getElementById('datum_popisa').value;
+        let vremePopisa = document.getElementById('vreme_popisa').value;
         let izabrano = document.getElementById('filter_osoba').value;
         let rows = document.querySelectorAll('#tabela-sadrzaj tr');
         
         let excelData = [
             ["DATUM POPISA:", datumPopisa],
+            ["VREME POPISA:", vremePopisa],
             ["DOBAVLJAČ / SHEET:", izabrano],
             [],
             ["Component Name", "Supplier", "Part number", "QTY"]
@@ -302,9 +417,14 @@
         XLSX.writeFile(wb, `Popis_${izabrano}_${datumPopisa}.xlsx`);
     }
 
+    document.getElementById('datum_popisa').addEventListener('input', osveziOznakeDatumVreme);
+    document.getElementById('vreme_popisa').addEventListener('input', osveziOznakeDatumVreme);
+    document.getElementById('datum_popisa').addEventListener('change', sacuvajDatumVreme);
+    document.getElementById('vreme_popisa').addEventListener('change', sacuvajDatumVreme);
+
     window.onload = function() {
-        let danas = new Date().toISOString().split('T')[0];
-        document.getElementById('datum_popisa').value = danas;
+        // Datum i vreme se ne popunjavaju automatski - korisnik ih mora upisati (osim ako su već upisani za tog dobavljača u Google Sheets-u)
+        osveziOznakeDatumVreme();
         ucitajPodatke();
     };
 </script>
