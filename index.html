@@ -641,5 +641,440 @@
             });
         });
     </script>
+    <!-- ============================================================
+     CHAT WIDGET - nalepiti odmah ISPRED </body> taga (posle postojećeg <script> bloka).
+     Ništa drugo u fajlu se ne menja.
+     ============================================================ -->
+<style>
+    #chatFab { display: none; position: fixed; right: 22px; bottom: 22px; width: 58px; height: 58px; border-radius: 50%; background: var(--brand); color: #fff; border: 1px solid var(--brand-2); box-shadow: var(--shadow); cursor: pointer; z-index: 1200; align-items: center; justify-content: center; font-size: 26px; transition: background 0.2s, transform 0.2s; }
+    #chatFab:hover { background: var(--brand-2); transform: scale(1.05); }
+    #chatBadge { display: none; position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #dc3545; color: #fff; font-size: 12px; font-weight: 700; line-height: 22px; text-align: center; }
+
+    #chatBox { display: none; position: fixed; right: 22px; bottom: 92px; width: 360px; height: 480px; max-height: calc(100vh - 120px); background: var(--panel); border: 1px solid var(--border-soft); border-radius: 14px; box-shadow: var(--shadow); z-index: 1200; flex-direction: column; overflow: hidden; }
+    #chatBox.open { display: flex; }
+    .chat-head { background: var(--brand); color: #fff; padding: 12px 16px; font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; align-items: center; letter-spacing: 1px; text-transform: uppercase; }
+    .chat-head button { background: none; border: none; color: #fff; font-size: 20px; line-height: 1; cursor: pointer; }
+    #chatMessages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; background: var(--bg); }
+    .chat-msg { max-width: 82%; padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; background: var(--panel-3); color: var(--text); word-wrap: break-word; overflow-wrap: anywhere; align-self: flex-start; border-bottom-left-radius: 3px; }
+    .chat-msg.mine { align-self: flex-end; background: var(--brand-2); border-bottom-left-radius: 12px; border-bottom-right-radius: 3px; }
+    .chat-msg .chat-name { font-size: 11px; font-weight: 700; color: var(--brand-light); margin-bottom: 2px; }
+    .chat-msg.mine .chat-name { display: none; }
+    .chat-msg .chat-time { font-size: 10px; color: var(--text-faint); margin-top: 3px; text-align: right; }
+    .chat-msg.mine .chat-time { color: rgba(255,255,255,0.6); }
+    .chat-empty { text-align: center; color: var(--text-faint); font-size: 13px; margin: auto; }
+    .chat-input-row { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--border-soft); background: var(--panel); }
+    .chat-input-row input { flex: 1; background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 20px; padding: 8px 14px; font-size: 14px; outline: none; }
+    .chat-input-row input:focus { border-color: var(--brand-light); }
+    .chat-input-row button { background: var(--brand); color: #fff; border: none; border-radius: 20px; padding: 0 16px; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .chat-input-row button:hover { background: var(--brand-2); }
+    .chat-name-setup { padding: 20px; display: flex; flex-direction: column; gap: 10px; justify-content: center; flex: 1; background: var(--bg); }
+    .chat-name-setup p { color: var(--text-dim); font-size: 13px; margin: 0; }
+    .chat-name-setup input { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 14px; outline: none; }
+    .chat-name-setup button { background: var(--brand); color: #fff; border: none; border-radius: 8px; padding: 10px; font-weight: 600; cursor: pointer; }
+
+    @media (max-width: 768px) {
+        #chatBox { right: 0; bottom: 0; width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
+        #chatFab { right: 14px; bottom: 14px; }
+    }
+</style>
+
+<button id="chatFab" onclick="chatToggle()" aria-label="Chat">💬<span id="chatBadge">0</span></button>
+
+<!-- ============================================================
+     CHAT WIDGET v2 (oznake @ime + slike) - nalepiti ISPRED </body> taga.
+     Zameni prethodnu verziju celu. Ostatak fajla se ne menja.
+     Koristi postojeće globalne: loggedUser, GOOGLE_SCRIPT_URL, resizeImage, zoomImage.
+     ============================================================ -->
+<style>
+    #chatFab { display: none; position: fixed; right: 22px; bottom: 22px; width: 58px; height: 58px; border-radius: 50%; background: var(--brand); color: #fff; border: 1px solid var(--brand-2); box-shadow: var(--shadow); cursor: pointer; z-index: 1200; align-items: center; justify-content: center; font-size: 26px; transition: background 0.2s, transform 0.2s; }
+    #chatFab:hover { background: var(--brand-2); transform: scale(1.05); }
+    #chatBadge { display: none; position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #dc3545; color: #fff; font-size: 12px; font-weight: 700; line-height: 22px; text-align: center; }
+    #chatBadge.mention { background: #e0a83b; color: #1a1c20; }
+
+    #chatBox { display: none; position: fixed; right: 22px; bottom: 92px; width: 360px; height: 480px; max-height: calc(100vh - 120px); background: var(--panel); border: 1px solid var(--border-soft); border-radius: 14px; box-shadow: var(--shadow); z-index: 1200; flex-direction: column; overflow: hidden; }
+    #chatBox.open { display: flex; }
+    .chat-head { background: var(--brand); color: #fff; padding: 12px 16px; font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; align-items: center; letter-spacing: 1px; text-transform: uppercase; }
+    .chat-head button { background: none; border: none; color: #fff; font-size: 20px; line-height: 1; cursor: pointer; }
+    #chatMessages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; background: var(--bg); }
+    .chat-msg { max-width: 82%; padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.4; background: var(--panel-3); color: var(--text); word-wrap: break-word; overflow-wrap: anywhere; align-self: flex-start; border-bottom-left-radius: 3px; }
+    .chat-msg.mine { align-self: flex-end; background: var(--brand-2); border-bottom-left-radius: 12px; border-bottom-right-radius: 3px; }
+    .chat-msg.tagged-me { border-left: 3px solid #e0a83b; background: rgba(224,168,59,0.14); }
+    .chat-msg .chat-name { font-size: 11px; font-weight: 700; color: var(--brand-light); margin-bottom: 2px; }
+    .chat-msg.mine .chat-name { display: none; }
+    .chat-msg .chat-time { font-size: 10px; color: var(--text-faint); margin-top: 3px; text-align: right; }
+    .chat-msg.mine .chat-time { color: rgba(255,255,255,0.6); }
+    .chat-img { display: block; max-width: 100%; max-height: 220px; border-radius: 8px; margin-top: 6px; cursor: zoom-in; }
+    .chat-empty { text-align: center; color: var(--text-faint); font-size: 13px; margin: auto; }
+
+    /* Oznake @ime */
+    .chat-mention { color: #6d9ae0; background: rgba(109,154,224,0.18); border-radius: 4px; padding: 0 3px; font-weight: 600; }
+    .chat-mention.me { color: #1a1c20; background: #e0a83b; }
+    .chat-msg.mine .chat-mention { color: #fff; background: rgba(255,255,255,0.22); }
+    .chat-msg.mine .chat-mention.me { color: #1a1c20; background: #e0a83b; }
+
+    #chatSuggest { display: none; position: absolute; left: 10px; bottom: 62px; min-width: 180px; max-width: 80%; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; z-index: 5; }
+    #chatSuggest div { padding: 8px 14px; font-size: 13px; color: var(--text); cursor: pointer; }
+    #chatSuggest div:hover, #chatSuggest div.active { background: var(--brand); }
+
+    #chatPreview { display: none; padding: 8px 10px 0; background: var(--panel); border-top: 1px solid var(--border-soft); }
+    #chatPreview .pv { position: relative; display: inline-block; }
+    #chatPreview img { height: 64px; border-radius: 8px; display: block; }
+    #chatPreview .pv-x { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: #dc3545; color: #fff; border: none; font-size: 13px; line-height: 20px; padding: 0; cursor: pointer; }
+
+    .chat-input-row { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--border-soft); background: var(--panel); align-items: center; }
+    #chatPreview + .chat-input-row { border-top: none; }
+    .chat-input-row input[type="text"] { flex: 1; min-width: 0; background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 20px; padding: 8px 14px; font-size: 14px; outline: none; }
+    .chat-input-row input[type="text"]:focus { border-color: var(--brand-light); }
+    .chat-attach { background: var(--panel-3); color: var(--text); border: 1px solid var(--border); border-radius: 50%; width: 36px; height: 36px; padding: 0; font-size: 16px; cursor: pointer; flex-shrink: 0; }
+    .chat-attach:hover { background: var(--panel-2); }
+    .chat-send { background: var(--brand); color: #fff; border: none; border-radius: 20px; padding: 8px 16px; font-weight: 600; font-size: 13px; cursor: pointer; flex-shrink: 0; }
+    .chat-send:hover { background: var(--brand-2); }
+    .chat-send:disabled { background: #3a3d42; color: var(--text-faint); cursor: not-allowed; }
+    .chat-name-setup { padding: 20px; display: flex; flex-direction: column; gap: 10px; justify-content: center; flex: 1; background: var(--bg); }
+    .chat-name-setup p { color: var(--text-dim); font-size: 13px; margin: 0; }
+    .chat-name-setup input { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 14px; outline: none; }
+    .chat-name-setup button { background: var(--brand); color: #fff; border: none; border-radius: 8px; padding: 10px; font-weight: 600; cursor: pointer; }
+
+    @media (max-width: 768px) {
+        #chatBox { right: 0; bottom: 0; width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
+        #chatFab { right: 14px; bottom: 14px; }
+    }
+</style>
+
+<button id="chatFab" onclick="chatToggle()" aria-label="Chat">💬<span id="chatBadge">0</span></button>
+
+<div id="chatBox">
+    <div class="chat-head"><span>Tim Chat</span><button onclick="chatToggle()" aria-label="Zatvori">×</button></div>
+
+    <div id="chatNameSetup" class="chat-name-setup" style="display:none;">
+        <p>Unesite ime koje će drugi videti u čatu (prvo ime se koristi za oznake, npr. @Dusan):</p>
+        <input type="text" id="chatNameInput" maxlength="30" placeholder="Ime i prezime">
+        <button onclick="chatSaveName()">Nastavi</button>
+    </div>
+
+    <div id="chatMessages"><div class="chat-empty">Učitavanje poruka...</div></div>
+
+    <div id="chatSuggest"></div>
+    <div id="chatPreview"><div class="pv"><img id="chatPreviewImg" src="" alt=""><button class="pv-x" onclick="chatClearImage()" aria-label="Ukloni sliku">×</button></div></div>
+    <div class="chat-input-row" id="chatInputRow">
+        <button class="chat-attach" onclick="document.getElementById('chatFile').click()" title="Dodaj sliku" aria-label="Dodaj sliku">📎</button>
+        <input type="file" id="chatFile" accept="image/*" style="display:none;">
+        <input type="text" id="chatInput" maxlength="500" placeholder="Poruka... (@ za oznaku)" autocomplete="off">
+        <button class="chat-send" id="chatSendBtn" onclick="chatSend()">Pošalji</button>
+    </div>
+</div>
+
+<script>
+(function () {
+    const CHAT_IMG_MAX = 30000; // max dužina base64 slike u čatu (znakova)
+    let chatOpen = false;
+    let lastId = 0;
+    let unread = 0;
+    let unreadMention = false;
+    let started = false;
+    let sending = false;
+    let pollTimer = null;
+    let pendingImage = null;   // dataURL slike pripremljene za slanje
+    let suggestIdx = 0;
+    const shown = new Set();
+    const knownNames = new Map(); // normalizovano prvo ime -> prvo ime
+
+    const $ = (id) => document.getElementById(id);
+    let clientId = localStorage.getItem('chatClientId');
+    if (!clientId) { clientId = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('chatClientId', clientId); }
+    let chatName = localStorage.getItem('chatName') || '';
+
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
+
+    // "Dušan" -> "dusan", "Đorđe" -> "djordje"
+    function norm(s) {
+        return String(s || '').toLowerCase().replace(/đ/g, 'dj').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+    function firstName(full) { return String(full || '').trim().split(/\s+/)[0] || ''; }
+    function rememberName(full) {
+        const f = firstName(full);
+        if (f) knownNames.set(norm(f), f);
+    }
+
+    // Da li oznaka @token pogađa mene
+    function tokenIsMe(token) {
+        if (!chatName) return false;
+        const t = norm(token);
+        return t === norm(firstName(chatName)) || t === norm(chatName.replace(/\s+/g, '')) || t === 'svi' || t === 'all';
+    }
+    function textMentionsMe(text) {
+        const re = /(^|[\s(,;:!?])@([\p{L}\p{N}_-]{1,30})/gu;
+        let m;
+        while ((m = re.exec(text)) !== null) { if (tokenIsMe(m[2])) return true; }
+        return false;
+    }
+
+    // Escape pa obojiti oznake
+    function formatText(text) {
+        return esc(text).replace(/(^|[\s(,;:!?])@([\p{L}\p{N}_-]{1,30})/gu, function (all, pre, token) {
+            return pre + '<span class="chat-mention' + (tokenIsMe(token) ? ' me' : '') + '">@' + token + '</span>';
+        });
+    }
+
+    // Čeka da se korisnik prijavi (loggedUser postavlja postojeći kod) pa prikaže chat dugme.
+    const waitLogin = setInterval(() => {
+        if (typeof loggedUser !== 'undefined' && loggedUser) {
+            clearInterval(waitLogin);
+            $('chatFab').style.display = 'flex';
+            started = true;
+            if (chatName) rememberName(chatName);
+            applyNameState();
+            chatPoll();
+            schedulePoll();
+        }
+    }, 500);
+
+    function schedulePoll() {
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(chatPoll, chatOpen ? 4000 : 12000);
+    }
+
+    function applyNameState() {
+        const needName = !chatName;
+        $('chatNameSetup').style.display = needName ? 'flex' : 'none';
+        $('chatMessages').style.display = needName ? 'none' : 'flex';
+        $('chatInputRow').style.display = needName ? 'none' : 'flex';
+        if (needName) { $('chatPreview').style.display = 'none'; hideSuggest(); }
+        else $('chatPreview').style.display = pendingImage ? 'block' : 'none';
+    }
+
+    window.chatSaveName = function () {
+        const v = $('chatNameInput').value.trim();
+        if (!v) return;
+        chatName = v;
+        localStorage.setItem('chatName', v);
+        rememberName(v);
+        applyNameState();
+        $('chatInput').focus();
+    };
+
+    window.chatToggle = function () {
+        chatOpen = !chatOpen;
+        $('chatBox').classList.toggle('open', chatOpen);
+        if (chatOpen) {
+            unread = 0; unreadMention = false; updateBadge();
+            applyNameState();
+            scrollDown();
+            if (chatName) $('chatInput').focus();
+        } else {
+            hideSuggest();
+        }
+        if (started) schedulePoll();
+    };
+
+    function updateBadge() {
+        const b = $('chatBadge');
+        b.style.display = unread > 0 ? 'block' : 'none';
+        b.classList.toggle('mention', unreadMention);
+        b.textContent = unread > 99 ? '99+' : (unreadMention ? '@' + unread : unread);
+    }
+
+    function scrollDown() {
+        const box = $('chatMessages');
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function fmtTime(ts) {
+        const d = new Date(ts);
+        if (isNaN(d)) return '';
+        const hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        const today = new Date();
+        if (d.toDateString() === today.toDateString()) return hm;
+        return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '. ' + hm;
+    }
+
+    function render(msgs) {
+        const box = $('chatMessages');
+        const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+        const empty = box.querySelector('.chat-empty');
+        let added = 0, fromOthers = 0, mentionsMe = 0;
+        msgs.forEach(m => {
+            const id = Number(m.id);
+            if (!id || shown.has(id)) return;
+            shown.add(id);
+            if (id > lastId) lastId = id;
+            if (empty) empty.remove();
+            rememberName(m.ime);
+            const mine = m.clientId === clientId;
+            const tagged = !mine && textMentionsMe(String(m.tekst || ''));
+            const div = document.createElement('div');
+            div.className = 'chat-msg' + (mine ? ' mine' : '') + (tagged ? ' tagged-me' : '');
+            let html = '<div class="chat-name">' + esc(m.ime) + '</div>';
+            if (m.tekst) html += '<div>' + formatText(m.tekst) + '</div>';
+            if (m.slika && String(m.slika).indexOf('data:image/') === 0) {
+                html += '<img class="chat-img" src="' + esc(m.slika) + '" alt="Slika">';
+            }
+            html += '<div class="chat-time">' + esc(fmtTime(m.vreme)) + '</div>';
+            div.innerHTML = html;
+            const img = div.querySelector('.chat-img');
+            if (img) img.addEventListener('click', function () { if (typeof zoomImage === 'function') zoomImage(this); });
+            box.appendChild(div);
+            added++;
+            if (!mine) { fromOthers++; if (tagged) mentionsMe++; }
+        });
+        if (!box.children.length) box.innerHTML = '<div class="chat-empty">Još nema poruka. Počnite razgovor!</div>';
+        if (added && (nearBottom || chatOpen)) scrollDown();
+        if (fromOthers && !chatOpen && lastId) {
+            unread += fromOthers;
+            if (mentionsMe) unreadMention = true;
+            updateBadge();
+        }
+    }
+
+    function chatPoll() {
+        if (typeof loggedUser === 'undefined' || !loggedUser) return;
+        const firstLoad = lastId === 0;
+        fetch(GOOGLE_SCRIPT_URL + '?akcija=ucitajPoruke&sifra=' + encodeURIComponent(loggedUser) + '&posle=' + lastId)
+            .then(r => r.json())
+            .then(data => {
+                if (data.status !== 'OK' || !Array.isArray(data.poruke)) return;
+                // Pri prvom učitavanju stare poruke se ne računaju kao nepročitane
+                if (firstLoad) {
+                    const prev = unread, prevM = unreadMention;
+                    render(data.poruke);
+                    unread = prev; unreadMention = prevM; updateBadge();
+                    if (!data.poruke.length) $('chatMessages').innerHTML = '<div class="chat-empty">Još nema poruka. Počnite razgovor!</div>';
+                } else {
+                    render(data.poruke);
+                }
+            })
+            .catch(() => {});
+    }
+
+    // ===== SLIKA (attach) =====
+    window.chatClearImage = function () {
+        pendingImage = null;
+        $('chatFile').value = '';
+        $('chatPreview').style.display = 'none';
+        $('chatPreviewImg').src = '';
+    };
+
+    function chatPrepareImage(file) {
+        if (!file || file.type.indexOf('image/') !== 0) return;
+        if (typeof resizeImage !== 'function') { alert('Slanje slika trenutno nije dostupno.'); return; }
+        const btn = $('chatSendBtn');
+        btn.disabled = true; btn.textContent = '...';
+        resizeImage(file, function (dataURL) {
+            btn.disabled = false; btn.textContent = 'Pošalji';
+            if (!dataURL || dataURL.length > CHAT_IMG_MAX + 2000) { alert('Slika je prevelika, izaberite drugu.'); chatClearImage(); return; }
+            pendingImage = dataURL;
+            $('chatPreviewImg').src = dataURL;
+            $('chatPreview').style.display = 'block';
+            $('chatInput').focus();
+        }, CHAT_IMG_MAX);
+    }
+
+    // ===== OZNAKE: predlozi imena dok se kuca @ =====
+    function currentMentionQuery() {
+        const inp = $('chatInput');
+        const before = inp.value.slice(0, inp.selectionStart);
+        const m = before.match(/(^|[\s(,;:!?])@([\p{L}\p{N}_-]*)$/u);
+        return m ? { query: m[2], start: before.length - m[2].length - 1 } : null;
+    }
+
+    function hideSuggest() { $('chatSuggest').style.display = 'none'; $('chatSuggest').innerHTML = ''; }
+
+    function showSuggest() {
+        const q = currentMentionQuery();
+        if (!q) { hideSuggest(); return; }
+        const nq = norm(q.query);
+        const names = [];
+        knownNames.forEach(function (display, key) { if (key.indexOf(nq) === 0) names.push(display); });
+        if ('svi'.indexOf(nq) === 0) names.push('svi');
+        names.sort();
+        if (!names.length) { hideSuggest(); return; }
+        suggestIdx = 0;
+        const box = $('chatSuggest');
+        box.innerHTML = '';
+        names.slice(0, 5).forEach(function (n, i) {
+            const d = document.createElement('div');
+            d.textContent = '@' + n;
+            if (i === 0) d.className = 'active';
+            d.addEventListener('mousedown', function (ev) { ev.preventDefault(); pickSuggest(n); });
+            box.appendChild(d);
+        });
+        box.style.display = 'block';
+    }
+
+    function pickSuggest(name) {
+        const inp = $('chatInput');
+        const q = currentMentionQuery();
+        if (!q) return;
+        const after = inp.value.slice(inp.selectionStart);
+        const before = inp.value.slice(0, q.start);
+        const inserted = '@' + name + ' ';
+        inp.value = before + inserted + after;
+        const pos = (before + inserted).length;
+        inp.setSelectionRange(pos, pos);
+        hideSuggest();
+        inp.focus();
+    }
+
+    function moveSuggest(dir) {
+        const items = $('chatSuggest').children;
+        if (!items.length) return;
+        items[suggestIdx].classList.remove('active');
+        suggestIdx = (suggestIdx + dir + items.length) % items.length;
+        items[suggestIdx].classList.add('active');
+    }
+
+    // ===== SLANJE =====
+    window.chatSend = function () {
+        if (sending) return;
+        const inp = $('chatInput');
+        const text = inp.value.trim();
+        const slika = pendingImage;
+        if ((!text && !slika) || !chatName) return;
+        sending = true;
+        const btn = $('chatSendBtn');
+        btn.disabled = true;
+        inp.value = '';
+        hideSuggest();
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ akcija: 'posaljiPoruku', sifra: loggedUser, ime: chatName, tekst: text, slika: slika || '', clientId: clientId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            sending = false; btn.disabled = false;
+            if (data.status === 'OK') { chatClearImage(); chatPoll(); }
+            else { inp.value = text; alert(data.poruka || 'Poruka nije poslata.'); }
+        })
+        .catch(() => { sending = false; btn.disabled = false; inp.value = text; alert('Greška prilikom slanja poruke.'); });
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const inp = $('chatInput');
+        inp.addEventListener('input', showSuggest);
+        inp.addEventListener('click', showSuggest);
+        inp.addEventListener('blur', () => setTimeout(hideSuggest, 150));
+        inp.addEventListener('keydown', (e) => {
+            const open = $('chatSuggest').style.display === 'block';
+            if (open && e.key === 'ArrowDown') { e.preventDefault(); moveSuggest(1); return; }
+            if (open && e.key === 'ArrowUp') { e.preventDefault(); moveSuggest(-1); return; }
+            if (open && (e.key === 'Enter' || e.key === 'Tab')) {
+                e.preventDefault();
+                const active = $('chatSuggest').children[suggestIdx];
+                if (active) pickSuggest(active.textContent.slice(1));
+                return;
+            }
+            if (open && e.key === 'Escape') { hideSuggest(); return; }
+            if (e.key === 'Enter') chatSend();
+        });
+        $('chatNameInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') chatSaveName(); });
+        $('chatFile').addEventListener('change', function () { if (this.files && this.files[0]) chatPrepareImage(this.files[0]); });
+    });
+})();
+</script>
+
 </body>
 </html>
