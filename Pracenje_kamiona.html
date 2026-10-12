@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Praćenje transporta</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#17202e;--mut:#6a7588;--line:#e1e6ee;--acc:#1f5fd6;--acc2:#e8f0ff;--ok:#16794a;--warn:#b4620a;--bad:#c2342b;--r:10px}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);height:100vh;display:flex;flex-direction:column}
+header{background:#0f1e3a;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{font-size:17px;margin:0;font-weight:650}
+header .sub{color:#9fb3d6;font-size:12px}
+.kpis{margin-left:auto;display:flex;gap:18px}
+.kpi b{display:block;font-size:18px;line-height:1}
+.kpi span{font-size:11px;color:#9fb3d6}
+main{flex:1;display:grid;grid-template-columns:minmax(380px,520px) 1fr;min-height:0}
+.panel{display:flex;flex-direction:column;min-height:0;background:var(--bg);border-right:1px solid var(--line)}
+.tabs{display:flex;background:#fff;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;padding:11px 6px;border:0;background:none;font:inherit;font-weight:600;color:var(--mut);cursor:pointer;border-bottom:3px solid transparent}
+.tabs button.on{color:var(--acc);border-color:var(--acc)}
+.pane{display:none;overflow:auto;padding:12px;flex:1}
+.pane.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px}
+h2{font-size:14px;margin:0 0 10px}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
+input,select,textarea{width:100%;padding:8px 9px;border:1px solid #cfd6e2;border-radius:7px;font:inherit;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--acc2);border-color:var(--acc)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.row .sm{flex:0 0 90px}
+button.btn{padding:8px 13px;border-radius:7px;border:1px solid var(--acc);background:var(--acc);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+button.btn:disabled{opacity:.6;cursor:wait}
+button.btn.ghost{background:#fff;color:var(--acc)}
+button.btn.red{background:#fff;color:var(--bad);border-color:#e7b9b5}
+button.btn.s{padding:4px 9px;font-size:12px}
+.hint{font-size:12px;color:var(--mut);margin-top:4px}
+.found{font-size:12px;color:var(--ok);margin-top:4px}
+.sug{border:1px solid var(--line);border-radius:7px;margin-top:4px;background:#fff;max-height:150px;overflow:auto}
+.sug div{padding:6px 9px;cursor:pointer;font-size:12.5px;border-bottom:1px solid var(--line)}
+.sug div:hover{background:var(--acc2)}
+.item{display:flex;gap:6px;margin-bottom:6px;align-items:flex-start}
+.item .pn{flex:1}.item .q{width:90px}
+.item small{display:block;color:var(--mut);font-size:11.5px;margin-top:2px;min-height:14px}
+.tot{font-weight:650;margin:6px 0}
+.ship{cursor:pointer;border-left:4px solid var(--acc)}
+.ship.late{border-left-color:var(--bad)}.ship.done{border-left-color:#9aa5b8;opacity:.75}
+.ship .top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.plate{font-weight:700;font-size:15px;letter-spacing:.5px}
+.badge{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--acc2);color:var(--acc);font-weight:600;white-space:nowrap}
+.badge.late{background:#fde8e6;color:var(--bad)}.badge.done{background:#eceff4;color:var(--mut)}
+.meta{color:var(--mut);font-size:12.5px;margin-top:3px}
+.chips{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px}
+.chip{background:#f0f3f8;border-radius:5px;padding:2px 7px;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:#eef2f8;text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--mut);padding:7px 6px}
+td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.p{cursor:pointer}tr.p:hover{background:#f7f9fd}
+.transit{color:var(--warn);font-weight:650}
+.mapwrap{position:relative;min-height:0}
+#map{position:absolute;inset:0}
+.maptools{position:absolute;z-index:500;top:10px;left:56px;right:10px;display:flex;gap:6px;max-width:560px}
+.maptools input{box-shadow:0 2px 8px #0003}
+.maptools button{box-shadow:0 2px 8px #0003;white-space:nowrap}
+.mapinfo{position:absolute;z-index:500;left:10px;bottom:22px;max-width:340px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;box-shadow:0 2px 10px #0003;display:none}
+.mapinfo.on{display:block}
+.tk{background:#fff;border:2px solid var(--acc);border-radius:8px;padding:1px 6px;font-weight:700;font-size:11.5px;white-space:nowrap;box-shadow:0 1px 5px #0004}
+.tk.late{border-color:var(--bad);color:var(--bad)}
+.hq{background:#c2342b;color:#fff;border-radius:8px;padding:3px 8px;font-weight:700;font-size:11.5px;white-space:nowrap;box-shadow:0 1px 6px #0006}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#17202e;color:#fff;padding:9px 16px;border-radius:8px;z-index:9999;display:none}
+.mode{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;background:#f6c34a;color:#4a3300}
+.mode.ok{background:#c9f0d8;color:#0d5a34}
+.mode.err{background:#fde8e6;color:#c2342b}
+@media(max-width:860px){main{grid-template-columns:1fr;grid-template-rows:52vh 48vh}.panel{border-right:0}.mapwrap{order:-1}body{height:auto;min-height:100vh}main{height:calc(100vh - 70px)}.kpis{margin-left:0}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>🚚 Praćenje transporta</h1><div class="sub">Odredište: Stellantis Kragujevac</div></div>
+  <span class="mode" id="mode">Povezivanje…</span>
+  <div class="kpis">
+    <div class="kpi"><b id="kT">0</b><span>vozila u tranzitu</span></div>
+    <div class="kpi"><b id="kQ">0</b><span>komada u tranzitu</span></div>
+    <div class="kpi"><b id="kL">0</b><span>kasni</span></div>
+  </div>
+</header>
+
+<main>
+<section class="panel">
+  <div class="tabs">
+    <button class="on" data-t="tr">🚚 Transport</button>
+    <button data-t="pa">📦 Unos materijala</button>
+  </div>
+
+  <!-- TRANSPORT -->
+  <div class="pane on" id="p-tr">
+    <div class="card" id="formCard">
+      <h2 id="formTitle">Novo vozilo</h2>
+      <div class="row">
+        <div><label>Broj tablica</label><input id="plate" placeholder="npr. BG 123-AB" style="text-transform:uppercase"></div>
+        <div class="sm" style="flex-basis:110px"><label>Tip</label><select id="type"><option>Kamion</option><option>Kombi</option></select></div>
+      </div>
+      <label>Trenutna pozicija (grad)</label>
+      <div class="row"><input id="place" placeholder="npr. Beograd, Zagreb, Wien…"><button class="btn ghost" id="find" style="flex:0 0 auto">Nađi</button><button class="btn ghost" id="pick" style="flex:0 0 auto" title="Klikni na mapu da postaviš poziciju">📍 Mapa</button></div>
+      <div id="sug" class="sug" style="display:none"></div>
+      <div class="found" id="found"></div>
+      <div class="row">
+        <div><label>Očekivani dolazak (ETA)</label><input type="datetime-local" id="eta"></div>
+        <div class="sm" style="flex-basis:150px"><label>Status</label><select id="status"><option>U tranzitu</option><option>Stiglo</option><option>Otkazano</option></select></div>
+      </div>
+      <label>Šta nosi (part number + količina)</label>
+      <div id="items"></div>
+      <button class="btn ghost s" id="addItem">+ dodaj deo</button>
+      <div class="tot" id="tot">Ukupno: 0 kom</div>
+      <label>Napomena</label><input id="note" placeholder="vozač, CMR, …">
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="save">Sačuvaj</button>
+        <button class="btn ghost" id="reset" style="flex:0 0 auto">Novo / otkaži izmenu</button>
+      </div>
+    </div>
+    <div class="row" style="margin:4px 0 8px;align-items:center">
+      <h2 style="margin:0;flex:1">Vozila</h2>
+      <select id="flt" style="flex:0 0 150px"><option value="act">Aktivna</option><option value="all">Sva</option></select>
+    </div>
+    <div id="list"></div>
+  </div>
+
+  <!-- DELOVI -->
+  <div class="pane" id="p-pa">
+    <div class="card">
+      <h2>Uvoz iz Excel popisa</h2>
+      <input type="file" id="file" accept=".xlsx,.xls,.csv">
+      <div class="hint">Izaberi Excel „Popis_…xlsx”. Čita kolone <b>Component Name, Supplier, Part number, QTY</b> i datum popisa. Postojeći part numberi se ažuriraju (stanje), novi se dodaju u bazu (Google Sheets).</div>
+      <div class="found" id="impRes"></div>
+    </div>
+    <div class="row" style="margin-bottom:8px">
+      <input id="q" placeholder="🔍 Traži part number ili naziv">
+      <select id="pf" style="flex:0 0 150px"><option value="all">Svi delovi</option><option value="act">Sa zalihom/tranzitom</option></select>
+    </div>
+    <div class="hint" id="pHint" style="margin-bottom:6px"></div>
+    <table><thead><tr><th>Part number / naziv</th><th class="n">Stanje</th><th class="n">U tranzitu</th><th class="n">Ukupno</th></tr></thead><tbody id="pb"></tbody></table>
+  </div>
+</section>
+
+<section class="mapwrap">
+  <div class="maptools">
+    <input id="geo" placeholder="Grad ili km od Kragujevca (npr. Zagreb  ili  800)">
+    <button class="btn" id="geoGo">Prikaži</button>
+    <button class="btn ghost" id="fit" title="Prikaži sva vozila">⤢</button>
+  </div>
+  <div id="map"></div>
+  <div class="mapinfo" id="mapinfo"></div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ====== PODEŠAVANJE ====== */
+const API_URL='https://script.google.com/macros/s/AKfycbx4AYF_m9m1R0gu25FBzvS0Cd3soaUXHrMd5KCwiRd9vrh-aBG8L0u5Zwzna7U54dnN/exec';
+const HQ={name:'Stellantis Kragujevac',lat:44.0128,lng:20.9114};
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>(Number(n)||0).toLocaleString('de-DE');
+
+/* ---------- sloj za podatke: Google Apps Script (Google Sheets) ---------- */
+async function apiGet(){
+  const r=await fetch(API_URL+'?action=getData',{redirect:'follow'});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const j=await r.json();if(j.ok===false)throw new Error(j.error||'greška');return j}
+async function apiPost(action,payload){
+  // text/plain => nema CORS preflight-a (Apps Script ga ne podržava)
+  const r=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,payload})});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const j=await r.json();if(j.ok===false)throw new Error(j.error||'greška');return j}
+const api={
+  getData:()=>apiGet(),
+  importParts:rows=>apiPost('importParts',rows),
+  saveShipment:s=>apiPost('saveShipment',s),
+  deleteShipment:id=>apiPost('deleteShipment',id)
+};
+function setMode(state,txt){const m=$('mode');m.className='mode '+state;m.textContent=txt}
+
+/* ---------- stanje ---------- */
+let parts=[],ships=[],editId=null,cur=null,pickMode=false,tmpLayer=null,circle=null;
+
+const toast=m=>{const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',3200)};
+const hav=(a,b,c,d)=>{const R=6371,r=x=>x*Math.PI/180,dl=r(c-a),dg=r(d-b);const h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+const airKm=(lat,lng)=>hav(lat,lng,HQ.lat,HQ.lng);
+
+/* Photon (komoot) – dozvoljava pozive iz browsera */
+async function geocode(q,n=5){const r=await fetch('https://photon.komoot.io/api/?limit='+n+'&q='+encodeURIComponent(q));if(!r.ok)throw 0;
+  return(await r.json()).features.map(f=>{const p=f.properties;return{lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0],name:[p.name,p.state,p.country].filter(Boolean).join(', ')}})}
+async function reverse(lat,lng){try{const r=await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`);const f=(await r.json()).features[0];if(!f)return'';const p=f.properties;return[p.city||p.name,p.country].filter(Boolean).join(', ')}catch(e){return''}}
+async function roadKm(lat,lng){try{const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${lng},${lat};${HQ.lng},${HQ.lat}?overview=false`);const j=await r.json();
+  if(j.routes&&j.routes[0])return Math.round(j.routes[0].distance/1000)}catch(e){}
+  return Math.round(airKm(lat,lng)*1.25)}  // rezerva: vazdušno × 1,25
+
+/* ---------- ETA helpers ---------- */
+function etaInfo(s){if(s.status!=='U tranzitu')return{txt:s.status,cls:'done'};if(!s.eta)return{txt:'bez ETA',cls:''};
+  const d=new Date(s.eta)-new Date(),a=Math.abs(d),dd=Math.floor(a/864e5),hh=Math.floor(a%864e5/36e5),mm=Math.floor(a%36e5/6e4);
+  const t=(dd?dd+'d ':'')+hh+'h'+(dd?'':' '+mm+'m');return d<0?{txt:'kasni '+t,cls:'late'}:{txt:'za '+t,cls:''}}
+const fmtEta=e=>{if(!e)return'—';const d=new Date(e);return isNaN(d)?e:d.toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
+const transitQty=pn=>ships.filter(s=>s.status==='U tranzitu').reduce((a,s)=>a+s.items.filter(i=>i.pn===pn).reduce((b,i)=>b+(+i.qty||0),0),0);
+
+/* ---------- mapa (CARTO Voyager tile-ovi – OSM podaci, bez 403 blokade) ---------- */
+const map=L.map('map',{worldCopyJump:true}).setView([47,16],5);
+// Esri World Street Map – bez API ključa i bez blokade (OSM tile server vraća 403 za mnoge sajtove)
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(map);
+L.marker([HQ.lat,HQ.lng],{icon:L.divIcon({className:'',html:'<div class="hq">🏭 Stellantis Kragujevac</div>',iconAnchor:[70,14]}),zIndexOffset:1000}).addTo(map);
+const trLayer=L.layerGroup().addTo(map);
+
+function drawMap(){trLayer.clearLayers();
+  ships.filter(s=>s.status==='U tranzitu'&&isFinite(s.lat)).forEach(s=>{const e=etaInfo(s),tot=s.items.reduce((a,i)=>a+(+i.qty||0),0);
+    L.polyline([[s.lat,s.lng],[HQ.lat,HQ.lng]],{color:e.cls==='late'?'#c2342b':'#1f5fd6',weight:2,dashArray:'6 6',opacity:.55}).addTo(trLayer);
+    const m=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:`<div class="tk ${e.cls}">${s.type==='Kombi'?'🚐':'🚚'} ${esc(s.plate)} · ${fmt(tot)}</div>`,iconAnchor:[40,12]})}).addTo(trLayer);
+    m.bindPopup(`<b>${esc(s.plate)}</b> (${esc(s.type)})<br>📍 ${esc(s.place)}<br>🛣 ≈ ${s.km??Math.round(airKm(s.lat,s.lng))} km do Kragujevca<br>⏱ ETA ${fmtEta(s.eta)} (${e.txt})<br>📦 ${fmt(tot)} kom<br><a href="#" onclick="editShip('${s.id}');return false">Izmeni</a>`);
+  })}
+$('fit').onclick=()=>{const pts=[[HQ.lat,HQ.lng],...ships.filter(s=>s.status==='U tranzitu'&&isFinite(s.lat)).map(s=>[s.lat,s.lng])];map.fitBounds(pts,{padding:[60,60],maxZoom:7})};
+
+function clearTmp(){if(tmpLayer){map.removeLayer(tmpLayer);tmpLayer=null}if(circle){map.removeLayer(circle);circle=null}$('mapinfo').classList.remove('on')}
+async function geoGo(){const q=$('geo').value.trim();if(!q)return;clearTmp();const info=$('mapinfo');
+  if(/^\d+([.,]\d+)?$/.test(q)){const km=parseFloat(q.replace(',','.'));
+    circle=L.circle([HQ.lat,HQ.lng],{radius:km*1000,color:'#c2342b',weight:2,fillOpacity:.05}).addTo(map);map.fitBounds(circle.getBounds());
+    const inside=ships.filter(s=>s.status==='U tranzitu'&&isFinite(s.lat)&&airKm(s.lat,s.lng)<=km);
+    info.innerHTML=`<b>Krug ${fmt(km)} km</b> oko Kragujevca (vazdušno)<br>`+(inside.length?inside.map(s=>`🚚 <b>${esc(s.plate)}</b> – ${esc(s.place)}, ${Math.round(airKm(s.lat,s.lng))} km, ${fmt(s.items.reduce((a,i)=>a+(+i.qty||0),0))} kom`).join('<br>'):'<span style="color:var(--mut)">Nema vozila u ovom krugu.</span>');info.classList.add('on');return}
+  try{const r=await geocode(q,1);if(!r.length)return toast('Grad nije pronađen');const p=r[0];const road=await roadKm(p.lat,p.lng);
+    tmpLayer=L.layerGroup([L.marker([p.lat,p.lng]).bindPopup(esc(q)),L.polyline([[p.lat,p.lng],[HQ.lat,HQ.lng]],{color:'#c2342b',dashArray:'4 6'})]).addTo(map);
+    map.fitBounds([[p.lat,p.lng],[HQ.lat,HQ.lng]],{padding:[80,80]});
+    info.innerHTML=`<b>${esc(q)}</b><br>🛣 ≈ <b>${fmt(road)} km</b> drumom do Kragujevca<br>✈ ${fmt(Math.round(airKm(p.lat,p.lng)))} km vazdušno`;info.classList.add('on')}
+  catch(e){toast('Pretraga nije uspela – proveri internet')}}
+$('geoGo').onclick=geoGo;$('geo').onkeydown=e=>{if(e.key==='Enter')geoGo()};
+
+/* ---------- forma ---------- */
+function itemRow(it={pn:'',qty:''}){const d=document.createElement('div');d.className='item';
+  d.innerHTML=`<div class="pn"><input list="dl" placeholder="part number" value="${esc(it.pn)}"><small></small></div><input class="q" type="number" min="0" placeholder="kom" value="${esc(it.qty)}"><button class="btn red s" title="ukloni">✕</button>`;
+  const inp=d.querySelector('.pn input'),sm=d.querySelector('small');
+  const upd=()=>{const p=parts.find(x=>x.pn===inp.value.trim());sm.textContent=p?p.name||'(bez naziva)':(inp.value?'⚠ nije u bazi – biće dodat samo kao broj':'');calcTot()};
+  inp.oninput=upd;d.querySelector('.q').oninput=calcTot;d.querySelector('button').onclick=()=>{d.remove();calcTot()};
+  $('items').appendChild(d);upd()}
+function readItems(){return[...$('items').children].map(d=>({pn:d.querySelector('.pn input').value.trim(),qty:+d.querySelector('.q').value||0})).filter(i=>i.pn&&i.qty>0)}
+function calcTot(){const it=readItems();$('tot').textContent=`Ukupno: ${fmt(it.reduce((a,i)=>a+i.qty,0))} kom (${it.length} part number-a)`}
+$('addItem').onclick=()=>itemRow();
+
+function resetForm(){editId=null;cur=null;$('formTitle').textContent='Novo vozilo';['plate','place','eta','note'].forEach(i=>$(i).value='');$('type').value='Kamion';$('status').value='U tranzitu';
+  $('items').innerHTML='';itemRow();$('found').textContent='';$('sug').style.display='none';setPick(false);calcTot()}
+$('reset').onclick=resetForm;
+
+function setPos(p){cur=p;$('found').innerHTML=`✔ ${esc(p.place)} · ≈ ${fmt(p.km)} km do Kragujevca`;
+  map.setView([p.lat,p.lng],Math.max(map.getZoom(),6))}
+async function findPlace(){const q=$('place').value.trim();if(!q)return;$('found').textContent='Tražim…';
+  try{const r=await geocode(q,5);const sug=$('sug');if(!r.length){$('found').textContent='Nije pronađeno – probaj drugačiji naziv ili klikni 📍 Mapa';return}
+    const pick=async p=>{sug.style.display='none';$('found').textContent='Računam udaljenost…';setPos({lat:p.lat,lng:p.lng,place:q,km:await roadKm(p.lat,p.lng)})};
+    if(r.length===1)return pick(r[0]);
+    sug.innerHTML='';r.forEach(p=>{const d=document.createElement('div');d.textContent=p.name;d.onclick=()=>pick(p);sug.appendChild(d)});sug.style.display='block';$('found').textContent='Izaberi tačan rezultat:'}
+  catch(e){$('found').textContent='Pretraga nije uspela – proveri internet ili klikni 📍 Mapa'}}
+$('find').onclick=findPlace;$('place').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();findPlace()}};
+function setPick(on){pickMode=on;$('pick').textContent=on?'Klikni na mapu…':'📍 Mapa';document.getElementById('map').style.cursor=on?'crosshair':''}
+$('pick').onclick=()=>setPick(!pickMode);
+map.on('click',async e=>{if(!pickMode)return;setPick(false);$('found').textContent='Računam…';const place=(await reverse(e.latlng.lat,e.latlng.lng))||$('place').value||`${e.latlng.lat.toFixed(3)}, ${e.latlng.lng.toFixed(3)}`;
+  $('place').value=place;setPos({lat:e.latlng.lat,lng:e.latlng.lng,place,km:await roadKm(e.latlng.lat,e.latlng.lng)})});
+
+$('save').onclick=async()=>{
+  const plate=$('plate').value.trim().toUpperCase();if(!plate)return toast('Unesi broj tablica');
+  if(!cur)return toast('Pronađi poziciju: upiši grad i klikni „Nađi” (ili 📍 Mapa)');
+  const items=readItems();
+  const s={id:editId||'T'+Date.now(),plate,type:$('type').value,place:cur.place,lat:cur.lat,lng:cur.lng,km:cur.km,eta:$('eta').value,status:$('status').value,note:$('note').value.trim(),items};
+  $('save').disabled=true;
+  try{await api.saveShipment(s);toast('Sačuvano u Google Sheets ✔');resetForm();await refresh()}catch(e){toast('Greška pri čuvanju: '+(e.message||e))}
+  $('save').disabled=false};
+
+window.editShip=id=>{const s=ships.find(x=>x.id===id);if(!s)return;tab('tr');editId=id;$('formTitle').textContent='Izmena: '+s.plate;
+  $('plate').value=s.plate;$('type').value=s.type;$('place').value=s.place;$('eta').value=s.eta;$('status').value=s.status;$('note').value=s.note;
+  cur={lat:s.lat,lng:s.lng,place:s.place,km:s.km??Math.round(airKm(s.lat,s.lng))};$('found').innerHTML=`✔ ${esc(cur.place)} · ≈ ${fmt(cur.km)} km do Kragujevca <span class="hint">(promeni grad za novu poziciju)</span>`;
+  $('items').innerHTML='';(s.items.length?s.items:[{}]).forEach(itemRow);calcTot();$('formCard').scrollIntoView({behavior:'smooth'});map.setView([s.lat,s.lng],6)};
+
+/* ---------- lista vozila ---------- */
+function renderList(){const f=$('flt').value;let L2=ships.slice().sort((a,b)=>(a.status==='U tranzitu'?0:1)-(b.status==='U tranzitu'?0:1)||String(a.eta).localeCompare(String(b.eta)));
+  if(f==='act')L2=L2.filter(s=>s.status==='U tranzitu');
+  $('list').innerHTML=L2.length?'':'<div class="hint">Još nema unetih vozila.</div>';
+  L2.forEach(s=>{const e=etaInfo(s),tot=s.items.reduce((a,i)=>a+(+i.qty||0),0),d=document.createElement('div');d.className='card ship '+e.cls;
+    d.innerHTML=`<div class="top"><span class="plate">${s.type==='Kombi'?'🚐':'🚚'} ${esc(s.plate)}</span><span class="badge ${e.cls}">${esc(e.txt)}</span></div>
+    <div class="meta">📍 ${esc(s.place)} · ≈ ${s.km!=null?fmt(s.km):'?'} km do Kragujevca</div>
+    <div class="meta">⏱ ETA ${fmtEta(s.eta)} · 📦 <b>${fmt(tot)} kom</b></div>
+    <div class="chips">${s.items.map(i=>`<span class="chip">${esc(i.pn)} × ${fmt(i.qty)}</span>`).join('')}</div>
+    ${s.note?`<div class="meta">📝 ${esc(s.note)}</div>`:''}
+    <div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn ghost s" data-a="e" style="flex:0 0 auto">Izmeni</button>${s.status==='U tranzitu'?'<button class="btn ghost s" data-a="a" style="flex:0 0 auto">✔ Stiglo</button>':''}<button class="btn red s" data-a="d" style="flex:0 0 auto">Obriši</button></div>`;
+    d.onclick=ev=>{const a=ev.target.dataset.a;
+      if(a==='e')editShip(s.id);
+      else if(a==='d'){if(confirm('Obrisati '+s.plate+'?'))api.deleteShipment(s.id).then(refresh).catch(er=>toast('Greška: '+er.message))}
+      else if(a==='a'){s.status='Stiglo';api.saveShipment(s).then(refresh).catch(er=>toast('Greška: '+er.message))}
+      else if(isFinite(s.lat))map.setView([s.lat,s.lng],7)};
+    $('list').appendChild(d)})}
+$('flt').onchange=renderList;
+
+/* ---------- delovi ---------- */
+function renderParts(){$('dl').innerHTML=parts.map(p=>`<option value="${esc(p.pn)}">${esc(p.name)}</option>`).join('');
+  const q=$('q').value.trim().toLowerCase(),f=$('pf').value;
+  let rows=parts.map(p=>({...p,tr:transitQty(p.pn)})).filter(p=>(!q||p.pn.toLowerCase().includes(q)||p.name.toLowerCase().includes(q))&&(f==='all'||p.qty>0||p.tr>0));
+  const latest=parts.map(p=>p.date).filter(Boolean).sort().pop();
+  $('pHint').textContent=parts.length?`${parts.length} delova u bazi · poslednji popis: ${latest||'—'}`:'Baza je prazna – uvezi Excel popis iznad.';
+  $('pb').innerHTML=rows.map(p=>`<tr class="p" data-pn="${esc(p.pn)}"><td><b>${esc(p.pn)}</b><br><span style="color:var(--mut);font-size:12px">${esc((p.name||'(bez naziva)').split('/')[0].slice(0,80))}</span></td><td class="n">${fmt(p.qty)}</td><td class="n ${p.tr?'transit':''}">${p.tr?fmt(p.tr):'–'}</td><td class="n"><b>${fmt(p.qty+p.tr)}</b></td></tr>`).join('')||'<tr><td colspan=4 class="hint">Nema rezultata.</td></tr>'}
+$('q').oninput=renderParts;$('pf').onchange=renderParts;
+$('pb').onclick=e=>{const tr=e.target.closest('tr.p');if(!tr)return;const pn=tr.dataset.pn;const c=ships.filter(s=>s.status==='U tranzitu'&&s.items.some(i=>i.pn===pn));
+  if(!c.length)return toast('Nijedno vozilo trenutno ne nosi '+pn);
+  alert(pn+' – u tranzitu:\n\n'+c.map(s=>`${s.plate} (${s.place}): ${s.items.filter(i=>i.pn===pn).reduce((a,i)=>a+i.qty,0)} kom, ETA ${fmtEta(s.eta)}`).join('\n'))};
+const dl=document.createElement('datalist');dl.id='dl';document.body.appendChild(dl);
+
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('impRes').textContent='Čitam…';
+  try{const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}),out=[];
+    wb.SheetNames.forEach(sn=>{const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:false,defval:''});
+      const hi=rows.findIndex(r=>r.some(c=>String(c).trim().toLowerCase()==='part number'));if(hi<0)return;
+      const H=rows[hi].map(c=>String(c).trim().toLowerCase()),ix=k=>H.findIndex(h=>h===k),ci={n:ix('component name'),s:ix('supplier'),p:ix('part number'),q:ix('qty')};
+      let date='';rows.slice(0,hi).forEach(r=>{if(/datum/i.test(r[0]))date=String(r[1]).trim();if(/vreme/i.test(r[0])&&date)date+=' '+String(r[1]).trim()});
+      let sup='';rows.slice(0,hi).forEach(r=>{if(/dobavlja/i.test(r[0]))sup=String(r[1]).trim().replace(/_/g,' ')});
+      rows.slice(hi+1).forEach(r=>{const pn=String(r[ci.p]??'').trim();if(!pn)return;out.push({pn,name:String(r[ci.n]??'').trim(),supplier:String(r[ci.s]||sup).trim(),qty:parseInt(String(r[ci.q]).replace(/[^\d-]/g,''))||0,date})})});
+    if(!out.length){$('impRes').textContent='Nisam našao kolonu „Part number” u fajlu.';return}
+    $('impRes').textContent='Upisujem u Google Sheets…';
+    const res=await api.importParts(out);$('impRes').textContent=`✔ Uvezeno ${out.length} redova: ${res.added} novih, ${res.updated} ažuriranih.`;toast('Popis uvezen');await refresh()}
+  catch(err){$('impRes').textContent='Greška: '+(err.message||err)}e.target.value=''};
+
+/* ---------- opšte ---------- */
+function tab(t){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$('p-tr').classList.toggle('on',t==='tr');$('p-pa').classList.toggle('on',t==='pa')}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
+function kpi(){const a=ships.filter(s=>s.status==='U tranzitu');$('kT').textContent=a.length;$('kQ').textContent=fmt(a.reduce((x,s)=>x+s.items.reduce((y,i)=>y+(+i.qty||0),0),0));$('kL').textContent=a.filter(s=>etaInfo(s).cls==='late').length}
+async function refresh(){
+  try{const d=await api.getData();parts=d.parts||[];ships=(d.shipments||[]).map(s=>({...s,items:s.items||[]}));setMode('ok','● Google Sheets')}
+  catch(e){console.error('API greška:',e);setMode('err','⚠ Nema veze sa Google Sheets');$('mode').title=String(e.message||e);toast('Ne mogu da učitam podatke: '+(e.message||e));return}
+  renderParts();renderList();drawMap();kpi()}
+resetForm();refresh();setInterval(()=>{if(!document.hidden&&!editId)refresh()},60000);
+</script>
+</body>
+</html>
