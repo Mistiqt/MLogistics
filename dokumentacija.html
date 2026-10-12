@@ -447,6 +447,7 @@
                 <option value="sigit">SIGIT</option>
                 <option value="ADPM">ADP Mladenovac</option>
                 <option value="alzir">Arcese DP World (Adient hala)</option>
+                <option value="Becchis">Becchis</option>
                 <option value="custom">Unesi ručno...</option>
             </select>
             <input type="text" id="inputDobavljacRucno" value="PMC AUTOMOTIVE D.O.O KRAGUJEVAC" placeholder="Unesi primalca" oninput="azurirajDobavljacaRucno()" style="display: none; margin-top: 5px;">
@@ -458,6 +459,7 @@
                 <option value="SRECKO ZIVANOVIC">SRECKO ZIVANOVIC</option>
                 <option value="DRAGISA AVRAMOVIC">DRAGISA AVRAMOVIC</option>
                 <option value="SRDJAN JOVANOVIC">SRDJAN JOVANOVIC</option>
+                <option value="SRDJAN JOVANOVIC">VLADIMIR JOVANOVIC</option>
                 <option value="custom">Unesi ručno...</option>
             </select>
             <input type="text" id="inputVozacRucno" value="DRAGISA KRAGOVIC" placeholder="Unesi ime vozača" oninput="azurirajVozacaRucno()" style="display: none; margin-top: 5px;">
@@ -468,6 +470,7 @@
                 <option value="KG 380 BT">KG 380 BT</option>
                 <option value="KG 366 MC">KG 366 MC</option>
                 <option value="KG 366 MD">KG 366 MD</option>
+                <option value="SU 244 VE / AH 794 SU">SU 244 VE / AH 794 SU</option>
                 <option value="custom">Unesi ručno...</option>
             </select>
             <input type="text" id="inputTabliceOtpremnica" value="KG 380 BT" placeholder="Unesi tablice" oninput="azurirajOtpremnicuKontrole()" style="display: none; margin-top: 5px;">
@@ -2003,6 +2006,21 @@
                     <td style="text-align: center;" class="din-vrednost red-broj">1</td>
                     <td><input type="text" class="input-tekst din-vrednost" value="${sigitStavka.sifra}"></td>
                     <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${sigitStavka.kolicina}" min="0"></td>
+                    <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
+                `;
+                tbody.appendChild(row);
+                } else if (tip === "Becchis") {
+                inputDobavljacRucno.value = "BECCHIS OSIRIDE DOO";
+                document.getElementById("otpPrimalacNaziv").innerText = "BECCHIS OSIRIDE DOO";
+                document.getElementById("otpPrimalacAdresa1").innerText = "DRAGOSLAVA SREJOVICA 89";
+                document.getElementById("otpPrimalacAdresa2").innerText = "34000 KRAGUJEVAC - SRBIJA";
+                
+                let BecchisStavka = { sifra: "Prazna ambalaza", kolicina: "" };
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td style="text-align: center;" class="din-vrednost red-broj">1</td>
+                    <td><input type="text" class="input-tekst din-vrednost" value="${BecchisStavka.sifra}"></td>
+                    <td style="text-align: center;"><input type="number" class="input-kol din-vrednost" value="${BecchisStavka.kolicina}" min="0"></td>
                     <td style="text-align: center;" class="no-print"><button class="btn-brisi" onclick="obrisiRedOtpremnica(this)">X</button></td>
                 `;
                 tbody.appendChild(row);
