@@ -420,10 +420,10 @@ const untilStr=h=>{const d=new Date(Date.now()+h*36e5),p=n=>String(n).padStart(2
   return `${d.toLocaleDateString('de-DE',{weekday:'short'})}, ${p(d.getDate())}.${p(d.getMonth()+1)}., ${p(d.getHours())}:${p(d.getMinutes())}`};
 const saveDem=()=>{ls.set('dem_v1',dem);ls.set('pv_v1',pv);pushSet({dem,pv})};
 
-/* „popisan" = ima stanje > 0 ILI je bio u uvezenom popisu / ručno unet sa stanjem */
+/* „popisan" = ima stanje > 0 */
 let cnt=new Set(ls.get('cnt_v1',[]));
 const saveCnt=()=>{ls.set('cnt_v1',[...cnt]);pushSet({cnt:[...cnt]})};
-const isCounted=p=>(+p.qty>0)||cnt.has(p.pn);
+const isCounted=p=>(+p.qty>0);   // „popisan” = ima upisanu vrednost (stanje > 0); ostali idu na dno
 
 function covData(){
   const q=$('cq').value.trim().toLowerCase(),f=$('cf').value;
