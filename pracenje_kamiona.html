@@ -258,13 +258,35 @@ const api={
   importParts:rows=>apiPost('importParts',rows),
   saveShipment:s=>apiPost('saveShipment',s),
   deleteShipment:id=>apiPost('deleteShipment',id),
-  clearParts:()=>apiPost('clearParts',{})
+  clearParts:()=>apiPost('clearParts',{}),
+  saveSettings:o=>apiPost('saveSettings',o)
 };
 function setMode(state,txt){const m=$('mode');m.className='mode '+state;m.textContent=txt}
 
 /* ---------- stanje ---------- */
 let parts=[],ships=[],editId=null,cur=null,pickMode=false,tmpLayer=null,circle=null;
 let dem=ls.get('dem_v1',{}),pv=ls.get('pv_v1',{}),vpd=+ls.get('vpd_v1',0)||0,thr=+ls.get('thrh_v1',24)||24,popisi=ls.get('popisi_v1',[]);
+
+/* ---------- zajednička podešavanja (potreba/dan, po vozilu, vozila/dan, prag, popisani) – čuvaju se u Google Sheets ---------- */
+let setPending=0,setChain=Promise.resolve();
+function pushSet(o){setPending++;
+  setChain=setChain.then(()=>api.saveSettings(o)).catch(e=>toast('Podešavanja nisu sačuvana: '+(e.message||e))).finally(()=>{setPending--});
+  return setChain}
+function applySettings(s){
+  if(setPending>0)return;   // lokalna izmena je u toku – ne prepisuj je
+  s=s||{};const miss={};
+  if(s.dem!==undefined)dem=s.dem||{};else if(Object.keys(dem).length)miss.dem=dem;
+  if(s.pv!==undefined)pv=s.pv||{};else if(Object.keys(pv).length)miss.pv=pv;
+  if(s.vpd!==undefined)vpd=+s.vpd||0;else if(vpd)miss.vpd=vpd;
+  if(s.thr!==undefined)thr=+s.thr||24;else if(ls.get('thrh_v1',null)!==null)miss.thr=thr;
+  if(s.cnt!==undefined)cnt=new Set(s.cnt||[]);else if(cnt.size)miss.cnt=[...cnt];
+  if(s.popisi!==undefined)popisi=s.popisi||[];else if(popisi.length)miss.popisi=popisi;
+  ls.set('dem_v1',dem);ls.set('pv_v1',pv);ls.set('vpd_v1',vpd);ls.set('thrh_v1',thr);ls.set('cnt_v1',[...cnt]);ls.set('popisi_v1',popisi);
+  const a=document.activeElement;
+  if(a!==$('thr'))$('thr').value=thr;if(a!==$('vpd'))$('vpd').value=vpd||'';
+  renderPopisi();
+  if(Object.keys(miss).length)pushSet(miss)}   // prvi put: lokalne vrednosti se prebace u Google Sheets
+
 
 const toast=m=>{const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',3200)};
 const hav=(a,b,c,d)=>{const R=6371,r=x=>x*Math.PI/180,dl=r(c-a),dg=r(d-b);const h=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dg/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
@@ -396,11 +418,11 @@ const barCol={ok:'g',warn:'o',bad:'r','':''};
 const demOf=pn=>{const d=+dem[pn]||0;if(d>0)return d;const v=+pv[pn]||0;return v>0&&vpd>0?v*vpd:0};
 const untilStr=h=>{const d=new Date(Date.now()+h*36e5),p=n=>String(n).padStart(2,'0');
   return `${d.toLocaleDateString('de-DE',{weekday:'short'})}, ${p(d.getDate())}.${p(d.getMonth()+1)}., ${p(d.getHours())}:${p(d.getMinutes())}`};
-const saveDem=()=>{ls.set('dem_v1',dem);ls.set('pv_v1',pv)};
+const saveDem=()=>{ls.set('dem_v1',dem);ls.set('pv_v1',pv);pushSet({dem,pv})};
 
 /* „popisan" = ima stanje > 0 ILI je bio u uvezenom popisu / ručno unet sa stanjem */
 let cnt=new Set(ls.get('cnt_v1',[]));
-const saveCnt=()=>ls.set('cnt_v1',[...cnt]);
+const saveCnt=()=>{ls.set('cnt_v1',[...cnt]);pushSet({cnt:[...cnt]})};
 const isCounted=p=>(+p.qty>0)||cnt.has(p.pn);
 
 function covData(){
@@ -428,8 +450,8 @@ function renderCov(){
       <div class="ft"><span>Ukupno <b>${fmt(p.qty)}</b> kom${p.tr?` · sa tranzitom (+${fmt(p.tr)}) ≈ <b>${fh(p.h2)}</b>`:''}${has?` · ${fmt(Math.round(p.d*10)/10)} kom/dan`:''}</span>
       <span class="ctl"><label>kom/dan</label><input class="dm" type="number" min="0" step="any" data-pn="${esc(p.pn)}" data-k="d" value="${+dem[p.pn]||''}" placeholder="${p.d?Math.round(p.d*10)/10:'—'}"><label>po vozilu</label><input class="dm" type="number" min="0" step="any" data-pn="${esc(p.pn)}" data-k="v" value="${+pv[p.pn]||''}" placeholder="1"><button class="btn red s" data-x="${esc(p.pn)}" title="Obriši potrebu">✕</button></span></div></div>`}).join('')||'<div class="hint">Nema rezultata.</div>'}
 $('cq').oninput=renderCov;$('cf').onchange=renderCov;
-$('thr').value=thr;$('thr').onchange=()=>{thr=parseFloat($('thr').value)||24;ls.set('thrh_v1',thr);renderCov()};
-$('vpd').value=vpd||'';$('vpd').onchange=()=>{vpd=parseFloat(String($('vpd').value).replace(',','.'))||0;ls.set('vpd_v1',vpd);renderCov()};
+$('thr').value=thr;$('thr').onchange=()=>{thr=parseFloat($('thr').value)||24;ls.set('thrh_v1',thr);pushSet({thr});renderCov()};
+$('vpd').value=vpd||'';$('vpd').onchange=()=>{vpd=parseFloat(String($('vpd').value).replace(',','.'))||0;ls.set('vpd_v1',vpd);pushSet({vpd});renderCov()};
 $('cb').onchange=e=>{const i=e.target.closest('input.dm');if(!i)return;const pn=i.dataset.pn,v=parseFloat(String(i.value).replace(',','.'));
   if(i.dataset.k==='d'){if(v>0)dem[pn]=v;else delete dem[pn]}
   else{if(v>0){pv[pn]=v;delete dem[pn]}else delete pv[pn]}   // „po vozilu” preuzima – direktna potreba se briše
@@ -487,7 +509,7 @@ $('bTpl').onclick=()=>{const bin=atob(TPL_B64),u=new Uint8Array(bin.length);for(
 $('bReset').onclick=()=>{if(!confirm('Obrisati svu unetu potrebu/dan i „po vozilu” (ručno i iz Excela)?\nPart numberi u bazi ostaju.'))return;
   dem={};pv={};saveDem();renderCov();$('bRes').textContent='';toast('Unesena potreba je resetovana')};
 async function wipeParts(){if(!confirm('Obrisati SVE part number-e iz baze (Google Sheets) i svu unetu potrebu?\nOvo se ne može poništiti.'))return;
-  try{await api.clearParts();dem={};pv={};saveDem();cnt.clear();saveCnt();popisi=[];ls.set('popisi_v1',popisi);renderPopisi();$('impRes').textContent='';$('bRes').textContent='';toast('Svi part numberi su obrisani');await refresh()}
+  try{await api.clearParts();dem={};pv={};saveDem();cnt.clear();saveCnt();popisi=[];ls.set('popisi_v1',popisi);pushSet({popisi});renderPopisi();$('impRes').textContent='';$('bRes').textContent='';toast('Svi part numberi su obrisani');await refresh()}
   catch(e){toast('Brisanje nije uspelo: '+(e.message||e)+' (Apps Script mora imati akciju clearParts)')}}
 $('bWipe').onclick=wipeParts;$('pWipe').onclick=wipeParts;
 
@@ -511,7 +533,7 @@ $('file').onchange=async e=>{const fs=[...e.target.files];if(!fs.length)return;c
       popisi.unshift({name:f.name,rows:o.rows.length,added:res.added||0,updated:res.updated||0,at:nowStr()});
       log.push(`✔ ${f.name}: ${o.rows.length} redova (${res.added||0} novih, ${res.updated||0} ažuriranih)`);ok++}
     catch(err){log.push(`✖ ${f.name}: ${err.message||err}`)}}
-  ls.set('dem_v1',dem);popisi=popisi.slice(0,30);ls.set('popisi_v1',popisi);
+  saveDem();popisi=popisi.slice(0,30);ls.set('popisi_v1',popisi);pushSet({popisi});
   $('impRes').innerHTML=log.map(esc).join('<br>');renderPopisi();
   if(ok){toast(ok>1?`Uvezeno ${ok} popisa`:'Popis uvezen');await refresh()}
   e.target.value=''};
@@ -591,7 +613,7 @@ function tab(t){document.querySelectorAll('.tabs button').forEach(b=>b.classList
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
 function kpi(){const a=ships.filter(s=>s.status==='U tranzitu');$('kT').textContent=a.length;$('kQ').textContent=fmt(a.reduce((x,s)=>x+s.items.reduce((y,i)=>y+(+i.qty||0),0),0));$('kL').textContent=a.filter(s=>etaInfo(s).cls==='late').length}
 async function refresh(){
-  try{const d=await api.getData();parts=d.parts||[];ships=(d.shipments||[]).map(s=>({...s,items:s.items||[]}));setMode('ok','● Google Sheets')}
+  try{const d=await api.getData();parts=d.parts||[];ships=(d.shipments||[]).map(s=>({...s,items:s.items||[]}));applySettings(d.settings);setMode('ok','● Google Sheets')}
   catch(e){console.error('API greška:',e);setMode('err','⚠ Nema veze sa Google Sheets');$('mode').title=String(e.message||e);toast('Ne mogu da učitam podatke: '+(e.message||e));return}
   renderParts();renderCov();renderList();drawMap();kpi()}
 resetForm();renderPopisi();refresh();
