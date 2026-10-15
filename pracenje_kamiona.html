@@ -370,13 +370,26 @@ $('save').onclick=async()=>{
   const items=readItems();
   const s={id:editId||'T'+Date.now(),plate,type:$('type').value,place:cur.place,lat:cur.lat,lng:cur.lng,km:cur.km,eta:$('eta').value,status:$('status').value,note:$('note').value.trim(),items};
   $('save').disabled=true;
-  try{await api.saveShipment(s);toast('Sačuvano u Google Sheets ✔');resetForm();await refresh()}catch(e){toast('Greška pri čuvanju: '+(e.message||e))}
+  try{
+    const prev=editId?(ships.find(x=>x.id===editId)||{}).status:null;
+    if(s.status==='Stiglo'&&prev==='U tranzitu'){await receiveShip(s)}   // prelazak tranzit → stiglo: dodaj u stanje
+    else await api.saveShipment(s);
+    toast('Sačuvano u Google Sheets ✔');resetForm();await refresh()
+  }catch(e){toast('Greška pri čuvanju: '+(e.message||e))}
   $('save').disabled=false};
 
 window.editShip=id=>{const s=ships.find(x=>x.id===id);if(!s)return;tab('tr');editId=id;$('formTitle').textContent='Izmena: '+s.plate;
   $('plate').value=s.plate;$('type').value=s.type;$('place').value=s.place;$('eta').value=s.eta;$('status').value=s.status;$('note').value=s.note;
   cur={lat:s.lat,lng:s.lng,place:s.place,km:s.km??Math.round(airKm(s.lat,s.lng))};$('found').innerHTML=`✔ ${esc(cur.place)} · ≈ ${fmt(cur.km)} km do Kragujevca <span class="hint">(promeni grad za novu poziciju)</span>`;
   $('items').innerHTML='';(s.items.length?s.items:[{}]).forEach(itemRow);calcTot();$('formCard').scrollIntoView({behavior:'smooth'});map.setView([s.lat,s.lng],6)};
+
+/* Kad vozilo stigne: server (Apps Script) u istom koraku dodaje količine u STANJE i menja status u „Stiglo” → nestaje iz tranzita.
+   Stanje + Tranzit = Ukupno, pa se ukupno ne menja. */
+async function receiveShip(s){
+  s.status='Stiglo';
+  await api.saveShipment(s);
+  (s.items||[]).forEach(i=>{if(i.pn)cnt.add(String(i.pn).trim())});saveCnt();
+  return true}
 
 /* ---------- lista vozila ---------- */
 function renderList(){const f=$('flt').value;let L2=ships.slice().sort((a,b)=>(a.status==='U tranzitu'?0:1)-(b.status==='U tranzitu'?0:1)||String(a.eta).localeCompare(String(b.eta)));
@@ -391,8 +404,11 @@ function renderList(){const f=$('flt').value;let L2=ships.slice().sort((a,b)=>(a
     <div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn ghost s" data-a="e" style="flex:0 0 auto">Izmeni</button>${s.status==='U tranzitu'?'<button class="btn ghost s" data-a="a" style="flex:0 0 auto">✔ Stiglo</button>':''}<button class="btn red s" data-a="d" style="flex:0 0 auto">Obriši</button></div>`;
     d.onclick=ev=>{const a=ev.target.dataset.a;
       if(a==='e')editShip(s.id);
-      else if(a==='d'){if(confirm('Obrisati '+s.plate+'?'))api.deleteShipment(s.id).then(refresh).catch(er=>toast('Greška: '+er.message))}
-      else if(a==='a'){s.status='Stiglo';api.saveShipment(s).then(refresh).catch(er=>toast('Greška: '+er.message))}
+      else if(a==='d'){if(!confirm('Obrisati '+s.plate+'?'))return;
+        let rev=false;if(s.status==='Stiglo')rev=confirm('Vozilo je već označeno kao stiglo.\nOK = obriši i SKINI količine iz stanja\nOtkaži = obriši vozilo, stanje ostaje');
+        api.deleteShipment({id:s.id,revertStock:rev}).then(()=>{toast('Obrisano ✔');return refresh()}).catch(er=>toast('Greška: '+(er.message||er)))}
+      else if(a==='a'){if(!confirm('Potvrditi da je '+s.plate+' stiglo? Količine će biti dodate u stanje.'))return;
+        receiveShip(s).then(refresh).catch(er=>toast('Greška: '+er.message))}
       else if(isFinite(s.lat))map.setView([s.lat,s.lng],7)};
     $('list').appendChild(d)})}
 $('flt').onchange=renderList;
