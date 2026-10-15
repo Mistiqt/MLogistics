@@ -428,7 +428,9 @@ const dl=document.createElement('datalist');dl.id='dl';document.body.appendChild
 
 /* ---------- pokrivenost (u satima) ---------- */
 const SCALE=72,CMAX=200;   // traka prikazuje 72 h, crta na svakih 24 h
-const fh=x=>x==null?'—':(x>=100?Math.round(x):x.toFixed(0))+' h';
+const fh=x=>{if(x==null||!isFinite(x))return'—';if(x>=100)return Math.round(x)+' h';
+  const m=Math.round(x*60),H=Math.floor(m/60),M=m%60;   // npr. 6 h 26 min – isto vreme koje se koristi za „pokriveno do”
+  return H+' h'+(M?' '+M+' min':'')};
 const covCls=x=>x==null?'':x<thr?'bad':x<thr*3?'warn':'ok';
 const barCol={ok:'g',warn:'o',bad:'r','':''};
 const demOf=pn=>{const d=+dem[pn]||0;if(d>0)return d;const v=+pv[pn]||0;return v>0&&vpd>0?v*vpd:0};
@@ -441,10 +443,11 @@ let cnt=new Set(ls.get('cnt_v1',[]));
 const saveCnt=()=>{ls.set('cnt_v1',[...cnt]);pushSet({cnt:[...cnt]})};
 const isCounted=p=>(+p.qty>0);   // „popisan” = ima upisanu vrednost (stanje > 0); ostali idu na dno
 
-function covData(){
+function covData(all){
   const q=$('cq').value.trim().toLowerCase(),f=$('cf').value;
   let rows=parts.map(p=>{const tr=transitQty(p.pn),d=demOf(p.pn),qty=+p.qty||0,cn=isCounted(p);
     return{...p,qty,tr,d,cn,h1:cn&&d>0?qty/d*24:null,h2:cn&&d>0?(qty+tr)/d*24:null}});
+  if(!all)rows=rows.filter(p=>p.cn);   // nepopisani part numberi (bez vrednosti) se ne prikazuju
   const crit=rows.filter(p=>p.h1!=null&&p.h1<thr).length,withD=rows.filter(p=>p.d>0).length;
   rows=rows.filter(p=>!q||p.pn.toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q));
   if(f==='crit')rows=rows.filter(p=>p.h1!=null&&p.h1<thr);else if(f==='dem')rows=rows.filter(p=>p.d>0);else if(f==='nodem')rows=rows.filter(p=>!p.d);
@@ -578,7 +581,7 @@ function covStat(p){if(!p.cn)return{k:'na',t:'Nije popisan'};if(!(p.d>0))return{
   const c=covCls(p.h1);return c==='bad'?{k:'bad',t:'KRITIČNO'}:c==='warn'?{k:'warn',t:'Upozorenje'}:{k:'ok',t:'OK'}}
 const r1=x=>x==null?'':Math.round(x*10)/10;
 
-$('xCvX').onclick=()=>{const {rows}=covData();if(!rows.length)return toast('Nema podataka za izvoz');
+$('xCvX').onclick=()=>{const {rows}=covData(true);if(!rows.length)return toast('Nema podataka za izvoz');
   const A=[['Part number','Naziv','Dobavljač','Popisan','Stanje (kom)','U tranzitu (kom)','Potreba/dan (kom)','Po vozilu (kom)','Pokrivenost (h)','Pokrivenost sa tranzitom (h)','Pokriveno do','Status']];
   rows.forEach(p=>A.push([p.pn,p.name||'',p.supplier||'',p.cn?'da':'ne',p.qty,p.tr,p.d>0?r1(p.d):'',+pv[p.pn]||'',r1(p.h1),r1(p.h2),p.h1!=null?untilStr(p.h1):'',covStat(p).t]));
   saveXlsx([['Pokrivenost',A,[16,42,18,9,12,14,16,14,14,22,20,18]]],'pokrivenost_'+stamp()+'.xlsx');
