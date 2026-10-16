@@ -89,12 +89,17 @@ i.hatch,.f.hatch{background:repeating-linear-gradient(45deg,#a9c0ee 0 3px,#d6e2f
 .maptools button{box-shadow:0 2px 8px #0003;white-space:nowrap}
 .mapinfo{position:absolute;z-index:500;left:10px;bottom:22px;max-width:min(340px,calc(100% - 20px));background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;box-shadow:0 2px 10px #0003;display:none}
 .mapinfo.on{display:block}
-.vh{--c:#1f5fd6;width:46px;height:28px;filter:drop-shadow(0 1px 2px #000a)}
+.vh{--c:#1f5fd6;width:46px;height:28px;filter:drop-shadow(0 1px 2px #000a);transform:scale(var(--vs,1));transition:transform .2s}
 .vh.late{--c:#c2342b}
 .vh svg{width:100%;height:100%;display:block}
 .vh.flip svg{transform:scaleX(-1)}
 .leaflet-tooltip.vt{font-weight:700;font-size:12px}
-.hq{background:#c2342b;color:#fff;border-radius:8px;padding:3px 8px;font-weight:700;font-size:11.5px;white-space:nowrap;box-shadow:0 1px 6px #0006}
+.hq{display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 4px #0006);transform:scale(var(--hqs,1));transform-origin:50% 100%;transition:transform .2s}
+.hq .lg{background:#fff;border:1px solid #d5dbe6;border-radius:8px;padding:5px 9px 4px;text-align:center}
+.hq .lg img{display:block;width:104px;height:auto}
+.hq .lg small{display:block;font-size:10.5px;font-weight:600;color:#33415c;margin-top:1px;letter-spacing:.2px}
+.hq .ar{width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid #fff;margin-top:-1px}
+.hq .pt{width:9px;height:9px;border-radius:50%;background:#1a3263;border:2px solid #fff;margin-top:2px}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#17202e;color:#fff;padding:9px 16px;border-radius:8px;z-index:9999;display:none}
 .mode{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;background:#f6c34a;color:#4a3300}
 .mode.ok{background:#c9f0d8;color:#0d5a34}
@@ -316,8 +321,14 @@ const transitQty=pn=>ships.filter(s=>s.status==='U tranzitu').reduce((a,s)=>a+s.
 const map=L.map('map',{worldCopyJump:true}).setView([47,16],5);
 // Esri World Street Map – bez API ključa i bez blokade (OSM tile server vraća 403 za mnoge sajtove)
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(map);
-L.marker([HQ.lat,HQ.lng],{icon:L.divIcon({className:'',html:'<div class="hq">🏭 Stellantis Kragujevac</div>',iconAnchor:[70,14]}),zIndexOffset:1000}).addTo(map);
+const HQ_LOGO='data:image/png;base64,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';
+L.marker([HQ.lat,HQ.lng],{icon:L.divIcon({className:'',html:`<div class="hq"><div class="lg"><img src="${HQ_LOGO}" alt="Stellantis"><small>Kragujevac</small></div><div class="ar"></div><div class="pt"></div></div>`,iconSize:[122,80],iconAnchor:[61,74]}),zIndexOffset:-500}).bindTooltip('Stellantis Kragujevac – odredište').addTo(map);
 const trLayer=L.layerGroup().addTo(map);
+/* oznake se smanjuju pri odzumiranju da ne prekrivaju vozila; vozila su uvek iznad Stellantis oznake */
+function scaleMarks(){const z=map.getZoom(),c=map.getContainer().style;
+  c.setProperty('--hqs',z>=8?1:z===7?.8:z===6?.6:z===5?.45:.32);
+  c.setProperty('--vs',z>=7?1:z===6?.85:z===5?.7:.55)}
+map.on('zoomend',scaleMarks);scaleMarks();
 
 /* ---------- kretanje vozila (prosečna brzina 95 km/h) ---------- */
 const SPEED=95;
