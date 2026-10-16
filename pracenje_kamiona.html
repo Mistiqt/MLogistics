@@ -89,8 +89,11 @@ i.hatch,.f.hatch{background:repeating-linear-gradient(45deg,#a9c0ee 0 3px,#d6e2f
 .maptools button{box-shadow:0 2px 8px #0003;white-space:nowrap}
 .mapinfo{position:absolute;z-index:500;left:10px;bottom:22px;max-width:min(340px,calc(100% - 20px));background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;box-shadow:0 2px 10px #0003;display:none}
 .mapinfo.on{display:block}
-.tk{background:#fff;border:2px solid var(--acc);border-radius:8px;padding:1px 6px;font-weight:700;font-size:11.5px;white-space:nowrap;box-shadow:0 1px 5px #0004}
-.tk.late{border-color:var(--bad);color:var(--bad)}
+.vh{--c:#1f5fd6;width:46px;height:28px;filter:drop-shadow(0 1px 2px #000a)}
+.vh.late{--c:#c2342b}
+.vh svg{width:100%;height:100%;display:block}
+.vh.flip svg{transform:scaleX(-1)}
+.leaflet-tooltip.vt{font-weight:700;font-size:12px}
 .hq{background:#c2342b;color:#fff;border-radius:8px;padding:3px 8px;font-weight:700;font-size:11.5px;white-space:nowrap;box-shadow:0 1px 6px #0006}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#17202e;color:#fff;padding:9px 16px;border-radius:8px;z-index:9999;display:none}
 .mode{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600;background:#f6c34a;color:#4a3300}
@@ -167,7 +170,7 @@ i.hatch,.f.hatch{background:repeating-linear-gradient(45deg,#a9c0ee 0 3px,#d6e2f
       <select id="pf" style="flex:0 0 150px"><option value="all">Svi delovi</option><option value="act">Sa zalihom/tranzitom</option></select>
     </div>
     <div class="hint" id="pHint" style="margin-bottom:6px"></div>
-    <table><thead><tr><th>Part number / naziv</th><th class="n">Stanje</th><th class="n">U tranzitu</th><th class="n">Ukupno</th></tr></thead><tbody id="pb"></tbody></table>
+    <table><thead><tr><th>Part number / naziv</th><th class="n">Stanje (sada)</th><th class="n">U tranzitu</th><th class="n">Ukupno</th></tr></thead><tbody id="pb"></tbody></table>
   </div>
 
   <!-- POKRIVENOST -->
@@ -281,6 +284,8 @@ function applySettings(s){
   if(s.thr!==undefined)thr=+s.thr||24;else if(ls.get('thrh_v1',null)!==null)miss.thr=thr;
   if(s.cnt!==undefined)cnt=new Set(s.cnt||[]);else if(cnt.size)miss.cnt=[...cnt];
   if(s.popisi!==undefined)popisi=s.popisi||[];else if(popisi.length)miss.popisi=popisi;
+  if(s.pos&&typeof s.pos==='object'){Object.keys(s.pos).forEach(k=>{const o=s.pos[k];if(o&&(!pos[k]||(o.t||0)>(pos[k].t||0)))pos[k]=o});ls.set('pos_v1',pos)}
+  else if(Object.keys(pos).length&&!posPushed){miss.pos=pos;posPushed=true}
   ls.set('dem_v1',dem);ls.set('pv_v1',pv);ls.set('vpd_v1',vpd);ls.set('thrh_v1',thr);ls.set('cnt_v1',[...cnt]);ls.set('popisi_v1',popisi);
   const a=document.activeElement;
   if(a!==$('thr'))$('thr').value=thr;if(a!==$('vpd'))$('vpd').value=vpd||'';
@@ -314,20 +319,70 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_M
 L.marker([HQ.lat,HQ.lng],{icon:L.divIcon({className:'',html:'<div class="hq">🏭 Stellantis Kragujevac</div>',iconAnchor:[70,14]}),zIndexOffset:1000}).addTo(map);
 const trLayer=L.layerGroup().addTo(map);
 
-function drawMap(){trLayer.clearLayers();
-  ships.filter(s=>s.status==='U tranzitu'&&isFinite(s.lat)).forEach(s=>{const e=etaInfo(s),tot=s.items.reduce((a,i)=>a+(+i.qty||0),0);
-    L.polyline([[s.lat,s.lng],[HQ.lat,HQ.lng]],{color:e.cls==='late'?'#c2342b':'#1f5fd6',weight:2,dashArray:'6 6',opacity:.55}).addTo(trLayer);
-    const m=L.marker([s.lat,s.lng],{icon:L.divIcon({className:'',html:`<div class="tk ${e.cls}">${s.type==='Kombi'?'🚐':'🚚'} ${esc(s.plate)} · ${fmt(tot)}</div>`,iconAnchor:[40,12]})}).addTo(trLayer);
-    m.bindPopup(`<b>${esc(s.plate)}</b> (${esc(s.type)})<br>📍 ${esc(s.place)}<br>🛣 ≈ ${s.km??Math.round(airKm(s.lat,s.lng))} km do Kragujevca<br>⏱ ETA ${fmtEta(s.eta)} (${e.txt})<br>📦 ${fmt(tot)} kom<br><a href="#" onclick="editShip('${s.id}');return false">Izmeni</a>`);
-  })}
-$('fit').onclick=()=>{const pts=[[HQ.lat,HQ.lng],...ships.filter(s=>s.status==='U tranzitu'&&isFinite(s.lat)).map(s=>[s.lat,s.lng])];map.fitBounds(pts,{padding:[60,60],maxZoom:7})};
+/* ---------- kretanje vozila (prosečna brzina 95 km/h) ---------- */
+const SPEED=95;
+let pos=ls.get('pos_v1',{}),posPushed=false;   // id -> {t,lat,lng}: kada je pozicija uneta (čuva se i u Google Sheets preko podešavanja)
+const savePos=()=>{ls.set('pos_v1',pos);pushSet({pos})};
+const routes={};                               // keš geometrije puta (OSRM)
+const rkey=s=>s.id+'|'+s.lat+'|'+s.lng;
+async function getRoute(s){const k=rkey(s);if(k in routes)return routes[k];routes[k]=null;
+  try{const r=await fetch(`https://router.project-osrm.org/route/v1/driving/${s.lng},${s.lat};${HQ.lng},${HQ.lat}?overview=full&geometries=geojson`);const j=await r.json();
+    const c=j.routes&&j.routes[0]&&j.routes[0].geometry.coordinates;
+    if(c&&c.length>1){const pts=c.map(x=>[x[1],x[0]]),cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+hav(pts[i-1][0],pts[i-1][1],pts[i][0],pts[i][1]));routes[k]={pts,cum,len:cum[cum.length-1]}}}catch(e){}
+  return routes[k]}
+function parseDate(x){if(!x)return null;x=String(x).trim();let m=x.match(/^(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})\.?,?\s*(\d{1,2}):(\d{2})/);if(m)return new Date(+m[3],m[2]-1,+m[1],+m[4],+m[5]);
+  m=x.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})/);if(m)return new Date(+m[1],m[2]-1,+m[3],+m[4],+m[5]);
+  m=x.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return new Date(+m[1],m[2]-1,+m[3]);
+  const d=new Date(x);return isNaN(d)?null:d}
+/* Procena trenutne tačke: pozicija se kreće ka Kragujevcu od trenutka unosa, brzinom SPEED */
+function motion(s){
+  const km=s.km!=null&&isFinite(s.km)?+s.km:Math.round(airKm(s.lat,s.lng)*1.25);
+  let p=pos[s.id];if(p&&(Math.abs(p.lat-s.lat)>1e-6||Math.abs(p.lng-s.lng)>1e-6))p=null;
+  if(!p){const u=parseDate(s.updated);if(u)p={t:u.getTime()}}            // rezerva: vreme poslednjeg upisa u Sheets
+  if(!p)return{lat:s.lat,lng:s.lng,km,done:0,left:km,arr:null,sim:false,rest:null};
+  const done=Math.min(km,Math.max(0,(Date.now()-p.t)/36e5*SPEED)),left=km-done,arr=p.t+km/SPEED*36e5,rt=routes[rkey(s)];let lat,lng,rest;
+  if(rt){const d=rt.len*(km?done/km:1);let i=1;while(i<rt.cum.length-1&&rt.cum[i]<d)i++;
+    const a=rt.pts[i-1],b=rt.pts[i],seg=(rt.cum[i]-rt.cum[i-1])||1,f=Math.min(1,Math.max(0,(d-rt.cum[i-1])/seg));
+    lat=a[0]+(b[0]-a[0])*f;lng=a[1]+(b[1]-a[1])*f;rest=[[lat,lng],...rt.pts.slice(i)]}
+  else{const f=km?done/km:1;lat=s.lat+(HQ.lat-s.lat)*f;lng=s.lng+(HQ.lng-s.lng)*f;rest=[[lat,lng],[HQ.lat,HQ.lng]]}
+  return{lat,lng,km,done,left,arr,sim:true,rest}}
+const fmtDur=h=>{const m=Math.max(0,Math.round(h*60)),H=Math.floor(m/60),M=m%60;return H+' h'+(M?' '+M+' min':'')};
+function estText(s){const mo=motion(s);if(!mo.sim)return'';
+  if(mo.left<=0.5)return'🏁 po proceni (95 km/h) je stiglo u Kragujevac';
+  return`🧭 sada ≈ <b>${fmt(Math.round(mo.left))} km</b> do Kragujevca · procena dolaska <b>${fmtEta(new Date(mo.arr))}</b> (95 km/h, još ${fmtDur(mo.left/SPEED)})`}
+
+const TRUCK='<svg viewBox="0 0 48 28"><rect x="1" y="3" width="29" height="17" rx="2" style="fill:var(--c)"/><path d="M32 8h8l6 7v6H32z" style="fill:var(--c)"/><path d="M34 10h4.6l3.4 4.5H34z" fill="#dbe7ff"/><circle cx="10" cy="22" r="4.2" fill="#1b1f2a"/><circle cx="39" cy="22" r="4.2" fill="#1b1f2a"/></svg>';
+const VAN='<svg viewBox="0 0 48 28"><path d="M3 7a3 3 0 0 1 3-3h20c4 0 6 2 9 6l7 4c2 1 3 2 3 5v3H3z" style="fill:var(--c)"/><path d="M29 7h3.5l5.5 6H29z" fill="#dbe7ff"/><circle cx="12" cy="22" r="4.2" fill="#1b1f2a"/><circle cx="37" cy="22" r="4.2" fill="#1b1f2a"/></svg>';
+const vIcon=(s,late,flip)=>L.divIcon({className:'',html:`<div class="vh${late?' late':''}${flip?' flip':''}">${s.type==='Kombi'?VAN:TRUCK}</div>`,iconSize:[46,28],iconAnchor:[23,14]});
+const mk={};
+function popupHtml(s){const e=etaInfo(s),tot=s.items.reduce((a,i)=>a+(+i.qty||0),0),mo=motion(s);
+  return`<b>${esc(s.plate)}</b> (${esc(s.type)})<br>📍 uneto: ${esc(s.place)}<br>`+(mo.sim?`🧭 ${estText(s)}<br>`:`🛣 ≈ ${fmt(mo.km)} km do Kragujevca<br>`)+`⏱ ETA (uneto) ${fmtEta(s.eta)} (${e.txt})<br>📦 ${fmt(tot)} kom<br><a href="#" onclick="editShip('${s.id}');return false">Izmeni</a>`}
+function drawMap(){trLayer.clearLayers();for(const k in mk)delete mk[k];
+  ships.filter(s=>s.status==='U tranzitu'&&isFinite(s.lat)).forEach(s=>{const e=etaInfo(s),late=e.cls==='late',mo=motion(s);
+    const col=late?'#c2342b':'#1f5fd6';
+    const rest=L.polyline(mo.rest||[[s.lat,s.lng],[HQ.lat,HQ.lng]],{color:col,weight:2.5,dashArray:'6 6',opacity:.6}).addTo(trLayer);
+    const start=mo.sim?L.circleMarker([s.lat,s.lng],{radius:4,color:'#6a7588',weight:1.5,fillColor:'#fff',fillOpacity:1}).bindTooltip('uneta pozicija: '+s.place).addTo(trLayer):null;
+    const m=L.marker([mo.lat,mo.lng],{icon:vIcon(s,late,HQ.lng<mo.lng),zIndexOffset:500}).addTo(trLayer);
+    m.bindTooltip(esc(s.plate),{className:'vt',direction:'top',offset:[0,-14]});m.bindPopup(popupHtml(s));
+    mk[s.id]={s,m,rest,start,flip:HQ.lng<mo.lng};
+    getRoute(s).then(r=>{if(r&&mk[s.id]&&mk[s.id].s===s)tickMap()})});
+}
+/* osvežavanje pomeranja bez ponovnog crtanja (svakih 20 s) */
+function tickMap(){
+  for(const id in mk){const o=mk[id],mo=motion(o.s);
+    o.m.setLatLng([mo.lat,mo.lng]);o.rest.setLatLngs(mo.rest||[[o.s.lat,o.s.lng],[HQ.lat,HQ.lng]]);
+    const fl=HQ.lng<mo.lng;if(fl!==o.flip){o.flip=fl;const el=o.m.getElement();if(el){const v=el.querySelector('.vh');if(v)v.classList.toggle('flip',fl)}}
+    if(o.m.isPopupOpen())o.m.setPopupContent(popupHtml(o.s))}
+  document.querySelectorAll('.est[data-id]').forEach(el=>{const s=ships.find(x=>x.id===el.dataset.id);if(s)el.innerHTML=estText(s)})}
+setInterval(tickMap,20000);
+$('fit').onclick=()=>{const pts=[[HQ.lat,HQ.lng],...ships.filter(s=>s.status==='U tranzitu'&&isFinite(s.lat)).map(s=>{const m=motion(s);return[m.lat,m.lng]})];map.fitBounds(pts,{padding:[60,60],maxZoom:7})};
 
 function clearTmp(){if(tmpLayer){map.removeLayer(tmpLayer);tmpLayer=null}if(circle){map.removeLayer(circle);circle=null}$('mapinfo').classList.remove('on')}
 async function geoGo(){const q=$('geo').value.trim();if(!q)return;clearTmp();const info=$('mapinfo');
   if(/^\d+([.,]\d+)?$/.test(q)){const km=parseFloat(q.replace(',','.'));
     circle=L.circle([HQ.lat,HQ.lng],{radius:km*1000,color:'#c2342b',weight:2,fillOpacity:.05}).addTo(map);map.fitBounds(circle.getBounds());
-    const inside=ships.filter(s=>s.status==='U tranzitu'&&isFinite(s.lat)&&airKm(s.lat,s.lng)<=km);
-    info.innerHTML=`<b>Krug ${fmt(km)} km</b> oko Kragujevca (vazdušno)<br>`+(inside.length?inside.map(s=>`🚚 <b>${esc(s.plate)}</b> – ${esc(s.place)}, ${Math.round(airKm(s.lat,s.lng))} km, ${fmt(s.items.reduce((a,i)=>a+(+i.qty||0),0))} kom`).join('<br>'):'<span style="color:var(--mut)">Nema vozila u ovom krugu.</span>');info.classList.add('on');return}
+    const inside=ships.filter(s=>s.status==='U tranzitu'&&isFinite(s.lat)&&airKm(motion(s).lat,motion(s).lng)<=km);
+    info.innerHTML=`<b>Krug ${fmt(km)} km</b> oko Kragujevca (vazdušno)<br>`+(inside.length?inside.map(s=>`🚚 <b>${esc(s.plate)}</b> – ${esc(s.place)}, ${Math.round(airKm(motion(s).lat,motion(s).lng))} km, ${fmt(s.items.reduce((a,i)=>a+(+i.qty||0),0))} kom`).join('<br>'):'<span style="color:var(--mut)">Nema vozila u ovom krugu.</span>');info.classList.add('on');return}
   try{const r=await geocode(q,1);if(!r.length)return toast('Grad nije pronađen');const p=r[0];const road=await roadKm(p.lat,p.lng);
     tmpLayer=L.layerGroup([L.marker([p.lat,p.lng]).bindPopup(esc(q)),L.polyline([[p.lat,p.lng],[HQ.lat,HQ.lng]],{color:'#c2342b',dashArray:'4 6'})]).addTo(map);
     map.fitBounds([[p.lat,p.lng],[HQ.lat,HQ.lng]],{padding:[80,80]});
@@ -350,7 +405,9 @@ function resetForm(){editId=null;cur=null;$('formTitle').textContent='Novo vozil
   $('items').innerHTML='';itemRow();$('found').textContent='';$('sug').style.display='none';setPick(false);calcTot()}
 $('reset').onclick=resetForm;
 
-function setPos(p){cur=p;$('found').innerHTML=`✔ ${esc(p.place)} · ≈ ${fmt(p.km)} km do Kragujevca`;
+const toLocalInput=d=>{const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())};
+function setPos(p){cur=p;const h=p.km/SPEED;if(!$('eta').value&&isFinite(h))$('eta').value=toLocalInput(new Date(Date.now()+h*36e5));
+  $('found').innerHTML=`✔ ${esc(p.place)} · ≈ ${fmt(p.km)} km do Kragujevca · ≈ ${fmtDur(h)} vožnje (${SPEED} km/h)`;
   map.setView([p.lat,p.lng],Math.max(map.getZoom(),6))}
 async function findPlace(){const q=$('place').value.trim();if(!q)return;$('found').textContent='Tražim…';
   try{const r=await geocode(q,5);const sug=$('sug');if(!r.length){$('found').textContent='Nije pronađeno – probaj drugačiji naziv ili klikni 📍 Mapa';return}
@@ -371,6 +428,8 @@ $('save').onclick=async()=>{
   const s={id:editId||'T'+Date.now(),plate,type:$('type').value,place:cur.place,lat:cur.lat,lng:cur.lng,km:cur.km,eta:$('eta').value,status:$('status').value,note:$('note').value.trim(),items};
   $('save').disabled=true;
   try{
+    const old=ships.find(x=>x.id===s.id);
+    if(!old||Math.abs(old.lat-s.lat)>1e-6||Math.abs(old.lng-s.lng)>1e-6){pos[s.id]={t:Date.now(),lat:s.lat,lng:s.lng};savePos()}   // od ovog trenutka vozilo „putuje” ka Kragujevcu
     const prev=editId?(ships.find(x=>x.id===editId)||{}).status:null;
     if(s.status==='Stiglo'&&prev==='U tranzitu'){await receiveShip(s)}   // prelazak tranzit → stiglo: dodaj u stanje
     else await api.saveShipment(s);
@@ -399,6 +458,7 @@ function renderList(){const f=$('flt').value;let L2=ships.slice().sort((a,b)=>(a
     d.innerHTML=`<div class="top"><span class="plate">${s.type==='Kombi'?'🚐':'🚚'} ${esc(s.plate)}</span><span class="badge ${e.cls}">${esc(e.txt)}</span></div>
     <div class="meta">📍 ${esc(s.place)} · ≈ ${s.km!=null?fmt(s.km):'?'} km do Kragujevca</div>
     <div class="meta">⏱ ETA ${fmtEta(s.eta)} · 📦 <b>${fmt(tot)} kom</b></div>
+    ${s.status==='U tranzitu'&&motion(s).sim?`<div class="meta est" data-id="${s.id}">${estText(s)}</div>`:''}
     <div class="chips">${s.items.map(i=>`<span class="chip">${esc(i.pn)} × ${fmt(i.qty)}</span>`).join('')}</div>
     ${s.note?`<div class="meta">📝 ${esc(s.note)}</div>`:''}
     <div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn ghost s" data-a="e" style="flex:0 0 auto">Izmeni</button>${s.status==='U tranzitu'?'<button class="btn ghost s" data-a="a" style="flex:0 0 auto">✔ Stiglo</button>':''}<button class="btn red s" data-a="d" style="flex:0 0 auto">Obriši</button></div>`;
@@ -413,13 +473,19 @@ function renderList(){const f=$('flt').value;let L2=ships.slice().sort((a,b)=>(a
     $('list').appendChild(d)})}
 $('flt').onchange=renderList;
 
+/* ---------- satna potrošnja: stanje = popis − (potreba/dan ÷ 24) × broj punih sati od popisa ---------- */
+const hourFloor=d=>{const x=new Date(d);x.setMinutes(0,0,0);return x.getTime()};
+const hoursSincePopis=p=>{const t=parseDate(p.date);return t?Math.max(0,Math.round((hourFloor(Date.now())-hourFloor(t))/36e5)):0};   // pun sat = 10:00, 11:00, 12:00…
+const consumed=p=>Math.round(hoursSincePopis(p)*demOf(p.pn)/24);
+const curQty=p=>Math.max(0,(+p.qty||0)-consumed(p));
+
 /* ---------- delovi ---------- */
 function renderParts(){$('dl').innerHTML=parts.map(p=>`<option value="${esc(p.pn)}">${esc(p.name)}</option>`).join('');
   const q=$('q').value.trim().toLowerCase(),f=$('pf').value;
-  let rows=parts.map(p=>({...p,tr:transitQty(p.pn)})).filter(p=>(!q||p.pn.toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q))&&(f==='all'||p.qty>0||p.tr>0));
+  let rows=parts.map(p=>({...p,raw:+p.qty||0,hr:demOf(p.pn)/24,qty:curQty(p),tr:transitQty(p.pn)})).filter(p=>(!q||p.pn.toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q))&&(f==='all'||p.qty>0||p.tr>0));
   const latest=parts.map(p=>p.date).filter(Boolean).sort().pop();
-  $('pHint').textContent=parts.length?`${parts.length} delova u bazi · poslednji popis: ${latest||'—'}`:'Baza je prazna – uvezi Excel popis iznad.';
-  $('pb').innerHTML=rows.map(p=>`<tr class="p" data-pn="${esc(p.pn)}"><td><b>${esc(p.pn)}</b><br><span style="color:var(--mut);font-size:12px">${esc((p.name||'(bez naziva)').split('/')[0].slice(0,80))}</span></td><td class="n">${fmt(p.qty)}</td><td class="n ${p.tr?'transit':''}">${p.tr?fmt(p.tr):'–'}</td><td class="n"><b>${fmt(p.qty+p.tr)}</b></td></tr>`).join('')||'<tr><td colspan=4 class="hint">Nema rezultata.</td></tr>'}
+  $('pHint').textContent=parts.length?`${parts.length} delova u bazi · poslednji popis: ${latest||'—'} · stanje se automatski smanjuje na svaki pun sat (potreba/dan ÷ 24)`:'Baza je prazna – uvezi Excel popis iznad.';
+  $('pb').innerHTML=rows.map(p=>`<tr class="p" data-pn="${esc(p.pn)}"><td><b>${esc(p.pn)}</b><br><span style="color:var(--mut);font-size:12px">${esc((p.name||'(bez naziva)').split('/')[0].slice(0,80))}</span></td><td class="n">${fmt(p.qty)}${p.hr>0?`<br><span style="color:var(--mut);font-size:11px">popis ${fmt(p.raw)} · −${fmt(Math.round(p.hr*10)/10)}/h</span>`:''}</td><td class="n ${p.tr?'transit':''}">${p.tr?fmt(p.tr):'–'}</td><td class="n"><b>${fmt(p.qty+p.tr)}</b></td></tr>`).join('')||'<tr><td colspan=4 class="hint">Nema rezultata.</td></tr>'}
 $('q').oninput=renderParts;$('pf').onchange=renderParts;
 $('pb').onclick=e=>{const tr=e.target.closest('tr.p');if(!tr)return;const pn=tr.dataset.pn;const c=ships.filter(s=>s.status==='U tranzitu'&&s.items.some(i=>i.pn===pn));
   if(!c.length)return toast('Nijedno vozilo trenutno ne nosi '+pn);
@@ -445,7 +511,7 @@ const isCounted=p=>(+p.qty>0);   // „popisan” = ima upisanu vrednost (stanje
 
 function covData(all){
   const q=$('cq').value.trim().toLowerCase(),f=$('cf').value;
-  let rows=parts.map(p=>{const tr=transitQty(p.pn),d=demOf(p.pn),qty=+p.qty||0,cn=isCounted(p);
+  let rows=parts.map(p=>{const tr=transitQty(p.pn),d=demOf(p.pn),qty=curQty(p),cn=isCounted(p);
     return{...p,qty,tr,d,cn,h1:cn&&d>0?qty/d*24:null,h2:cn&&d>0?(qty+tr)/d*24:null}});
   if(!all)rows=rows.filter(p=>p.cn);   // nepopisani part numberi (bez vrednosti) se ne prikazuju
   const crit=rows.filter(p=>p.h1!=null&&p.h1<thr).length,withD=rows.filter(p=>p.d>0).length;
@@ -466,7 +532,7 @@ function renderCov(){
     return sep+`<div class="card cov"><div class="hd"><div style="min-width:0"><div class="pnum">${esc(p.pn)}</div><div class="nm">${esc((p.name||'(bez naziva)').split('/')[0].slice(0,80))}</div></div>
       <div style="text-align:right;flex:0 0 auto"><div class="big ${c}">${p.cn?fh(p.h1):'<span style="font-size:14px;color:var(--mut)">nije popisan</span>'}</div><div class="until">${!p.cn?'nema unosa u popisu':has?'pokriveno do '+untilStr(p.h1):'unesi potrebu'}</div></div></div>
       <div class="bar"><span class="f ${barCol[c]}" style="width:${w1}%"></span>${has&&w2>w1?`<span class="f hatch" style="left:${w1}%;width:${w2-w1}%"></span>`:''}${ticks}</div>
-      <div class="ft"><span>Ukupno <b>${fmt(p.qty)}</b> kom${p.tr?` · sa tranzitom (+${fmt(p.tr)}) ≈ <b>${fh(p.h2)}</b>`:''}${has?` · ${fmt(Math.round(p.d*10)/10)} kom/dan`:''}</span>
+      <div class="ft"><span>Stanje sada <b>${fmt(p.qty)}</b> kom${p.tr?` · sa tranzitom (+${fmt(p.tr)}) ≈ <b>${fh(p.h2)}</b>`:''}${has?` · ${fmt(Math.round(p.d*10)/10)} kom/dan`:''}</span>
       <span class="ctl"><label>kom/dan</label><input class="dm" type="number" min="0" step="any" data-pn="${esc(p.pn)}" data-k="d" value="${+dem[p.pn]||''}" placeholder="${p.d?Math.round(p.d*10)/10:'—'}"><label>po vozilu</label><input class="dm" type="number" min="0" step="any" data-pn="${esc(p.pn)}" data-k="v" value="${+pv[p.pn]||''}" placeholder="1"><button class="btn red s" data-x="${esc(p.pn)}" title="Obriši potrebu">✕</button></span></div></div>`}).join('')||'<div class="hint">Nema rezultata.</div>'}
 $('cq').oninput=renderCov;$('cf').onchange=renderCov;
 $('thr').value=thr;$('thr').onchange=()=>{thr=parseFloat($('thr').value)||24;ls.set('thrh_v1',thr);pushSet({thr});renderCov()};
@@ -582,7 +648,7 @@ function covStat(p){if(!p.cn)return{k:'na',t:'Nije popisan'};if(!(p.d>0))return{
 const r1=x=>x==null?'':Math.round(x*10)/10;
 
 $('xCvX').onclick=()=>{const {rows}=covData(true);if(!rows.length)return toast('Nema podataka za izvoz');
-  const A=[['Part number','Naziv','Dobavljač','Popisan','Stanje (kom)','U tranzitu (kom)','Potreba/dan (kom)','Po vozilu (kom)','Pokrivenost (h)','Pokrivenost sa tranzitom (h)','Pokriveno do','Status']];
+  const A=[['Part number','Naziv','Dobavljač','Popisan','Stanje sada (kom)','U tranzitu (kom)','Potreba/dan (kom)','Po vozilu (kom)','Pokrivenost (h)','Pokrivenost sa tranzitom (h)','Pokriveno do','Status']];
   rows.forEach(p=>A.push([p.pn,p.name||'',p.supplier||'',p.cn?'da':'ne',p.qty,p.tr,p.d>0?r1(p.d):'',+pv[p.pn]||'',r1(p.h1),r1(p.h2),p.h1!=null?untilStr(p.h1):'',covStat(p).t]));
   saveXlsx([['Pokrivenost',A,[16,42,18,9,12,14,16,14,14,22,20,18]]],'pokrivenost_'+stamp()+'.xlsx');
   toast('Excel izvezen ✔')};
@@ -636,6 +702,10 @@ async function refresh(){
   catch(e){console.error('API greška:',e);setMode('err','⚠ Nema veze sa Google Sheets');$('mode').title=String(e.message||e);toast('Ne mogu da učitam podatke: '+(e.message||e));return}
   renderParts();renderCov();renderList();drawMap();kpi()}
 resetForm();renderPopisi();refresh();
+let lastHr=hourFloor(Date.now());
+setInterval(()=>{const h=hourFloor(Date.now());if(h===lastHr)return;const a=document.activeElement;
+  if(a&&a.closest&&a.closest('#p-cv')&&/INPUT|TEXTAREA/.test(a.tagName))return;
+  lastHr=h;renderParts();renderCov();toast('Stanje je preračunato za novi sat')},15000);
 setInterval(()=>{const a=document.activeElement;if(!document.hidden&&!editId&&!(a&&a.closest&&a.closest('#p-cv')&&/INPUT|TEXTAREA/.test(a.tagName)))refresh()},60000);
 </script>
 </body>
