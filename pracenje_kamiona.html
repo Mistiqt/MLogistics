@@ -378,14 +378,14 @@ function drawMap(){trLayer.clearLayers();for(const k in mk)delete mk[k];
     mk[s.id]={s,m,rest,start,flip:HQ.lng<mo.lng};
     getRoute(s).then(r=>{if(r&&mk[s.id]&&mk[s.id].s===s)tickMap()})});
 }
-/* osvežavanje pomeranja bez ponovnog crtanja (svakih 20 s) */
+/* osvežavanje pomeranja bez ponovnog crtanja (svake 3 s) */
 function tickMap(){
   for(const id in mk){const o=mk[id],mo=motion(o.s);
     o.m.setLatLng([mo.lat,mo.lng]);o.rest.setLatLngs(mo.rest||[[o.s.lat,o.s.lng],[HQ.lat,HQ.lng]]);
     const fl=HQ.lng<mo.lng;if(fl!==o.flip){o.flip=fl;const el=o.m.getElement();if(el){const v=el.querySelector('.vh');if(v)v.classList.toggle('flip',fl)}}
     if(o.m.isPopupOpen())o.m.setPopupContent(popupHtml(o.s))}
   document.querySelectorAll('.est[data-id]').forEach(el=>{const s=ships.find(x=>x.id===el.dataset.id);if(s)el.innerHTML=estText(s)})}
-setInterval(tickMap,20000);
+setInterval(tickMap,3000);
 $('fit').onclick=()=>{const pts=[[HQ.lat,HQ.lng],...ships.filter(s=>s.status==='U tranzitu'&&isFinite(s.lat)).map(s=>{const m=motion(s);return[m.lat,m.lng]})];map.fitBounds(pts,{padding:[60,60],maxZoom:7})};
 
 function clearTmp(){if(tmpLayer){map.removeLayer(tmpLayer);tmpLayer=null}if(circle){map.removeLayer(circle);circle=null}$('mapinfo').classList.remove('on')}
