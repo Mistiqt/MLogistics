@@ -1,0 +1,2161 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magacin CAD v5.2 - Dizajner Layout-a Skladišta</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for CAD & Warehouse Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jsPDF for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        body {
+            user-select: none;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        canvas {
+            touch-action: none;
+        }
+        .tool-btn.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #60a5fa;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen flex flex-col">
+
+    <!-- TOP NAVBAR / HEADER -->
+    <header class="h-14 bg-slate-800 border-b border-slate-700 px-4 flex items-center justify-between z-10 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-600 p-2 rounded-lg text-white font-bold flex items-center gap-2">
+                <i class="fa-solid fa-boxes-packing text-lg"></i>
+                <span class="tracking-wide">MAGACIN<span class="text-blue-300 font-light">CAD</span></span>
+            </div>
+            <span class="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded border border-slate-600">v5.0 CAD</span>
+        </div>
+
+        <!-- QUICK CANVAS CONTROLS -->
+        <div class="flex items-center space-x-2 bg-slate-900 p-1 rounded-lg border border-slate-700">
+            <button id="btn-select" onclick="setMode('select')" class="tool-btn active px-2.5 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition" title="Selektuj i pomeraj objekat">
+                <i class="fa-solid fa-arrow-pointer"></i> Selektuj (S)
+            </button>
+            <button id="btn-measure-distance" onclick="setMode('measure_distance')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold hover:bg-slate-800" title="Klikni dve tačke da izmeriš razdaljinu">📏 Metri</button>
+            <button id="btn-measure-area" onclick="setMode('measure_area')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold hover:bg-slate-800" title="Klikni dva suprotna ugla za površinu">▧ m²</button>
+            <button id="btn-pan" onclick="setMode('pan')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition hover:bg-slate-800" title="Pomeraj platno">
+                <i class="fa-solid fa-hand"></i> Pomeraj (H)
+            </button>
+            <div class="h-4 w-[1px] bg-slate-700 my-auto"></div>
+            <button id="btn-draw-wall" onclick="setMode('draw_wall')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition hover:bg-slate-800">
+                <i class="fa-solid fa-vector-square"></i> Zid / Objekat
+            </button>
+            <button id="btn-draw-circle" onclick="setMode('draw_circle')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition hover:bg-slate-800">
+                <i class="fa-regular fa-circle"></i> Krug
+            </button>
+            <button id="btn-draw-line" onclick="setMode('draw_line')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition hover:bg-slate-800">
+                <i class="fa-solid fa-slash"></i> Linija
+            </button>
+            <button id="btn-draw-polyline" onclick="setMode('draw_polyline')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition hover:bg-slate-800" title="Linija sa više segmenta (Klik za tačke, Enter za kraj)">
+                <i class="fa-solid fa-route"></i> Polilinija
+            </button>
+        </div>
+
+        <!-- GROUPING & UTILITY ACTIONS -->
+        <div class="flex items-center space-x-2">
+            <button onclick="groupSelected()" title="Grupiši Selektovano (Ctrl+G)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600 flex items-center gap-1">
+                <i class="fa-solid fa-object-group"></i> Grupiši
+            </button>
+            <button onclick="ungroupSelected()" title="Razgrupiši (Ctrl+Shift+G)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600 flex items-center gap-1">
+                <i class="fa-solid fa-object-ungroup"></i> Razgrupiši
+            </button>
+
+            <div class="flex items-center bg-slate-900 rounded-lg border border-slate-700 px-2 py-1 text-xs space-x-2">
+                <label class="flex items-center gap-1 cursor-pointer select-none">
+                    <input type="checkbox" id="chk-grid" checked onchange="toggleGrid()" class="rounded bg-slate-800 border-slate-600 text-blue-600">
+                    <span class="text-slate-300">Mreža</span>
+                </label>
+                <span class="text-slate-600">|</span>
+                <label class="flex items-center gap-1 cursor-pointer select-none">
+                    <input type="checkbox" id="chk-snap" onchange="toggleSnap()" class="rounded bg-slate-800 border-slate-600 text-blue-600">
+                    <span class="text-slate-300">Snap</span>
+                </label>
+                <select id="snap-step" onchange="setSnapStep(this.value)" title="Korak preciznosti" class="bg-slate-800 text-xs rounded border border-slate-600">
+                    <option value="0.001">1 mm</option><option value="0.01">1 cm</option><option value="0.1">10 cm</option><option value="0.5">0.5 m</option><option value="1">1 m</option>
+                </select>
+                <button onclick="exactCAD()" class="bg-blue-700 px-2 py-1 rounded" title="Unesi tačne koordinate u metrima, do milimetra">Tačne koordinate</button>
+            </div>
+
+            <!-- TEMPLATES DROPDOWN -->
+            <select id="template-select" onchange="loadTemplate(this.value)" class="bg-slate-800 text-xs border border-slate-700 rounded-lg px-2 py-1.5 text-slate-200 outline-none focus:border-blue-500">
+                <option value="" disabled selected>-- Učitaj šablon --</option>
+                <option value="standard">Standardni Distributivni Centar</option>
+                <option value="crossdock">Cross-Docking Magacin</option>
+                <option value="robotics">Robotička Auto-Industrijska Hala</option>
+                <option value="clear">Prazan Magacin</option>
+            </select>
+
+            <!-- EXPORT / IMPORT -->
+            <button onclick="saveProject()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg">Sačuvaj projekat</button>
+            <label class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-1.5 rounded-lg cursor-pointer">Otvori projekat<input type="file" accept=".json" class="hidden" onchange="openProject(event)"></label>
+            <button onclick="exportPDF()" title="Sačuvaj PDF (Bela pozadina i čist tlocrt)" class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 transition shadow-lg shadow-red-900/40">
+                <i class="fa-solid fa-file-pdf"></i> Sačuvaj PDF
+            </button>
+            <label title="Učitaj CAD projekat (JSON)" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition shadow-lg shadow-emerald-900/40">
+                <i class="fa-solid fa-folder-open"></i> Učitaj PDF
+                <input type="file" id="file-input" accept=".json" onchange="openProject(event)" class="hidden">
+            </label>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE CONTAINER -->
+    <div class="flex flex-1 overflow-hidden relative">
+
+        <!-- LEFT SIDEBAR: PALETTE OF ELEMENTS -->
+        <aside class="w-64 bg-slate-800 border-r border-slate-700 flex flex-col shrink-0 select-none z-10">
+            <div class="p-3 border-b border-slate-700 font-semibold text-xs tracking-wider uppercase text-slate-400 flex justify-between items-center">
+                <span>Paleta Elemenata</span>
+                <i class="fa-solid fa-cubes text-slate-500"></i>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-3 space-y-4">
+
+                <!-- GEOMETRIJA & PROSTORIJE -->
+                <div>
+                    <h4 class="text-xs font-bold text-sky-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shapes"></i> Geometrija & Prostorije
+                    </h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div onclick="addPreset('office')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-sky-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-briefcase text-sky-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Kancelarija</span>
+                        </div>
+                        <div onclick="addPreset('toilet')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-cyan-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-restroom text-cyan-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Toalet (WC)</span>
+                        </div>
+                        <div onclick="addPreset('wc_fixture')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-cyan-500 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-toilet text-cyan-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">WC šolja (posebno)</span></div>
+                        <div onclick="addPreset('door')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-sky-500 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-door-open text-sky-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Vrata (CAD luk)</span></div>
+                        <div onclick="addPreset('circle')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-teal-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-regular fa-circle text-teal-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Krug / Stub</span>
+                        </div>
+                        <div onclick="setMode('draw_polyline')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-indigo-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-route text-indigo-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Polilinija</span>
+                        </div>
+                        <div onclick="promptCustomObject()" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-emerald-500 cursor-pointer flex flex-col items-center text-center group transition col-span-2">
+                            <i class="fa-solid fa-ruler-combined text-emerald-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Objekat po Dimenzijama</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROBOTIKA I AUTOMATIZACIJA -->
+                <div>
+                    <h4 class="text-xs font-bold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-robot"></i> Robotika & Auto-Ind
+                    </h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div onclick="addPreset('robot_comau')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-red-500 cursor-pointer flex flex-col items-center text-center group transition col-span-2">
+                            <i class="fa-solid fa-robot text-red-500 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Comau Ruka Robot</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CATEGORY: SKLADIŠTENJE & ZONE -->
+                <div>
+                    <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-warehouse"></i> Skladište & Zone
+                    </h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div onclick="addPreset('rack')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-blue-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-bars-staggered text-blue-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Paletni Regal</span>
+                        </div>
+                        <div onclick="addPreset('ground_storage')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-amber-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-boxes-stacked text-amber-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Parter Zona</span>
+                        </div>
+                        <div onclick="addPreset('zone_inbound')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-emerald-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-right-to-bracket text-emerald-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Prijemna Zona</span>
+                        </div>
+                        <div onclick="addPreset('zone_outbound')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-rose-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-right-from-bracket text-rose-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Otpremna Zona</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CATEGORY: SAOBRAĆAJ & OZNAKE -->
+                <div>
+                    <h4 class="text-xs font-bold text-yellow-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-road"></i> Saobraćaj & Oznake
+                    </h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div onclick="addPreset('road')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-yellow-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-road text-yellow-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Saobraćajnica</span>
+                        </div>
+                        <div onclick="addPreset('text')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-purple-400 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-font text-purple-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Tekst Oznaka</span>
+                        </div>
+                        <div onclick="addPreset('dock')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-purple-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-door-open text-purple-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Doking Rampa</span>
+                        </div>
+                        <div onclick="addPreset('truck')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-indigo-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-truck-front text-indigo-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Šleper</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DODATNI CAD SIMBOLI -->
+                <div><h4 class="text-xs font-bold text-cyan-400 uppercase mb-2">Pešaci, smer i oznake</h4><div class="grid grid-cols-2 gap-2"><div onclick="addPreset('pedestrian_path')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-person-walking text-cyan-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Pešačka staza</span></div><div onclick="addPreset('crosswalk')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-person-walking text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Pešački prelaz</span></div><div onclick="addPreset('direction_arrow')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-arrow-right text-green-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Strelica ulaz/izlaz</span></div><div onclick="addPreset('warning')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-triangle-exclamation text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Upozorenje</span></div><div onclick="addPreset('hydrant')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><span class="inline-flex bg-red-600 text-white font-black text-lg items-center justify-center w-6 h-6">H</span><span class="text-[11px] font-medium text-slate-300 mt-1">Hidrant</span></div></div></div>
+                <!-- CATEGORY: BEZBEDNOST -->
+                <div>
+                    <h4 class="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved"></i> Bezbednost & Oprema
+                    </h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div onclick="addPreset('forklift')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-amber-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-truck-pickup text-amber-500 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Viljuškar</span>
+                        </div>
+                        <div onclick="addPreset('extinguisher')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-red-400 cursor-pointer flex flex-col items-center text-center group transition">
+                            <span class="inline-flex bg-red-600 text-white font-black text-lg items-center justify-center w-6 h-6">H</span>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">PP Aparat</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- MINI STATS FOOTER -->
+            <div class="p-3 border-t border-slate-700 bg-slate-850 text-xs text-slate-400 space-y-1">
+                <div class="flex justify-between"><span>Ukupno Objekata:</span> <span id="stat-count" class="font-bold text-slate-200">0</span></div>
+                <div class="flex justify-between"><span>Ukupna Površina:</span> <span id="stat-area" class="font-bold text-emerald-400">0 m²</span></div>
+                <div class="flex justify-between"><span>Kapacitet Regala:</span> <span id="stat-capacity" class="font-bold text-blue-400">0 paleta</span></div>
+            </div>
+        </aside>
+
+        <!-- CENTER CANVAS WORKSPACE -->
+        <main class="flex-1 relative bg-slate-950 overflow-hidden flex items-center justify-center">
+            <canvas id="cadCanvas" class="w-full h-full cursor-crosshair"></canvas>
+
+            <!-- CANVAS OVERLAY TOOLBAR (ZOOM CONTROLS & HUD) -->
+            <div class="absolute bottom-4 left-4 bg-slate-800/90 backdrop-blur border border-slate-700 rounded-lg p-1.5 flex items-center space-x-2 text-xs shadow-xl text-slate-300">
+                <button onclick="zoomDelta(1.1)" title="Uvećaj (+)" class="w-7 h-7 flex items-center justify-center hover:bg-slate-700 rounded"><i class="fa-solid fa-plus"></i></button>
+                <button onclick="zoomDelta(0.9)" title="Umanji (-)" class="w-7 h-7 flex items-center justify-center hover:bg-slate-700 rounded"><i class="fa-solid fa-minus"></i></button>
+                <button onclick="fitDrawing()" title="Prikaži ceo nacrt" class="px-2 h-7 flex items-center justify-center hover:bg-slate-700 rounded font-medium">100%</button>
+                <span class="text-slate-600">|</span>
+                <span id="hud-coords" class="font-mono text-slate-400 px-1">X: 0.0m | Y: 0.0m</span>
+                <span class="text-slate-600">|</span>
+                <span id="hud-scale" class="font-mono text-slate-400">1m = 20px</span>
+            </div>
+
+            <!-- KEYBOARD SHORTCUTS HELP BOX -->
+            <div class="absolute top-4 right-4 bg-slate-800/80 backdrop-blur border border-slate-700 rounded-lg px-3 py-2 text-[11px] text-slate-400 shadow-xl pointer-events-none">
+                <div class="font-semibold text-slate-300 mb-1">Prečice:</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Delete</kbd> Obriši</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Shift + Drag</kbd> Box Selekcija</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+G / Ctrl+Shift+G</kbd> Grupa</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Enter / Esc</kbd> Završi Poliliniju</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">R</kbd> Rotiraj za 45°</div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR: PROPERTIES / INSPECTOR PANEL -->
+        <aside class="w-72 bg-slate-800 border-l border-slate-700 flex flex-col shrink-0 select-none z-10">
+            <div class="p-3 border-b border-slate-700 font-semibold text-xs tracking-wider uppercase text-slate-400 flex justify-between items-center">
+                <span>Inspektor Svojstava</span>
+                <i class="fa-solid fa-sliders text-slate-500"></i>
+            </div>
+
+            <div id="inspector-empty" class="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-500">
+                <i class="fa-solid fa-arrow-pointer text-4xl mb-3 opacity-40"></i>
+                <p class="text-xs">Izaberite elemenat, krug, liniju ili grupu na platnu za izmenu dimenzija, boje, debljine ili uvid u m².</p>
+            </div>
+
+            <div id="inspector-content" class="flex-1 overflow-y-auto p-4 space-y-4 hidden text-xs">
+                
+                <!-- CALCULATED AREA BOX -->
+                <div id="box-area-calc" class="bg-emerald-950/40 p-3 rounded-lg border border-emerald-700/50 flex items-center justify-between">
+                    <div>
+                        <div class="text-[10px] uppercase font-bold text-emerald-400">Izračunata Površina</div>
+                        <div id="prop-calculated-area" class="text-lg font-extrabold text-emerald-200">0.00 m²</div>
+                    </div>
+                    <i class="fa-solid fa-chart-area text-2xl text-emerald-500/50"></i>
+                </div>
+
+                <!-- TYPE & LABEL -->
+                <div class="space-y-1">
+                    <label class="font-semibold text-slate-400 uppercase tracking-wider text-[10px]">Naziv / Tekst Etikete</label>
+                    <input type="text" id="prop-label" oninput="updateSelectedProp('label', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-slate-100 outline-none focus:border-blue-500">
+                </div>
+
+                <!-- STROKE WIDTH & COLOR CONTROLS -->
+                <div class="border-t border-slate-700 pt-3 space-y-2">
+                    <h5 class="font-bold text-blue-400 uppercase tracking-wider text-[10px]">Podešavanje Izgleda i Linija</h5>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="font-semibold text-slate-400 text-[10px]">Boja Linije / Okvira</label>
+                            <div class="flex items-center gap-1.5 mt-1">
+                                <input type="color" id="prop-stroke-color" onchange="updateSelectedProp('strokeColor', this.value)" class="w-7 h-7 rounded bg-transparent border border-slate-700 cursor-pointer">
+                                <span id="prop-stroke-color-hex" class="font-mono text-[10px] text-slate-400">#3b82f6</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="font-semibold text-slate-400 text-[10px]">Boja Ispune</label>
+                            <div class="flex items-center gap-1.5 mt-1">
+                                <input type="color" id="prop-color" onchange="updateSelectedProp('color', this.value)" class="w-7 h-7 rounded bg-transparent border border-slate-700 cursor-pointer">
+                                <span id="prop-color-hex" class="font-mono text-[10px] text-slate-400">#3b82f6</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="fill-opacity-controls" class="space-y-1">
+                        <label class="font-semibold text-slate-400 text-[10px]">Providnost ispune: <span id="prop-opacity-value">100%</span></label>
+                        <input id="prop-opacity" type="range" min="0" max="100" step="5" value="100" class="w-full accent-blue-500" oninput="updateSelectedProp('fillOpacity', Number(this.value))">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 font-semibold mb-1">
+                            <span>Debljina Linije / Staze:</span>
+                            <span id="prop-stroke-width-val" class="text-blue-400 font-mono">2 px</span>
+                        </div>
+                        <input type="range" min="1" max="20" step="1" id="prop-stroke-width" oninput="updateSelectedProp('strokeWidth', parseInt(this.value))" class="w-full accent-blue-500 bg-slate-900 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- POSITION -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="font-semibold text-slate-400 uppercase tracking-wider text-[10px]">X Pozicija (m)</label>
+                        <input type="number" step="0.5" id="prop-x" onchange="updateSelectedProp('x_m', parseFloat(this.value))" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-slate-400 uppercase tracking-wider text-[10px]">Y Pozicija (m)</label>
+                        <input type="number" step="0.5" id="prop-y" onchange="updateSelectedProp('y_m', parseFloat(this.value))" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none">
+                    </div>
+                </div>
+
+                <!-- STANDARD DIMENSIONS (RECTANGLES/WALLS) -->
+                <div class="grid grid-cols-2 gap-2" id="dim-controls">
+                    <div>
+                        <label class="font-semibold text-slate-400 uppercase tracking-wider text-[10px]" id="lbl-width">Širina (m)</label>
+                        <input type="number" step="0.1" min="0.1" id="prop-width" onchange="updateSelectedProp('w_m', parseFloat(this.value))" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-slate-400 uppercase tracking-wider text-[10px]" id="lbl-height">Dužina (m)</label>
+                        <input type="number" step="0.1" min="0.1" id="prop-height" onchange="updateSelectedProp('h_m', parseFloat(this.value))" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none">
+                    </div>
+                </div>
+
+                <!-- CIRCLE SPECIFIC CONTROLS -->
+                <div id="circle-properties" class="space-y-2 hidden border-t border-slate-700 pt-3">
+                    <h5 class="font-bold text-teal-400 uppercase tracking-wider text-[10px]">Dimenzije Kruga</h5>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="font-semibold text-slate-400 text-[10px]">Prečnik d (m)</label>
+                            <input type="number" step="0.1" min="0.1" id="prop-diameter" onchange="updateCircleDimension('diameter', parseFloat(this.value))" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none">
+                        </div>
+                        <div>
+                            <label class="font-semibold text-slate-400 text-[10px]">Radijus r (m)</label>
+                            <input type="number" step="0.1" min="0.05" id="prop-radius" onchange="updateCircleDimension('radius', parseFloat(this.value))" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROTATION ANGLE -->
+                <div id="box-rotation">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="font-semibold text-slate-400 uppercase tracking-wider text-[10px]">Ugao Rotacije</label>
+                        <span id="prop-angle-val" class="text-slate-400 font-mono">0°</span>
+                    </div>
+                    <input type="range" min="0" max="360" step="5" id="prop-angle" oninput="updateSelectedProp('angle', parseInt(this.value))" class="w-full accent-blue-500 bg-slate-900 cursor-pointer">
+                </div>
+
+                <!-- RACK SPECIFIC PROPERTIES -->
+                <div id="rack-properties" class="border-t border-slate-700 pt-3 space-y-3 hidden">
+                    <h5 class="font-bold text-blue-400 uppercase tracking-wider text-[10px]">Specifično za Regal</h5>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="font-semibold text-slate-400 text-[10px]">Broj Nivoa</label>
+                            <input type="number" min="1" max="10" id="prop-levels" onchange="updateSelectedProp('levels', parseInt(this.value))" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none">
+                        </div>
+                        <div>
+                            <label class="font-semibold text-slate-400 text-[10px]">Paleta po Nivou</label>
+                            <input type="number" min="1" max="20" id="prop-pallets" onchange="updateSelectedProp('palletsPerLevel', parseInt(this.value))" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none">
+                        </div>
+                    </div>
+                    <div><label class="font-semibold text-slate-400 text-[10px]">Broj vertikala / polja regala</label><input type="number" min="1" max="200" id="prop-verticals" onchange="updateSelectedProp('verticals', parseInt(this.value))" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none"></div>
+                    <div class="bg-blue-950/40 p-2 rounded border border-blue-800/50 text-blue-300 text-[11px] flex justify-between">
+                        <span>Ukupan Kapacitet:</span>
+                        <strong id="prop-total-pallets">0 paletnih mesta</strong>
+                    </div>
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="border-t border-slate-700 pt-3 space-y-2">
+                    <button onclick="duplicateSelected()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-100 py-1.5 rounded font-medium flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-clone"></i> Dupliraj Objekat
+                    </button>
+                    <button onclick="deleteSelected()" class="w-full bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 py-1.5 rounded font-medium flex items-center justify-center gap-1.5 transition">
+                        <i class="fa-solid fa-trash-can"></i> Obriši Objekat
+                    </button>
+                </div>
+
+            </div>
+        </aside>
+    </div>
+
+    <!-- MAIN APPLICATION SCRIPT -->
+    <script>
+        const CANVAS = document.getElementById('cadCanvas');
+        const CTX = CANVAS.getContext('2d');
+        const PIXELS_PER_METER = 20;
+
+        let mode = 'select';
+        let gridEnabled = true;
+        let snapEnabled = false;
+        let snapGridSize = 0.001;
+
+        let zoom = 1.0;
+        let panX = 100;
+        let panY = 100;
+
+        let isPanning = false;
+        let startPanX = 0, startPanY = 0;
+        
+        let isDragging = false;
+        let dragOffsetX = 0, dragOffsetY = 0;
+
+        let isTransforming = false;
+        let transformType = null;
+
+        let isBoxSelecting = false;
+        let boxSelectStartWorld = null;
+        let boxSelectEndWorld = null;
+
+        let currentDrawingObj = null;
+        let drawingStart = {x:0,y:0};
+        let activePolylinePoints = [];
+        let polylineHoverPoint = null;
+
+        let objects = [];
+        let selectedObjectIds = [];
+
+        function generateId() {
+            return 'obj_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function resizeCanvas() {
+            const rect = CANVAS.parentElement.getBoundingClientRect();
+            CANVAS.width = rect.width;
+            CANVAS.height = rect.height;
+            requestAnimationFrame(() => draw());
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        let measureStart=null, measureEnd=null, measureHover=null;
+        function setMode(newMode) {
+            measureStart=null;measureEnd=null;measureHover=null;
+
+            if (mode === 'draw_polyline' && activePolylinePoints.length > 1) {
+                finishPolyline();
+            }
+
+            polylineHoverPoint = null;
+            mode = newMode;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById(`btn-${newMode.replace('_', '-')}`);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            if (mode === 'pan') {
+                CANVAS.style.cursor = 'grab';
+            } else if (mode.startsWith('draw') || mode.startsWith('measure_')) {
+                CANVAS.style.cursor = 'crosshair';
+            } else {
+                CANVAS.style.cursor = 'default';
+            }
+        }
+
+        function toggleGrid() {
+            gridEnabled = document.getElementById('chk-grid').checked;
+            requestAnimationFrame(() => draw());
+        }
+
+        function toggleSnap() {
+            snapEnabled = document.getElementById('chk-snap').checked;
+        }
+
+        function setSnapStep(value) { snapGridSize = Number(value); }
+        function exactCAD() {
+            const parsePoint = (raw) => {
+                if (raw === null) return null;
+                const parts = raw.trim().replace(/;/g, ',').split(',').map(v => Number(v.trim()));
+                if (parts.length !== 2 || !parts.every(Number.isFinite)) { alert('Unesi X,Y, na primer 12.345,7.890'); return null; }
+                return {x: parts[0], y: parts[1]};
+            };
+            const a = parsePoint(prompt('Početna tačka X,Y u metrima (3 decimale = 1 mm):', '0,0'));
+            if (!a) return;
+            const b = parsePoint(prompt('Krajnja tačka X,Y u metrima:', '3.250,2.125'));
+            if (!b) return;
+            const dx=b.x-a.x, dy=b.y-a.y;
+            const length=Math.hypot(dx,dy);
+            if (mode === 'measure_distance' || mode === 'measure_area') {
+                measureStart=a; measureEnd=b; measureHover=null;
+                draw();
+                alert(mode === 'measure_area' ? `Pravougaona površina: ${(Math.abs(dx*dy)).toFixed(6)} m²\nŠirina: ${Math.abs(dx).toFixed(3)} m; dužina: ${Math.abs(dy).toFixed(3)} m` : `Dužina: ${length.toFixed(3)} m (${(length*1000).toFixed(0)} mm)\nΔX=${dx.toFixed(3)} m, ΔY=${dy.toFixed(3)} m`);
+                return;
+            }
+            if (mode === 'draw_polyline') {
+                activePolylinePoints.push(a,b); finishPolyline(); return;
+            }
+            const type=mode === 'draw_wall' ? 'wall' : mode === 'draw_circle' ? 'circle' : 'line';
+            const o={id:generateId(),type,x_m:Math.min(a.x,b.x),y_m:Math.min(a.y,b.y),w_m:Math.max(.001,Math.abs(dx)),h_m:Math.max(.001,Math.abs(dy)),angle:0,color:'#3b82f6',strokeColor:'#60a5fa',strokeWidth:2,label:type==='line'?'Linija':type==='wall'?'Zid':'Krug',zIndex:objects.length};
+            if(type==='line') o.lineReverse=(dx*dy<0);
+            objects.push(o); selectedObjectIds=[o.id]; setMode('select');updateInspector();updateStats();draw();
+            alert(`Uneto: ΔX=${dx.toFixed(3)} m, ΔY=${dy.toFixed(3)} m, dijagonala=${length.toFixed(3)} m`);
+        }
+
+        function screenToWorld(screenX, screenY) {
+            const worldX = (screenX - panX) / (PIXELS_PER_METER * zoom);
+            const worldY = (screenY - panY) / (PIXELS_PER_METER * zoom);
+            
+            if (snapEnabled) {
+                return {
+                    x: Math.round(worldX / snapGridSize) * snapGridSize,
+                    y: Math.round(worldY / snapGridSize) * snapGridSize
+                };
+            }
+            return { x: worldX, y: worldY };
+        }
+
+        function worldToScreen(worldX, worldY) {
+            return {
+                x: worldX * PIXELS_PER_METER * zoom + panX,
+                y: worldY * PIXELS_PER_METER * zoom + panY
+            };
+        }
+
+        function addPreset(type) {
+            const centerWorld = screenToWorld(CANVAS.width / 2, CANVAS.height / 2);
+            let newObj = {
+                id: generateId(),
+                type: type,
+                x_m: centerWorld.x,
+                y_m: centerWorld.y,
+                w_m: 2,
+                h_m: 2,
+                angle: 0,
+                color: '#3b82f6',
+                strokeColor: '#60a5fa',
+                strokeWidth: 2,
+                label: 'Novi Elemenat',
+                zIndex: objects.length
+            };
+
+            switch (type) {
+                case 'circle':
+                    newObj.w_m = 3.0;
+                    newObj.h_m = 3.0;
+                    newObj.color = '#14b8a6';
+                    newObj.strokeColor = '#2dd4bf';
+                    newObj.label = 'Krug / Stub';
+                    break;
+                case 'door':
+                    newObj.w_m = 1.0; newObj.h_m = 1.0; newObj.color = '#64748b'; newObj.strokeColor = '#e2e8f0'; newObj.label = ''; break;
+                case 'office':
+                    newObj.w_m = 6.0;
+                    newObj.h_m = 4.0;
+                    newObj.color = '#0284c7';
+                    newObj.strokeColor = '#38bdf8';
+                    newObj.label = 'Kancelarija';
+                    break;
+                case 'wc_fixture':
+                    Object.assign(newObj,{w_m:0.7,h_m:1.1,color:'#e2e8f0',strokeColor:'#e2e8f0',label:''});
+                    break;
+                case 'toilet':
+                    newObj.w_m = 3.0;
+                    newObj.h_m = 3.0;
+                    newObj.color = '#0891b2';
+                    newObj.strokeColor = '#22d3ee';
+                    newObj.label = 'Toalet (WC)';
+                    break;
+                case 'robot_comau':
+                    newObj.w_m = 2.5;
+                    newObj.h_m = 2.5;
+                    newObj.color = '#dc2626';
+                    newObj.strokeColor = '#f87171';
+                    newObj.label = 'Comau Robot';
+                    break;
+                case 'pedestrian_path':
+                    Object.assign(newObj,{w_m:2,h_m:10,color:'#ffffff',strokeColor:'#ffffff',label:'Pešačka staza'});break;
+                case 'crosswalk':
+                    Object.assign(newObj,{w_m:3,h_m:4,color:'#f8fafc',strokeColor:'#facc15',label:'Pešački prelaz'});break;
+                case 'direction_arrow':
+                    Object.assign(newObj,{w_m:4,h_m:1.5,color:'#22c55e',strokeColor:'#4ade80',label:'ULAZ'});break;
+                case 'warning':
+                    Object.assign(newObj,{w_m:1.5,h_m:1.5,color:'#facc15',strokeColor:'#f59e0b',label:'Upozorenje'});break;
+                case 'hydrant':
+                    Object.assign(newObj,{w_m:1.2,h_m:1.2,color:'#ef4444',strokeColor:'#f87171',label:'HIDRANT'});break;
+                case 'text':
+                    newObj.w_m = 4.0;
+                    newObj.h_m = 1.0;
+                    newObj.color = '#c084fc';
+                    newObj.strokeColor = '#e879f9';
+                    newObj.label = 'Tekst Oznaka';
+                    newObj.transparent = true;
+                    break;
+                case 'rack':
+                    newObj.w_m = 1.2;
+                    newObj.h_m = 6.0;
+                    newObj.color = '#2563eb';
+                    newObj.strokeColor = '#60a5fa';
+                    newObj.label = 'Paletni Regal R1';
+                    newObj.levels = 4;
+                    newObj.palletsPerLevel = 6;
+                    newObj.verticals = 6;
+                    break;
+                case 'ground_storage':
+                    newObj.w_m = 5.0;
+                    newObj.h_m = 8.0;
+                    newObj.color = '#d97706';
+                    newObj.strokeColor = '#fbbf24';
+                    newObj.label = 'Parter Blok A';
+                    break;
+                case 'zone_inbound':
+                    newObj.w_m = 8.0;
+                    newObj.h_m = 5.0;
+                    newObj.color = '#10b981';
+                    newObj.strokeColor = '#34d399';
+                    newObj.label = 'Zona Prijema';
+                    break;
+                case 'zone_outbound':
+                    newObj.w_m = 8.0;
+                    newObj.h_m = 5.0;
+                    newObj.color = '#f43f5e';
+                    newObj.strokeColor = '#fb7185';
+                    newObj.label = 'Zona Otpreme';
+                    break;
+                case 'road':
+                    newObj.w_m = 4.0;
+                    newObj.h_m = 12.0;
+                    newObj.color = '#334155';
+                    newObj.strokeColor = '#eab308';
+                    newObj.label = 'Saobraćajnica';
+                    break;
+                case 'dock':
+                    newObj.w_m = 3.5;
+                    newObj.h_m = 2.0;
+                    newObj.color = '#9333ea';
+                    newObj.strokeColor = '#c084fc';
+                    newObj.label = 'Rampa #1';
+                    break;
+                case 'truck':
+                    newObj.w_m = 2.6;
+                    newObj.h_m = 13.6;
+                    newObj.color = '#6366f1';
+                    newObj.strokeColor = '#818cf8';
+                    newObj.label = 'Šleper (13.6m)';
+                    break;
+                case 'forklift':
+                    newObj.w_m = 1.2;
+                    newObj.h_m = 2.2;
+                    newObj.color = '#f59e0b';
+                    newObj.strokeColor = '#fbbf24';
+                    newObj.label = 'Viljuškar #1';
+                    break;
+                case 'extinguisher':
+                    newObj.w_m = 0.6;
+                    newObj.h_m = 0.6;
+                    newObj.color = '#ef4444';
+                    newObj.strokeColor = '#ffffff';
+                    newObj.label = 'PP Aparat';
+                    break;
+            }
+
+            objects.push(newObj);
+            selectedObjectIds = [newObj.id];
+            updateInspector();
+            updateStats();
+            requestAnimationFrame(() => draw());
+        }
+
+        function promptCustomObject() {
+            const w = parseFloat(prompt("Unesite ŠIRINU objekta u metrima (m):", "5.0"));
+            if (isNaN(w) || w <= 0) return;
+            const h = parseFloat(prompt("Unesite DUŽINU objekta u metrima (m):", "4.0"));
+            if (isNaN(h) || h <= 0) return;
+            const name = prompt("Unesite naziv/etiketu objekta:", "Prilagođeni Objekat") || "Objekat";
+
+            const centerWorld = screenToWorld(CANVAS.width / 2, CANVAS.height / 2);
+            let newObj = {
+                id: generateId(),
+                type: 'rect',
+                x_m: centerWorld.x,
+                y_m: centerWorld.y,
+                w_m: w,
+                h_m: h,
+                angle: 0,
+                color: '#059669',
+                strokeColor: '#34d399',
+                strokeWidth: 2,
+                label: name,
+                zIndex: objects.length
+            };
+
+            objects.push(newObj);
+            selectedObjectIds = [newObj.id];
+            updateInspector();
+            updateStats();
+            requestAnimationFrame(() => draw());
+        }
+
+        function draw(forExport = false) {
+            // requestAnimationFrame prosledjuje timestamp; nikad ga ne tretirati kao PDF rezim.
+            forExport = (forExport === true);
+            CTX.save();
+            CTX.setTransform(1, 0, 0, 1, 0, 0);
+            
+            if (forExport) {
+                // Za PDF izvoz: Čisto bela pozadina
+                CTX.fillStyle = '#ffffff';
+                CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+            } else {
+                // Dok radimo u programu: Crna pozadina u AutoCAD stilu
+                CTX.fillStyle = '#020817'; // Tamna CAD podloga
+                CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+                
+                if (gridEnabled) {
+                    drawGrid();
+                }
+            }
+            CTX.restore();
+
+            const sortedObjects = [...objects].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+
+            sortedObjects.forEach(obj => {
+                drawObject(obj, false, forExport);
+            });
+
+            if (forExport) return;
+
+            if (currentDrawingObj) {
+                drawObject(currentDrawingObj, true, false);
+                drawLiveDimensions(currentDrawingObj);
+            }
+            if (isTransforming && transformType === 'resize' && selectedObjectIds.length === 1) {
+                const resizing = objects.find(o => o.id === selectedObjectIds[0]);
+                if (resizing) drawLiveDimensions(resizing);
+            }
+
+            if (mode === 'draw_polyline' && activePolylinePoints.length > 0) {
+                drawActivePolylinePreview();
+            }
+
+            if (mode === 'select' && selectedObjectIds.length > 0) {
+                selectedObjectIds.forEach(id => {
+                    const selected = objects.find(o => o.id === id);
+                    if (selected) drawSelectionControls(selected);
+                });
+            }
+
+            if (isBoxSelecting && boxSelectStartWorld && boxSelectEndWorld) {
+                drawBoxSelectOverlay();
+            }
+            drawMeasurement();
+        }
+
+        function drawMeasurement(){
+            if(!measureStart || !mode.startsWith('measure_'))return;
+            const end=measureEnd||measureHover;if(!end)return;
+            const a=worldToScreen(measureStart.x,measureStart.y),b=worldToScreen(end.x,end.y);
+            CTX.save();CTX.strokeStyle='#facc15';CTX.lineWidth=2;CTX.setLineDash([7,4]);
+            if(mode==='measure_area'){
+                CTX.fillStyle='rgba(250,204,21,.13)';CTX.fillRect(a.x,a.y,b.x-a.x,b.y-a.y);
+                CTX.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);
+            }else{CTX.beginPath();CTX.moveTo(a.x,a.y);CTX.lineTo(b.x,b.y);CTX.stroke()}
+            CTX.setLineDash([]);
+            const dx=end.x-measureStart.x,dy=end.y-measureStart.y;
+            const result=mode==='measure_area'?`${Math.abs(dx*dy).toFixed(2)} m²  (${Math.abs(dx).toFixed(2)} × ${Math.abs(dy).toFixed(2)} m)`:`${Math.hypot(dx,dy).toFixed(3)} m / ${(Math.hypot(dx,dy)*1000).toFixed(0)} mm`;
+            CTX.font='bold 14px sans-serif';const tw=CTX.measureText(result).width;
+            const tx=(a.x+b.x)/2,ty=(a.y+b.y)/2-15;
+            CTX.fillStyle='#111827';CTX.fillRect(tx-tw/2-8,ty-15,tw+16,23);
+            CTX.fillStyle='#fde047';CTX.textAlign='center';CTX.fillText(result,tx,ty+1);CTX.restore();
+        }
+        function drawGrid() {
+            CTX.save();
+            const meterPixels = PIXELS_PER_METER * zoom * (zoom < 0.45 ? 5 : 1);
+            
+            const startX = ((panX % meterPixels) + meterPixels) % meterPixels;
+            const startY = ((panY % meterPixels) + meterPixels) % meterPixels;
+
+            // AutoCAD stil tanke i precizne linije mreže na crnoj podlozi
+            CTX.lineWidth = 0.8;
+            CTX.strokeStyle = 'rgba(95, 125, 175, 0.22)';
+            
+            CTX.beginPath();
+            for (let x = startX; x < CANVAS.width; x += meterPixels) {
+                CTX.moveTo(x, 0);
+                CTX.lineTo(x, CANVAS.height);
+            }
+            for (let y = startY; y < CANVAS.height; y += meterPixels) {
+                CTX.moveTo(0, y);
+                CTX.lineTo(CANVAS.width, y);
+            }
+            CTX.stroke();
+
+            // Glavne 5m linije mreže
+            const majorPixels = meterPixels * 5;
+            const majorStartX = ((panX % majorPixels) + majorPixels) % majorPixels;
+            const majorStartY = ((panY % majorPixels) + majorPixels) % majorPixels;
+
+            CTX.strokeStyle = 'rgba(105, 145, 205, 0.36)';
+            CTX.beginPath();
+            for (let x = majorStartX; x < CANVAS.width; x += majorPixels) {
+                CTX.moveTo(x, 0);
+                CTX.lineTo(x, CANVAS.height);
+            }
+            for (let y = majorStartY; y < CANVAS.height; y += majorPixels) {
+                CTX.moveTo(0, y);
+                CTX.lineTo(CANVAS.width, y);
+            }
+            CTX.stroke();
+
+            CTX.restore();
+        }
+
+        // PP aparat: vektorska silueta, nezavisna od ikonica/fontova.
+        function drawExtinguisherCanvas(ctx,w,h,forExport) {
+            const k=Math.min(w/44,h/68);
+            ctx.save();ctx.scale(k,k);
+            ctx.fillStyle='#dc2626';ctx.strokeStyle=forExport?'#991b1b':'#fecaca';ctx.lineWidth=2;
+            ctx.beginPath();ctx.roundRect(-14,-21,28,46,4);ctx.fill();ctx.stroke();
+            ctx.fillStyle='#f8fafc';ctx.fillRect(-9,-9,18,24);
+            ctx.fillStyle='#dc2626';ctx.fillRect(-6,-5,12,16);
+            ctx.strokeStyle='#f8fafc';ctx.lineWidth=3;
+            ctx.beginPath();ctx.moveTo(-8,-22);ctx.lineTo(-8,-30);ctx.lineTo(9,-30);ctx.stroke();
+            ctx.fillStyle='#f8fafc';ctx.fillRect(-4,-34,17,5);
+            ctx.strokeStyle='#f8fafc';ctx.lineWidth=3;
+            ctx.beginPath();ctx.moveTo(13,-19);ctx.bezierCurveTo(24,-17,22,-5,19,0);ctx.stroke();
+            ctx.fillStyle='#f8fafc';ctx.fillRect(-12,25,24,4);
+            ctx.restore();
+        }
+        function drawObject(obj, isPreview = false, forExport = false) {
+            if (!obj) return;
+            CTX.save();
+            
+            const screen = worldToScreen(obj.x_m, obj.y_m);
+            const w = obj.w_m * PIXELS_PER_METER * zoom;
+            const h = obj.h_m * PIXELS_PER_METER * zoom;
+
+            CTX.translate(screen.x + w / 2, screen.y + h / 2);
+            CTX.rotate((obj.angle * Math.PI) / 180);
+
+            if (isPreview) {
+                CTX.globalAlpha = 0.6;
+            }
+
+            const strokeW = obj.strokeWidth || 2;
+            const strokeC = obj.strokeColor || '#60a5fa';
+
+            switch (obj.type) {
+                case 'text':
+                    // Samo natpis, bez pravougaonika i ispune.
+                    break;
+                case 'pedestrian_path': {
+                    CTX.fillStyle='rgba(255,255,255,0.50)';CTX.fillRect(-w/2,-h/2,w,h);
+                    CTX.strokeStyle=forExport?'#64748b':'rgba(255,255,255,.85)';CTX.lineWidth=1.5;CTX.setLineDash([8,5]);CTX.strokeRect(-w/2,-h/2,w,h);CTX.setLineDash([]);
+                    // Simbol je u pikselima fiksne veličine, nezavisan od širine/dužine staze.
+                    const count=Math.max(1,Math.ceil(obj.h_m/50));
+                    for(let i=0;i<count;i++){
+                        const yy=-h/2+h*(i+.5)/count;
+                        CTX.save();CTX.translate(0,yy);
+                        const k=Math.min(1,Math.max(.25,w/32));CTX.scale(k,k);
+                        CTX.strokeStyle=forExport?'#111827':'#0f172a';CTX.lineWidth=2.4;CTX.lineCap='round';
+                        CTX.beginPath();CTX.arc(0,-9,3,0,Math.PI*2);CTX.stroke();
+                        CTX.beginPath();CTX.moveTo(0,-6);CTX.lineTo(0,5);CTX.moveTo(0,-2);CTX.lineTo(-6,3);CTX.moveTo(0,-2);CTX.lineTo(6,2);CTX.moveTo(0,5);CTX.lineTo(-5,13);CTX.moveTo(0,5);CTX.lineTo(6,12);CTX.stroke();CTX.restore();
+                    }
+                    break;
+                }
+                case 'crosswalk':
+                    CTX.strokeStyle=strokeC;CTX.lineWidth=strokeW;CTX.strokeRect(-w/2,-h/2,w,h);
+                    CTX.fillStyle=forExport?'#334155':'#f8fafc';
+                    for(let i=0;i<5;i++)CTX.fillRect(-w*.42,-h*.43+i*h*.18,w*.84,h*.10);
+                    break;
+                case 'direction_arrow':
+                    CTX.fillStyle=forExport?'#15803d':(obj.color||'#22c55e');CTX.beginPath();
+                    CTX.moveTo(-w/2,-h*.18);CTX.lineTo(w*.15,-h*.18);CTX.lineTo(w*.15,-h*.43);CTX.lineTo(w/2,0);CTX.lineTo(w*.15,h*.43);CTX.lineTo(w*.15,h*.18);CTX.lineTo(-w/2,h*.18);CTX.closePath();CTX.fill();break;
+                case 'warning':
+                    CTX.fillStyle='#facc15';CTX.strokeStyle='#b45309';CTX.lineWidth=strokeW;
+                    CTX.beginPath();CTX.moveTo(0,-h*.47);CTX.lineTo(w*.48,h*.43);CTX.lineTo(-w*.48,h*.43);CTX.closePath();CTX.fill();CTX.stroke();
+                    CTX.fillStyle='#111827';CTX.font=`bold ${Math.max(12,Math.min(w,h)*.62)}px sans-serif`;CTX.textAlign='center';CTX.textBaseline='middle';CTX.fillText('!',0,h*.12);break;
+                case 'extinguisher': {
+                    drawExtinguisherCanvas(CTX,w,h,forExport);
+                    break;
+                }
+                case 'hydrant': {
+                    const side=Math.min(w,h);
+                    CTX.fillStyle='#dc2626';CTX.fillRect(-w/2,-h/2,w,h);
+                    CTX.fillStyle='#ffffff';CTX.font=`900 ${Math.max(9,side*.72)}px Arial,sans-serif`;
+                    CTX.textAlign='center';CTX.textBaseline='middle';CTX.fillText('H',0,side*.025);
+                    break;
+                }
+                case 'circle':
+                    const radius = w / 2;
+                    CTX.fillStyle = obj.color ? `${obj.color}44` : 'rgba(20, 184, 166, 0.25)';
+                    CTX.beginPath();
+                    CTX.arc(0, 0, radius, 0, Math.PI * 2);
+                    CTX.fill();
+                    CTX.strokeStyle = strokeC;
+                    CTX.lineWidth = strokeW;
+                    CTX.stroke();
+                    break;
+
+                case 'polyline':
+                    if (obj.points && obj.points.length > 1) {
+                        CTX.strokeStyle = strokeC;
+                        CTX.lineWidth = strokeW;
+                        CTX.beginPath();
+                        obj.points.forEach((pt, index) => {
+                            const px = (pt.x - obj.w_m / 2) * PIXELS_PER_METER * zoom;
+                            const py = (pt.y - obj.h_m / 2) * PIXELS_PER_METER * zoom;
+                            if (index === 0) CTX.moveTo(px, py);
+                            else CTX.lineTo(px, py);
+                        });
+                        CTX.stroke();
+                    }
+                    break;
+
+                case 'group':
+                    if (obj.children && Array.isArray(obj.children)) {
+                        obj.children.forEach(child => {
+                             const absolute = {...child, x_m: obj.x_m + child.x_m, y_m: obj.y_m + child.y_m};
+                             drawObject(absolute, false, forExport);
+                         });
+                    }
+                    break;
+
+                case 'wall':
+                case 'rect':
+                    CTX.fillStyle = obj.color || '#475569';
+                    CTX.globalAlpha *= ((obj.fillOpacity ?? 100)/100);
+                    CTX.fillRect(-w/2, -h/2, w, h);
+                    CTX.globalAlpha = isPreview ? 0.6 : 1;
+                    CTX.strokeStyle = strokeC;
+                    CTX.lineWidth = strokeW;
+                    CTX.strokeRect(-w/2, -h/2, w, h);
+                    break;
+
+                case 'line':
+                    CTX.strokeStyle = strokeC;
+                    CTX.lineWidth = strokeW;
+                    CTX.beginPath();
+                    CTX.moveTo(-w/2, obj.lineReverse ? h/2 : -h/2);
+                    CTX.lineTo(w/2, obj.lineReverse ? -h/2 : h/2);
+                    CTX.stroke();
+                    break;
+
+                case 'door': {
+                    // CAD vrata: šarka u donjem levom uglu, krilo otvoreno 90°, luk otvaranja.
+                    const radius=Math.max(1,Math.min(w,h));
+                    CTX.strokeStyle=forExport?'#334155':'#e2e8f0'; CTX.lineWidth=Math.max(1.3,strokeW);
+                    CTX.beginPath();CTX.moveTo(-w/2,-h/2);CTX.lineTo(-w/2,-h/2+radius);CTX.stroke();
+                    CTX.beginPath();CTX.arc(-w/2,-h/2+radius,radius,-Math.PI/2,0,false);CTX.stroke();
+                    CTX.beginPath();CTX.moveTo(-w/2,-h/2+radius);CTX.lineTo(-w/2+radius,-h/2+radius);CTX.stroke();
+                    CTX.beginPath();CTX.arc(-w/2,-h/2+radius,2.5,0,Math.PI*2);CTX.fillStyle=forExport?'#334155':'#e2e8f0';CTX.fill();
+                    break;
+                }
+                case 'office': {
+                    CTX.fillStyle=obj.color||'#0284c7';CTX.globalAlpha*=((obj.fillOpacity ?? 40)/100);
+                    CTX.fillRect(-w/2,-h/2,w,h);CTX.globalAlpha=1;
+                    CTX.strokeStyle=forExport?'#334155':strokeC;CTX.lineWidth=strokeW;CTX.strokeRect(-w/2,-h/2,w,h);
+                    // Sto i stolica imaju fiksnu velicinu i ne rastezu se sa prostorijom.
+                    const k=Math.min(1,Math.max(.35,Math.min(w,h)/78));
+                    CTX.save();CTX.scale(k,k);CTX.translate(0,-9);
+                    CTX.strokeStyle=forExport?'#334155':'#e2e8f0';CTX.lineWidth=2.2;
+                    CTX.strokeRect(-18,-15,36,19);CTX.beginPath();CTX.moveTo(-14,4);CTX.lineTo(-14,10);CTX.moveTo(14,4);CTX.lineTo(14,10);CTX.stroke();
+                    CTX.strokeRect(-10,17,20,11);CTX.beginPath();CTX.moveTo(-13,15);CTX.lineTo(-13,29);CTX.moveTo(13,15);CTX.lineTo(13,29);CTX.stroke();
+                    CTX.restore();break;
+                }
+                case 'toilet': {
+                    CTX.fillStyle=obj.color||'#0891b2';CTX.globalAlpha*=((obj.fillOpacity ?? 40)/100);
+                    CTX.fillRect(-w/2,-h/2,w,h);CTX.globalAlpha=1;
+                    CTX.strokeStyle=forExport?'#334155':strokeC;CTX.lineWidth=strokeW;CTX.strokeRect(-w/2,-h/2,w,h);
+                    break;
+                }
+                case 'wc_fixture': {
+                    const k=Math.min(w/42,h/62);
+                    CTX.save();CTX.scale(k,k);
+                    CTX.strokeStyle=forExport?'#334155':'#e2e8f0';CTX.lineWidth=2.6;
+                    CTX.strokeRect(-13,-26,26,12);
+                    CTX.beginPath();CTX.ellipse(0,6,15,22,0,0,Math.PI*2);CTX.stroke();
+                    CTX.beginPath();CTX.ellipse(0,6,8,13,0,0,Math.PI*2);CTX.stroke();
+                    CTX.restore();break;
+                }
+
+                case 'robot_comau':
+                    const rRob = Math.min(w, h) / 2;
+                    CTX.fillStyle = '#1e293b';
+                    CTX.beginPath();
+                    CTX.arc(0, 0, rRob * 0.8, 0, Math.PI * 2);
+                    CTX.fill();
+                    CTX.strokeStyle = strokeC;
+                    CTX.lineWidth = strokeW;
+                    CTX.stroke();
+
+                    CTX.fillStyle = obj.color || '#dc2626';
+                    CTX.beginPath();
+                    CTX.arc(0, 0, rRob * 0.5, 0, Math.PI * 2);
+                    CTX.fill();
+
+                    CTX.strokeStyle = '#e2e8f0';
+                    CTX.lineWidth = 4;
+                    CTX.beginPath();
+                    CTX.moveTo(0, 0);
+                    CTX.lineTo(rRob * 0.7, -rRob * 0.5);
+                    CTX.stroke();
+
+                    CTX.fillStyle = '#f59e0b';
+                    CTX.fillRect(rRob * 0.6, -rRob * 0.6, rRob * 0.3, rRob * 0.2);
+                    break;
+
+                case 'rack':
+                    CTX.fillStyle = 'rgba(37, 99, 235, 0.2)';
+                    CTX.fillRect(-w/2, -h/2, w, h);
+                    CTX.strokeStyle = strokeC;
+                    CTX.lineWidth = strokeW;
+                    CTX.strokeRect(-w/2, -h/2, w, h);
+
+                    const numBeams = Math.max(1, Math.round(obj.verticals || Math.floor(obj.h_m / 1.5)));
+                    CTX.strokeStyle = '#60a5fa';
+                    CTX.lineWidth = 1;
+                    for (let i = 1; i < numBeams; i++) {
+                        let yPos = -h/2 + (h / numBeams) * i;
+                        CTX.beginPath();
+                        CTX.moveTo(-w/2, yPos);
+                        CTX.lineTo(w/2, yPos);
+                        CTX.stroke();
+                    }
+                    break;
+
+                case 'ground_storage':
+                    CTX.fillStyle = 'rgba(217, 119, 6, 0.15)';
+                    CTX.fillRect(-w/2, -h/2, w, h);
+                    CTX.strokeStyle = strokeC;
+                    CTX.lineWidth = strokeW;
+                    CTX.setLineDash([6, 4]);
+                    CTX.strokeRect(-w/2, -h/2, w, h);
+                    CTX.setLineDash([]);
+                    break;
+
+                case 'zone_inbound':
+                case 'zone_outbound':
+                    CTX.fillStyle = obj.type === 'zone_inbound' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)';
+                    CTX.fillRect(-w/2, -h/2, w, h);
+                    CTX.strokeStyle = strokeC;
+                    CTX.lineWidth = strokeW;
+                    CTX.strokeRect(-w/2, -h/2, w, h);
+                    break;
+
+                case 'road':
+                    CTX.fillStyle = obj.color || '#1e293b';
+                    CTX.fillRect(-w/2, -h/2, w, h);
+                    CTX.strokeStyle = strokeC;
+                    CTX.lineWidth = strokeW;
+                    CTX.setLineDash([10, 8]);
+                    CTX.beginPath();
+                    CTX.moveTo(0, -h/2);
+                    CTX.lineTo(0, h/2);
+                    CTX.stroke();
+                    CTX.setLineDash([]);
+                    break;
+
+                case 'dock':
+                    CTX.fillStyle = '#581c87';
+                    CTX.fillRect(-w/2, -h/2, w, h);
+                    CTX.strokeStyle = strokeC;
+                    CTX.lineWidth = strokeW;
+                    CTX.strokeRect(-w/2, -h/2, w, h);
+                    CTX.fillStyle = '#ef4444';
+                    CTX.fillRect(-w/2, h/2 - 4, w, 4);
+                    break;
+
+                case 'truck':
+                    CTX.fillStyle = '#312e81';
+                    CTX.fillRect(-w/2, -h/2, w, h);
+                    CTX.strokeStyle = strokeC;
+                    CTX.lineWidth = strokeW;
+                    CTX.strokeRect(-w/2, -h/2, w, h);
+                    CTX.fillStyle = '#4338ca';
+                    CTX.fillRect(-w/2, -h/2, w, h * 0.2);
+                    break;
+
+                case 'forklift':
+                    CTX.fillStyle = '#f59e0b';
+                    CTX.fillRect(-w/2, -h/2 + h*0.3, w, h*0.7);
+                    CTX.fillStyle = '#94a3b8';
+                    CTX.fillRect(-w/4, -h/2, 4, h*0.3);
+                    CTX.fillRect(w/4 - 4, -h/2, 4, h*0.3);
+                    break;
+
+                default:
+                    CTX.fillStyle = obj.color || '#3b82f6';
+                    CTX.fillRect(-w/2, -h/2, w, h);
+            }
+
+            if (zoom > 0.35 && obj.label && !['hydrant','extinguisher','pedestrian_path','wc_fixture'].includes(obj.type)) {
+                // Na PDF izvozu (bela pozadina) tekst mora biti taman da bi se dobro video
+                CTX.fillStyle = forExport ? '#0f172a' : (obj.type==='text' ? (obj.strokeColor||'#e879f9') : '#ffffff');
+                CTX.font = `bold ${Math.max(10, Math.min(16, 12 * zoom))}px sans-serif`;
+                CTX.textAlign = 'center';
+                CTX.textBaseline = 'middle';
+                if (!forExport) {
+                    CTX.shadowColor = 'black';
+                    CTX.shadowBlur = 4;
+                }
+                CTX.fillText(obj.label, 0, ['office','toilet'].includes(obj.type) ? Math.max(0,h/2-12) : 0);
+                CTX.shadowBlur = 0;
+            }
+
+            CTX.restore();
+        }
+
+        // CAD dimenzije tokom crtanja i promene velicine (samo radna povrsina).
+        function drawLiveDimensions(obj) {
+            if (!obj) return;
+            const w = Math.abs(obj.w_m || 0), h = Math.abs(obj.h_m || 0);
+            const center = worldToScreen(obj.x_m + w/2, obj.y_m + h/2);
+            const pxW = w * PIXELS_PER_METER * zoom;
+            const pxH = h * PIXELS_PER_METER * zoom;
+            let lines;
+            if (obj.type === 'circle') {
+                lines = [`Precnik: ${w.toFixed(3)} m (${Math.round(w*1000)} mm)`,
+                         `Poluprecnik: ${(w/2).toFixed(3)} m`];
+            } else if (obj.type === 'line') {
+                const len = Math.hypot(w,h);
+                lines = [`Duzina: ${len.toFixed(3)} m (${Math.round(len*1000)} mm)`,
+                         `X: ${w.toFixed(3)} m  Y: ${h.toFixed(3)} m`];
+            } else {
+                lines = [`Sirina: ${w.toFixed(3)} m  Duzina: ${h.toFixed(3)} m`,
+                         `Povrsina: ${(w*h).toFixed(3)} m²`];
+            }
+            CTX.save();
+            CTX.font = '12px monospace';
+            const width = Math.max(...lines.map(t => CTX.measureText(t).width)) + 18;
+            const height = lines.length * 18 + 10;
+            const x = Math.max(6, Math.min(CANVAS.width-width-6, center.x + Math.max(18,pxW/2) + 12));
+            const y = Math.max(6, Math.min(CANVAS.height-height-6, center.y - Math.max(18,pxH/2) - height));
+            CTX.fillStyle = 'rgba(8,18,36,.94)';
+            CTX.fillRect(x,y,width,height);
+            CTX.strokeStyle = '#38bdf8'; CTX.lineWidth = 1;
+            CTX.strokeRect(x,y,width,height);
+            CTX.fillStyle = '#f1f5f9';
+            lines.forEach((line,i) => CTX.fillText(line,x+9,y+19+i*18));
+            CTX.restore();
+        }
+
+        function drawActivePolylinePreview() {
+            CTX.save();
+            CTX.strokeStyle = '#a5b4fc';
+            CTX.lineWidth = 2.5;
+            CTX.setLineDash([5, 5]);
+
+            CTX.beginPath();
+            activePolylinePoints.forEach((pt, index) => {
+                const screen = worldToScreen(pt.x, pt.y);
+                if (index === 0) CTX.moveTo(screen.x, screen.y);
+                else CTX.lineTo(screen.x, screen.y);
+            });
+            // Ziva linija od poslednje tacke do kursora, kao u AutoCAD-u.
+            if (polylineHoverPoint) {
+                const last = activePolylinePoints[activePolylinePoints.length - 1];
+                const a = worldToScreen(last.x, last.y);
+                const b = worldToScreen(polylineHoverPoint.x, polylineHoverPoint.y);
+                CTX.moveTo(a.x, a.y);
+                CTX.lineTo(b.x, b.y);
+                CTX.strokeStyle = '#38bdf8';
+                CTX.lineWidth = 2.5;
+                CTX.setLineDash([]);
+                CTX.stroke();
+                // Koristi potpuno isti prikaz kao alat Linija, bez posebnog panela i koordinata.
+                const dx = polylineHoverPoint.x - last.x;
+                const dy = polylineHoverPoint.y - last.y;
+                drawLiveDimensions({
+                    type: 'line',
+                    x_m: Math.min(last.x, polylineHoverPoint.x),
+                    y_m: Math.min(last.y, polylineHoverPoint.y),
+                    w_m: Math.abs(dx),
+                    h_m: Math.abs(dy)
+                });
+                CTX.beginPath(); CTX.arc(b.x,b.y,3,0,Math.PI*2);
+                CTX.fillStyle = '#38bdf8'; CTX.fill();
+            }
+
+            activePolylinePoints.forEach(pt => {
+                const screen = worldToScreen(pt.x, pt.y);
+                CTX.fillStyle = '#6366f1';
+                CTX.beginPath();
+                CTX.arc(screen.x, screen.y, 4, 0, Math.PI * 2);
+                CTX.fill();
+            });
+
+            CTX.restore();
+        }
+
+        function drawSelectionControls(obj) {
+            if (!obj) return;
+            CTX.save();
+
+            const screen = worldToScreen(obj.x_m, obj.y_m);
+            const w = obj.w_m * PIXELS_PER_METER * zoom;
+            const h = obj.h_m * PIXELS_PER_METER * zoom;
+
+            CTX.translate(screen.x + w / 2, screen.y + h / 2);
+            CTX.rotate((obj.angle * Math.PI) / 180);
+
+            CTX.strokeStyle = '#60a5fa';
+            CTX.lineWidth = 1.5;
+            CTX.setLineDash([4, 4]);
+            if (obj.type === 'circle') {
+                CTX.strokeRect(-w/2 - 4, -w/2 - 4, w + 8, w + 8);
+            } else {
+                CTX.strokeRect(-w/2 - 4, -h/2 - 4, w + 8, h + 8);
+            }
+            CTX.setLineDash([]);
+
+            if (obj.type === 'line' || obj.type === 'polyline') {
+                CTX.fillStyle = '#3b82f6';
+                CTX.beginPath();
+                CTX.arc(-w/2, -h/2, 5, 0, Math.PI*2);
+                CTX.arc(w/2, h/2, 5, 0, Math.PI*2);
+                CTX.fill();
+            }
+
+            const handleY = obj.type === 'circle' ? w/2 : h/2;
+            CTX.fillStyle = '#3b82f6';
+            CTX.fillRect(w/2 + 1, handleY + 1, 8, 8);
+            CTX.strokeStyle = '#ffffff';
+            CTX.strokeRect(w/2 + 1, handleY + 1, 8, 8);
+
+            const rotY = obj.type === 'circle' ? -w/2 : -h/2;
+            CTX.beginPath();
+            CTX.moveTo(0, rotY - 4);
+            CTX.lineTo(0, rotY - 20);
+            CTX.strokeStyle = '#60a5fa';
+            CTX.stroke();
+
+            CTX.beginPath();
+            CTX.arc(0, rotY - 20, 6, 0, Math.PI * 2);
+            CTX.fillStyle = '#10b981';
+            CTX.fill();
+            CTX.strokeStyle = '#ffffff';
+            CTX.stroke();
+
+            let areaText = '';
+            if (obj.type === 'circle') {
+                const r = obj.w_m / 2;
+                const area = (Math.PI * r * r).toFixed(2);
+                areaText = `ø ${obj.w_m.toFixed(1)}m (${area} m²)`;
+            } else if (obj.type === 'line' || obj.type === 'polyline') {
+                const len = Math.sqrt(obj.w_m**2 + obj.h_m**2).toFixed(2);
+                areaText = `L: ${len}m`;
+            } else {
+                const area = (obj.w_m * obj.h_m).toFixed(2);
+                areaText = `${obj.w_m.toFixed(1)}m x ${obj.h_m.toFixed(1)}m (${area} m²)`;
+            }
+
+            CTX.fillStyle = '#93c5fd';
+            CTX.font = '11px sans-serif';
+            CTX.textAlign = 'center';
+            CTX.fillText(areaText, 0, handleY + 18);
+
+            CTX.restore();
+        }
+
+        function drawBoxSelectOverlay() {
+            CTX.save();
+            const s = worldToScreen(Math.min(boxSelectStartWorld.x, boxSelectEndWorld.x), Math.min(boxSelectStartWorld.y, boxSelectEndWorld.y));
+            const e = worldToScreen(Math.max(boxSelectStartWorld.x, boxSelectEndWorld.x), Math.max(boxSelectStartWorld.y, boxSelectEndWorld.y));
+            const w = e.x - s.x;
+            const h = e.y - s.y;
+
+            CTX.fillStyle = 'rgba(59, 130, 246, 0.15)';
+            CTX.fillRect(s.x, s.y, w, h);
+            CTX.strokeStyle = '#3b82f6';
+            CTX.lineWidth = 1;
+            CTX.setLineDash([4, 4]);
+            CTX.strokeRect(s.x, s.y, w, h);
+            CTX.restore();
+        }
+
+        function getCanvasMousePos(e) {
+            const rect = CANVAS.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function distToSegment(px, py, x1, y1, x2, y2) {
+            const l2 = (x2 - x1)**2 + (y2 - y1)**2;
+            if (l2 === 0) return Math.sqrt((px - x1)**2 + (py - y1)**2);
+            let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.sqrt((px - (x1 + t * (x2 - x1)))**2 + (py - (y1 + t * (y2 - y1)))**2);
+        }
+
+        function isPointInObject(worldX, worldY, obj) {
+            if (!obj) return false;
+            if (obj.type === 'line') {
+                const d = obj.lineReverse ? distToSegment(worldX,worldY,obj.x_m,obj.y_m+obj.h_m,obj.x_m+obj.w_m,obj.y_m) : distToSegment(worldX,worldY,obj.x_m,obj.y_m,obj.x_m+obj.w_m,obj.y_m+obj.h_m);
+                return d <= 0.6;
+            }
+
+            if (obj.type === 'polyline' && obj.points) {
+                for (let i = 0; i < obj.points.length - 1; i++) {
+                    const p1 = obj.points[i];
+                    const p2 = obj.points[i+1];
+                    const d = distToSegment(worldX, worldY, obj.x_m + p1.x, obj.y_m + p1.y, obj.x_m + p2.x, obj.y_m + p2.y);
+                    if (d <= 0.6) return true;
+                }
+                return false;
+            }
+
+            if (obj.type === 'circle') {
+                const r = obj.w_m / 2;
+                const cx = obj.x_m + r;
+                const cy = obj.y_m + r;
+                const dist = Math.sqrt((worldX - cx)**2 + (worldY - cy)**2);
+                return dist <= r;
+            }
+
+            const dx = worldX - (obj.x_m + obj.w_m / 2);
+            const dy = worldY - (obj.y_m + obj.h_m / 2);
+
+            const rad = (-obj.angle * Math.PI) / 180;
+            const localX = dx * Math.cos(rad) - dy * Math.sin(rad);
+            const localY = dx * Math.sin(rad) + dy * Math.cos(rad);
+
+            return Math.abs(localX) <= obj.w_m / 2 && Math.abs(localY) <= obj.h_m / 2;
+        }
+
+        // Desni klik na platno ili na dugme za merenje prekida alat bez dodatnih klikova.
+        function exitMeasureOnRightClick(e) {
+            if (mode === 'measure_distance' || mode === 'measure_area') {
+                e.preventDefault(); setMode('select'); draw();
+            }
+        }
+        CANVAS.addEventListener('contextmenu', (e) => {
+            if (mode === 'draw_polyline') {
+                e.preventDefault();
+                finishPolyline();
+                return;
+            }
+            exitMeasureOnRightClick(e);
+        });
+        ['btn-measure-distance','btn-measure-area'].forEach(id => {
+            document.getElementById(id)?.addEventListener('contextmenu', exitMeasureOnRightClick);
+        });
+        CANVAS.addEventListener('mousedown', (e) => {
+            const mouse = getCanvasMousePos(e);
+            const world = screenToWorld(mouse.x, mouse.y);
+
+            document.getElementById('hud-coords').innerText = `X: ${world.x.toFixed(3)}m | Y: ${world.y.toFixed(3)}m`;
+
+            if (e.button === 1 || mode === 'pan') {
+                isPanning = true;
+                startPanX = e.clientX - panX;
+                startPanY = e.clientY - panY;
+                CANVAS.style.cursor = 'grabbing';
+                return;
+            }
+
+            if (e.button === 0) {
+                if(mode.startsWith('measure_')){
+                    if(!measureStart || measureEnd){measureStart={...world};measureEnd=null}
+                    else{measureEnd={...world};measureHover=null}
+                    draw();return;
+                }
+                if (mode === 'select') {
+                    if (selectedObjectIds.length === 1) {
+                        const selected = objects.find(o => o.id === selectedObjectIds[0]);
+                        if (selected) {
+                            const hY = selected.type === 'circle' ? selected.w_m / 2 : selected.h_m / 2;
+                            const screenCenter = worldToScreen(selected.x_m + selected.w_m / 2, selected.y_m + hY);
+                            const dx = mouse.x - screenCenter.x;
+                            const dy = mouse.y - screenCenter.y;
+                            const rad = (-selected.angle * Math.PI) / 180;
+                            const rx = dx * Math.cos(rad) - dy * Math.sin(rad);
+                            const ry = dx * Math.sin(rad) + dy * Math.cos(rad);
+
+                            const sw = (selected.w_m * PIXELS_PER_METER * zoom) / 2;
+                            const sh = (hY * PIXELS_PER_METER * zoom);
+
+                            if (Math.abs(rx) < 12 && Math.abs(ry - (-sh - 20)) < 12) {
+                                isTransforming = true;
+                                transformType = 'rotate';
+                                return;
+                            }
+
+                            if (Math.abs(rx - sw) < 12 && Math.abs(ry - sh) < 12) {
+                                isTransforming = true;
+                                transformType = 'resize';
+                                return;
+                            }
+                        }
+                    }
+
+                    const clicked = [...objects].reverse().find(o => isPointInObject(world.x, world.y, o));
+
+                    if (clicked) {
+                        if (e.shiftKey || e.ctrlKey) {
+                            if (selectedObjectIds.includes(clicked.id)) {
+                                selectedObjectIds = selectedObjectIds.filter(id => id !== clicked.id);
+                            } else {
+                                selectedObjectIds.push(clicked.id);
+                            }
+                        } else {
+                            if (!selectedObjectIds.includes(clicked.id)) {
+                                selectedObjectIds = [clicked.id];
+                            }
+                        }
+                        isDragging = true;
+                        dragOffsetX = world.x;
+                        dragOffsetY = world.y;
+                    } else {
+                        if (e.shiftKey) {
+                            isBoxSelecting = true;
+                            boxSelectStartWorld = world;
+                            boxSelectEndWorld = world;
+                        } else {
+                            selectedObjectIds = [];
+                            isBoxSelecting = true;
+                            boxSelectStartWorld = world;
+                            boxSelectEndWorld = world;
+                        }
+                    }
+
+                    updateInspector();
+                } 
+                else if (mode === 'draw_polyline') {
+                    activePolylinePoints.push({ x: world.x, y: world.y });
+                    polylineHoverPoint = {x:world.x,y:world.y};
+                    requestAnimationFrame(() => draw());
+                }
+                else if (mode === 'draw_wall' || mode === 'draw_line' || mode === 'draw_circle') {
+                    drawingStart = {...world};
+                    currentDrawingObj = {
+                        id: generateId(),
+                        type: mode === 'draw_wall' ? 'wall' : (mode === 'draw_circle' ? 'circle' : 'line'),
+                        x_m: world.x,
+                        y_m: world.y,
+                        w_m: 0.5,
+                        h_m: 0.5,
+                        angle: 0,
+                        color: mode === 'draw_circle' ? '#14b8a6' : (mode === 'draw_wall' ? '#64748b' : '#3b82f6'),
+                        strokeColor: '#60a5fa',
+                        strokeWidth: 2,
+                        label: mode === 'draw_circle' ? 'Krug' : (mode === 'draw_wall' ? 'Zid' : 'Linija'),
+                        zIndex: objects.length
+                    };
+                }
+            }
+
+            requestAnimationFrame(() => draw());
+        });
+
+        CANVAS.addEventListener('dblclick', () => {
+            if (mode === 'draw_polyline') finishPolyline();
+        });
+
+        function finishPolyline() {
+            polylineHoverPoint = null;
+            if (activePolylinePoints.length < 2) {
+                activePolylinePoints = [];
+                return;
+            }
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            activePolylinePoints.forEach(pt => {
+                minX = Math.min(minX, pt.x);
+                minY = Math.min(minY, pt.y);
+                maxX = Math.max(maxX, pt.x);
+                maxY = Math.max(maxY, pt.y);
+            });
+
+            const width = Math.max(0.5, maxX - minX);
+            const height = Math.max(0.5, maxY - minY);
+
+            const polyObj = {
+                id: generateId(),
+                type: 'polyline',
+                x_m: minX,
+                y_m: minY,
+                w_m: width,
+                h_m: height,
+                angle: 0,
+                color: '#6366f1',
+                strokeColor: '#818cf8',
+                strokeWidth: 3,
+                label: 'Polilinija',
+                points: activePolylinePoints.map(pt => ({ x: pt.x - minX, y: pt.y - minY })),
+                zIndex: objects.length
+            };
+
+            objects.push(polyObj);
+            selectedObjectIds = [polyObj.id];
+            activePolylinePoints = [];
+            setMode('select');
+            updateInspector();
+            updateStats();
+            requestAnimationFrame(() => draw());
+        }
+
+        CANVAS.addEventListener('mousemove', (e) => {
+            const mouse = getCanvasMousePos(e);
+            const world = screenToWorld(mouse.x, mouse.y);
+
+            document.getElementById('hud-coords').innerText = `X: ${world.x.toFixed(3)}m | Y: ${world.y.toFixed(3)}m`;
+            if(mode.startsWith('measure_') && measureStart && !measureEnd){measureHover={...world};draw();return;}
+
+            if (isPanning) {
+                panX = e.clientX - startPanX;
+                panY = e.clientY - startPanY;
+                requestAnimationFrame(() => draw());
+                return;
+            }
+
+            if (isBoxSelecting) {
+                boxSelectEndWorld = world;
+                requestAnimationFrame(() => draw());
+                return;
+            }
+
+            if (isTransforming && selectedObjectIds.length === 1) {
+                const selected = objects.find(o => o.id === selectedObjectIds[0]);
+                if (selected) {
+                    if (transformType === 'rotate') {
+                        const centerScreen = worldToScreen(selected.x_m + selected.w_m / 2, selected.y_m + selected.h_m / 2);
+                        const angleRad = Math.atan2(mouse.y - centerScreen.y, mouse.x - centerScreen.x);
+                        let deg = Math.round((angleRad * 180 / Math.PI) + 90);
+                        if (deg < 0) deg += 360;
+                        selected.angle = deg;
+                    } 
+                    else if (transformType === 'resize') {
+                        const newW = Math.max(0.2, world.x - selected.x_m);
+                        const newH = Math.max(0.2, world.y - selected.y_m);
+                        selected.w_m = snapEnabled ? Math.round(newW / snapGridSize) * snapGridSize : newW;
+                        if (selected.type === 'circle') {
+                            selected.h_m = selected.w_m;
+                        } else {
+                            selected.h_m = snapEnabled ? Math.round(newH / snapGridSize) * snapGridSize : newH;
+                        }
+                    }
+                    updateInspector();
+                    requestAnimationFrame(() => draw());
+                    return;
+                }
+            }
+
+            if (isDragging && selectedObjectIds.length > 0) {
+                const deltaX = world.x - dragOffsetX;
+                const deltaY = world.y - dragOffsetY;
+
+                selectedObjectIds.forEach(id => {
+                    const obj = objects.find(o => o.id === id);
+                    if (obj) {
+                        obj.x_m += deltaX;
+                        obj.y_m += deltaY;
+                    }
+                });
+
+                dragOffsetX = world.x;
+                dragOffsetY = world.y;
+                updateInspector();
+                requestAnimationFrame(() => draw());
+                return;
+            }
+
+            if (currentDrawingObj) {
+                const dx = world.x - drawingStart.x, dy = world.y - drawingStart.y;
+                currentDrawingObj.x_m = Math.min(drawingStart.x, world.x);
+                currentDrawingObj.y_m = Math.min(drawingStart.y, world.y);
+                const w = Math.max(0.05, Math.abs(dx)), h = Math.max(0.05, Math.abs(dy));
+                currentDrawingObj.w_m = w;
+                currentDrawingObj.h_m = currentDrawingObj.type === 'circle' ? w : h;
+                if(currentDrawingObj.type === 'line') currentDrawingObj.lineReverse = dx*dy<0;
+                requestAnimationFrame(() => draw());
+            }
+
+            if (mode === 'draw_polyline' && activePolylinePoints.length > 0) {
+                polylineHoverPoint = {x: world.x, y: world.y};
+                requestAnimationFrame(() => draw());
+            }
+        });
+
+        CANVAS.addEventListener('mouseup', () => {
+            if (isPanning) {
+                isPanning = false;
+                if (mode === 'pan') CANVAS.style.cursor = 'grab';
+            }
+            if (isDragging) {
+                isDragging = false;
+            }
+            if (isTransforming) {
+                isTransforming = false;
+                transformType = null;
+            }
+            if (isBoxSelecting) {
+                isBoxSelecting = false;
+                if (boxSelectStartWorld && boxSelectEndWorld) {
+                    const minX = Math.min(boxSelectStartWorld.x, boxSelectEndWorld.x);
+                    const maxX = Math.max(boxSelectStartWorld.x, boxSelectEndWorld.x);
+                    const minY = Math.min(boxSelectStartWorld.y, boxSelectEndWorld.y);
+                    const maxY = Math.max(boxSelectStartWorld.y, boxSelectEndWorld.y);
+
+                    const enclosed = objects.filter(o => {
+                        return o.x_m >= minX && (o.x_m + o.w_m) <= maxX &&
+                               o.y_m >= minY && (o.y_m + o.h_m) <= maxY;
+                    });
+
+                    selectedObjectIds = enclosed.map(o => o.id);
+                    updateInspector();
+                }
+                boxSelectStartWorld = null;
+                boxSelectEndWorld = null;
+            }
+            if (currentDrawingObj) {
+                objects.push(currentDrawingObj);
+                selectedObjectIds = [currentDrawingObj.id];
+                currentDrawingObj = null;
+                setMode('select');
+                updateInspector();
+                updateStats();
+            }
+            requestAnimationFrame(() => draw());
+        });
+
+        CANVAS.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+            zoomDelta(zoomFactor, e.clientX - CANVAS.getBoundingClientRect().left, e.clientY - CANVAS.getBoundingClientRect().top);
+        }, { passive: false });
+
+        function zoomDelta(factor, mouseX = CANVAS.width / 2, mouseY = CANVAS.height / 2) {
+            const newZoom = Math.min(Math.max(0.2, zoom * factor), 5.0);
+            
+            panX = mouseX - (mouseX - panX) * (newZoom / zoom);
+            panY = mouseY - (mouseY - panY) * (newZoom / zoom);
+            zoom = newZoom;
+
+            document.getElementById('hud-scale').innerText = `1m = ${(PIXELS_PER_METER * zoom).toFixed(0)}px`;
+            requestAnimationFrame(() => draw());
+        }
+
+        function resetZoom() {
+            zoom = 1.0;
+            panX = 100;
+            panY = 100;
+            document.getElementById('hud-scale').innerText = `1m = 20px`;
+            requestAnimationFrame(() => draw());
+        }
+
+        function groupSelected() {
+            if (selectedObjectIds.length < 2) return;
+
+            const selectedObjs = objects.filter(o => selectedObjectIds.includes(o.id));
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+            selectedObjs.forEach(o => {
+                minX = Math.min(minX, o.x_m);
+                minY = Math.min(minY, o.y_m);
+                maxX = Math.max(maxX, o.x_m + o.w_m);
+                maxY = Math.max(maxY, o.y_m + o.h_m);
+            });
+
+            const groupObj = {
+                id: generateId(),
+                type: 'group',
+                x_m: minX,
+                y_m: minY,
+                w_m: maxX - minX,
+                h_m: maxY - minY,
+                angle: 0,
+                label: 'Grupa Elemenata',
+                children: selectedObjs.map(o => ({...o, x_m: o.x_m - minX, y_m: o.y_m - minY})),
+                zIndex: objects.length
+            };
+
+            objects = objects.filter(o => !selectedObjectIds.includes(o.id));
+            objects.push(groupObj);
+            selectedObjectIds = [groupObj.id];
+
+            updateInspector();
+            updateStats();
+            requestAnimationFrame(() => draw());
+        }
+
+        function ungroupSelected() {
+            if (selectedObjectIds.length !== 1) return;
+            const groupObj = objects.find(o => o.id === selectedObjectIds[0] && o.type === 'group');
+            if (!groupObj || !groupObj.children) return;
+
+            objects = objects.filter(o => o.id !== groupObj.id);
+            const newIds = [];
+            groupObj.children.forEach(child => {
+                child.x_m += groupObj.x_m;
+                child.y_m += groupObj.y_m;
+                objects.push(child);
+                newIds.push(child.id);
+            });
+
+            selectedObjectIds = newIds;
+            updateInspector();
+            updateStats();
+            requestAnimationFrame(() => draw());
+        }
+
+        function updateInspector() {
+            const emptyPanel = document.getElementById('inspector-empty');
+            const contentPanel = document.getElementById('inspector-content');
+
+            if (selectedObjectIds.length === 0) {
+                emptyPanel.classList.remove('hidden');
+                contentPanel.classList.add('hidden');
+                return;
+            }
+
+            emptyPanel.classList.add('hidden');
+            contentPanel.classList.remove('hidden');
+
+            let areaM2 = 0;
+            selectedObjectIds.forEach(id => {
+                const o = objects.find(obj => obj.id === id);
+                if (o) {
+                    if (o.type === 'circle') {
+                        const r = o.w_m / 2;
+                        areaM2 += Math.PI * r * r;
+                    } else if (o.type !== 'line' && o.type !== 'polyline') {
+                        areaM2 += (o.w_m * o.h_m);
+                    }
+                }
+            });
+            document.getElementById('prop-calculated-area').innerText = `${areaM2.toFixed(2)} m²`;
+
+            if (selectedObjectIds.length === 1) {
+                const selected = objects.find(o => o.id === selectedObjectIds[0]);
+                if (!selected) return;
+
+                document.getElementById('prop-label').value = selected.label || '';
+                document.getElementById('prop-x').value = selected.x_m.toFixed(1);
+                document.getElementById('prop-y').value = selected.y_m.toFixed(1);
+
+                const dimControls = document.getElementById('dim-controls');
+                const circleControls = document.getElementById('circle-properties');
+
+                if (selected.type === 'circle') {
+                    dimControls.classList.add('hidden');
+                    circleControls.classList.remove('hidden');
+                    document.getElementById('prop-diameter').value = selected.w_m.toFixed(1);
+                    document.getElementById('prop-radius').value = (selected.w_m / 2).toFixed(2);
+                } else {
+                    dimControls.classList.remove('hidden');
+                    circleControls.classList.add('hidden');
+                    document.getElementById('prop-width').value = selected.w_m.toFixed(1);
+                    document.getElementById('prop-height').value = selected.h_m.toFixed(1);
+                }
+
+                document.getElementById('prop-angle').value = selected.angle || 0;
+                document.getElementById('prop-angle-val').innerText = `${selected.angle || 0}°`;
+                
+                document.getElementById('prop-color').value = selected.color || '#3b82f6';
+                document.getElementById('prop-color-hex').innerText = selected.color || '#3b82f6';
+                const supportsFill = ['office','toilet','rect','wall'].includes(selected.type);
+                document.getElementById('fill-opacity-controls').classList.toggle('hidden', !supportsFill);
+                const opacity = selected.fillOpacity ?? (['office','toilet'].includes(selected.type) ? 40 : 100);
+                document.getElementById('prop-opacity').value = opacity;
+                document.getElementById('prop-opacity-value').innerText = opacity + '%';
+                
+                document.getElementById('prop-stroke-color').value = selected.strokeColor || '#60a5fa';
+                document.getElementById('prop-stroke-color-hex').innerText = selected.strokeColor || '#60a5fa';
+                
+                document.getElementById('prop-stroke-width').value = selected.strokeWidth || 2;
+                document.getElementById('prop-stroke-width-val').innerText = `${selected.strokeWidth || 2} px`;
+
+                const rackPanel = document.getElementById('rack-properties');
+                if (selected.type === 'rack') {
+                    rackPanel.classList.remove('hidden');
+                    document.getElementById('prop-levels').value = selected.levels || 4;
+                    document.getElementById('prop-pallets').value = selected.palletsPerLevel || 6;
+                    document.getElementById('prop-verticals').value = selected.verticals || 6;
+                    const total = (selected.levels || 4) * (selected.palletsPerLevel || 6) * (selected.verticals || 1);
+                    document.getElementById('prop-total-pallets').innerText = `${total} paletnih mesta`;
+                } else {
+                    rackPanel.classList.add('hidden');
+                }
+            } else {
+                document.getElementById('prop-label').value = `Selektovano: ${selectedObjectIds.length} objekta`;
+            }
+
+            updateStats();
+        }
+
+        function updateCircleDimension(kind, val) {
+            if (selectedObjectIds.length !== 1) return;
+            const selected = objects.find(o => o.id === selectedObjectIds[0]);
+            if (!selected || selected.type !== 'circle') return;
+
+            let diam = val;
+            if (kind === 'radius') diam = val * 2;
+            
+            selected.w_m = Math.max(0.1, diam);
+            selected.h_m = selected.w_m;
+
+            updateInspector();
+            requestAnimationFrame(() => draw());
+        }
+
+        function updateSelectedProp(prop, value) {
+            selectedObjectIds.forEach(id => {
+                const selected = objects.find(o => o.id === id);
+                if (!selected) return;
+
+                selected[prop] = value;
+
+                if (prop === 'strokeWidth') {
+                    document.getElementById('prop-stroke-width-val').innerText = `${value} px`;
+                }
+                if (prop === 'strokeColor') {
+                    document.getElementById('prop-stroke-color-hex').innerText = value;
+                }
+                if (prop === 'color') {
+                    document.getElementById('prop-color-hex').innerText = value;
+                }
+                if (prop === 'fillOpacity') {
+                    document.getElementById('prop-opacity-value').innerText = value + '%';
+                }
+                if (prop === 'angle') {
+                    document.getElementById('prop-angle-val').innerText = `${value}°`;
+                }
+            });
+
+            updateInspector();
+            updateStats();
+            requestAnimationFrame(() => draw());
+        }
+
+        function duplicateSelected() {
+            if (selectedObjectIds.length === 0) return;
+            const newSelectedIds = [];
+
+            selectedObjectIds.forEach(id => {
+                const selected = objects.find(o => o.id === id);
+                if (selected) {
+                    const copy = JSON.parse(JSON.stringify(selected));
+                    copy.id = generateId();
+                    copy.x_m += 1.0;
+                    copy.y_m += 1.0;
+                    objects.push(copy);
+                    newSelectedIds.push(copy.id);
+                }
+            });
+
+            selectedObjectIds = newSelectedIds;
+            updateInspector();
+            updateStats();
+            requestAnimationFrame(() => draw());
+        }
+
+        function deleteSelected() {
+            if (selectedObjectIds.length === 0) return;
+            objects = objects.filter(o => !selectedObjectIds.includes(o.id));
+            selectedObjectIds = [];
+            updateInspector();
+            updateStats();
+            requestAnimationFrame(() => draw());
+        }
+
+        function updateStats() {
+            document.getElementById('stat-count').innerText = objects.length;
+
+            let totalPallets = 0;
+            let totalArea = 0;
+
+            objects.forEach(o => {
+                if (!o) return;
+                if (o.type === 'rack') {
+                    totalPallets += (o.levels || 4) * (o.palletsPerLevel || 6) * (o.verticals || 1);
+                }
+                if (o.type === 'circle') {
+                    const r = o.w_m / 2;
+                    totalArea += Math.PI * r * r;
+                } else if (o.type !== 'line' && o.type !== 'polyline') {
+                    totalArea += (o.w_m * o.h_m);
+                }
+            });
+
+            document.getElementById('stat-capacity').innerText = `${totalPallets} paleta`;
+            document.getElementById('stat-area').innerText = `${totalArea.toFixed(1)} m²`;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+
+            if (e.key === 'Enter' || e.key === 'Escape') {
+                if (mode === 'draw_polyline') finishPolyline();
+            }
+
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                deleteSelected();
+            }
+            if (e.key === 's' || e.key === 'S') setMode('select');
+            if (e.key === 'h' || e.key === 'H') setMode('pan');
+            
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) {
+                e.preventDefault();
+                if (e.shiftKey) ungroupSelected();
+                else groupSelected();
+            }
+
+            if (e.key === 'r' || e.key === 'R') {
+                selectedObjectIds.forEach(id => {
+                    const selected = objects.find(o => o.id === id);
+                    if (selected) selected.angle = ((selected.angle || 0) + 45) % 360;
+                });
+                updateInspector();
+                requestAnimationFrame(() => draw());
+            }
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+                e.preventDefault();
+                duplicateSelected();
+            }
+        });
+
+        // CAD projekat je izvor istine; PDF je vektorski izlaz za pregled i štampu.
+        function saveProject() {
+            const data = {format:'MagacinCAD',version:5,unit:'m',objects};
+            const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a=document.createElement('a'); a.href=url; a.download='MagacinCAD_projekat.json';a.click();
+            setTimeout(()=>URL.revokeObjectURL(url),1000);
+        }
+        async function openProject(event) {
+            const file=event.target.files?.[0]; if(!file)return;
+            try {
+                const data=JSON.parse(await file.text());
+                const list=Array.isArray(data)?data:data.objects;
+                if(!Array.isArray(list)||list.length>100000||!list.every(o=>o&&typeof o.type==='string'&&Number.isFinite(o.x_m)&&Number.isFinite(o.y_m)&&Number.isFinite(o.w_m)&&Number.isFinite(o.h_m)))throw Error('Neispravan format');
+                if(objects.length&&!confirm('Zameniti trenutni nacrt?'))return;
+                objects=list;selectedObjectIds=[];updateInspector();updateStats();fitDrawing();
+            }catch(err){alert('Nije moguće otvoriti projekat: '+err.message)}
+            finally{event.target.value=''}
+        }
+        function fitDrawing(){
+            if(!objects.length){resetZoom();return}
+            const minX=Math.min(...objects.map(o=>o.x_m)),minY=Math.min(...objects.map(o=>o.y_m));
+            const maxX=Math.max(...objects.map(o=>o.x_m+o.w_m)),maxY=Math.max(...objects.map(o=>o.y_m+o.h_m));
+            zoom=Math.max(.1,Math.min(5,Math.min((CANVAS.width-100)/(Math.max(1,maxX-minX)*PIXELS_PER_METER),(CANVAS.height-100)/(Math.max(1,maxY-minY)*PIXELS_PER_METER))));
+            panX=CANVAS.width/2-(minX+maxX)/2*PIXELS_PER_METER*zoom;
+            panY=CANVAS.height/2-(minY+maxY)/2*PIXELS_PER_METER*zoom;
+            document.getElementById('hud-scale').innerText=`1m = ${(PIXELS_PER_METER*zoom).toFixed(0)}px`;draw();
+        }
+        function exportPDF(){
+            if(!objects.length){alert('Nema objekata za izvoz.');return}
+            if(!window.jspdf){alert('Biblioteka jsPDF nije učitana. Proverite internet vezu.');return}
+            const {jsPDF}=window.jspdf;
+            const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a3'});
+            const W=420,H=297,margin=15;
+            const minX=Math.min(...objects.map(o=>o.x_m)),minY=Math.min(...objects.map(o=>o.y_m));
+            const maxX=Math.max(...objects.map(o=>o.x_m+o.w_m)),maxY=Math.max(...objects.map(o=>o.y_m+o.h_m));
+            const scale=Math.min((W-2*margin)/Math.max(.1,maxX-minX),(H-2*margin)/Math.max(.1,maxY-minY));
+            const offsetX=(W-(maxX-minX)*scale)/2,offsetY=(H-(maxY-minY)*scale)/2;
+            const X=x=>offsetX+(x-minX)*scale,Y=y=>offsetY+(y-minY)*scale;
+            function rgb(hex){const v=/^#[0-9a-f]{6}$/i.test(hex||'')?hex:'#334155';return [1,3,5].map(i=>parseInt(v.slice(i,i+2),16))}
+            function render(o,ox=0,oy=0){
+                if(o.type==='group'){(o.children||[]).forEach(c=>render(c,ox+o.x_m,oy+o.y_m));return}
+                const x=o.x_m+ox,y=o.y_m+oy,w=Math.abs(o.w_m)*scale,h=Math.abs(o.h_m)*scale;
+                const [r,g,b]=rgb(o.strokeColor||'#334155');doc.setDrawColor(r,g,b);
+                doc.setLineWidth(Math.max(.15,Math.min(.8,(o.strokeWidth||2)*.18)));
+                const a=(o.angle||0)*Math.PI/180,cx=X(x)+w/2,cy=Y(y)+h/2;
+                const rotate=(px,py)=>[cx+px*Math.cos(a)-py*Math.sin(a),cy+px*Math.sin(a)+py*Math.cos(a)];
+                if(o.type==='text') { /* samo tekst */ }
+                else if(o.type==='pedestrian_path'){
+                    const q=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([u,v])=>rotate(u,v));
+                    doc.setDrawColor(130,140,155);for(let i=0;i<4;i++)doc.line(...q[i],...q[(i+1)%4]);
+                    doc.setDrawColor(20,30,45);doc.setLineWidth(.35);
+                    const count=Math.max(1,Math.ceil(o.h_m/50)),size=Math.min(2.6,Math.max(.8,w*.25));
+                    for(let i=0;i<count;i++){
+                        const yy=-h/2+h*(i+.5)/count;
+                        const pt=(u,v)=>rotate(u,yy+v);
+                        const head=pt(0,-size*.6);doc.circle(head[0],head[1],size*.16,'S');
+                        [[0,-size*.4,0,size*.25],[0,-size*.2,-size*.4,size*.05],[0,-size*.2,size*.4,size*.05],[0,size*.25,-size*.4,size*.7],[0,size*.25,size*.4,size*.7]].forEach(([x1,y1,x2,y2])=>doc.line(...pt(x1,y1),...pt(x2,y2)));
+                    }
+                }
+                else if(o.type==='crosswalk'){
+                    const q=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([u,v])=>rotate(u,v));for(let i=0;i<4;i++)doc.line(...q[i],...q[(i+1)%4]);
+                    for(let i=0;i<5;i++){let yy=-h*.43+i*h*.18;const a=rotate(-w*.42,yy),b=rotate(w*.42,yy);doc.setLineWidth(Math.max(.8,h*.09));doc.line(...a,...b)}
+                }
+                else if(o.type==='direction_arrow'){
+                    const q=[[-w/2,-h*.18],[w*.15,-h*.18],[w*.15,-h*.43],[w/2,0],[w*.15,h*.43],[w*.15,h*.18],[-w/2,h*.18]].map(([u,v])=>rotate(u,v));for(let i=0;i<q.length;i++)doc.line(...q[i],...q[(i+1)%q.length]);
+                }
+                else if(o.type==='warning'){
+                    const q=[[0,-h*.47],[w*.48,h*.43],[-w*.48,h*.43]].map(([u,v])=>rotate(u,v));for(let i=0;i<3;i++)doc.line(...q[i],...q[(i+1)%3]);doc.setTextColor(180,83,9);doc.text('!',cx,cy+h*.18,{align:'center'});
+                }
+                else if(o.type==='extinguisher'){
+                    const pts=[[-.28,-.32],[.28,-.32],[.28,.37],[-.28,.37]].map(([a,b])=>rotate(a*w,b*h));
+                    doc.setFillColor(220,38,38);doc.setDrawColor(150,20,20);
+                    doc.lines(pts.slice(1).map((p,i)=>[p[0]-pts[i][0],p[1]-pts[i][1]]),pts[0][0],pts[0][1],[1,1],'FD',true);
+                    doc.setDrawColor(220,38,38);doc.setLineWidth(.65);doc.line(...rotate(-w*.1,-h*.32),...rotate(-w*.1,-h*.46));
+                    doc.line(...rotate(-w*.1,-h*.46),...rotate(w*.22,-h*.46));
+                    doc.setFillColor(255,255,255);doc.rect(cx-w*.17,cy-h*.12,w*.34,h*.3,'F');
+                    doc.setDrawColor(220,38,38);doc.line(...rotate(-w*.08,-h*.02),...rotate(w*.08,h*.08));
+                }
+                else if(o.type==='hydrant'){
+                    doc.setFillColor(220,38,38);const q=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([u,v])=>rotate(u,v));
+                    doc.lines(q.slice(1).map((p,i)=>[p[0]-q[i][0],p[1]-q[i][1]]),q[0][0],q[0][1],[1,1],'F',true);
+                    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(Math.max(7,Math.min(35,Math.min(w,h)*2.1)));doc.text('H',cx,cy+Math.min(w,h)*.25,{align:'center'});
+                }
+                else if(o.type==='door'){
+                    const r=Math.min(w,h), hinge=rotate(-w/2,-h/2+r);
+                    doc.setDrawColor(45,55,70);doc.setLineWidth(.4);
+                    doc.line(...rotate(-w/2,-h/2),...hinge);
+                    doc.line(...hinge,...rotate(-w/2+r,-h/2+r));
+                    // Vektorski luk kroz niz kratkih segmenata.
+                    for(let i=0;i<32;i++){
+                        const a=-Math.PI/2+(Math.PI/2)*i/32,b=-Math.PI/2+(Math.PI/2)*(i+1)/32;
+                        doc.line(...rotate(-w/2+r*Math.cos(a),-h/2+r+r*Math.sin(a)),...rotate(-w/2+r*Math.cos(b),-h/2+r+r*Math.sin(b)));
+                    }
+                    doc.circle(...hinge,.65,'F');
+                }
+                else if(o.type==='wc_fixture'){
+                    const rr=Math.min(w,h)*.35;
+                    doc.setDrawColor(45,55,70);doc.setLineWidth(.45);
+                    doc.line(...rotate(-rr,-h*.32),...rotate(rr,-h*.32));
+                    doc.line(...rotate(-rr,-h*.32),...rotate(-rr,-h*.18));
+                    doc.line(...rotate(rr,-h*.32),...rotate(rr,-h*.18));
+                    const c=rotate(0,h*.1);doc.ellipse(c[0],c[1],rr,Math.min(h*.3,rr*1.5),'S');
+                }
+                else if(o.type==='circle'){doc.circle(cx,cy,w/2,'S')}
+                else if(o.type==='line'){const p=rotate(-w/2,-h/2),q=rotate(w/2,h/2);doc.line(...p,...q)}
+                else if(o.type==='polyline'&&o.points?.length>1){
+                    for(let i=1;i<o.points.length;i++){
+                        const p=o.points[i-1],q=o.points[i];
+                        const pp=rotate((p.x-o.w_m/2)*scale,(p.y-o.h_m/2)*scale);
+                        const qq=rotate((q.x-o.w_m/2)*scale,(q.y-o.h_m/2)*scale);
+                        doc.line(...pp,...qq);
+                    }
+                }else{
+                    const corners=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([px,py])=>rotate(px,py));
+                    for(let i=0;i<4;i++)doc.line(...corners[i],...corners[(i+1)%4]);
+                    if(o.type==='office'){
+                        doc.setDrawColor(40,55,75);doc.setLineWidth(.35);
+                        const size=Math.min(7,w*.23,h*.23);
+                        if(o.type==='office'){
+                            const p=[[-size,-size*.9],[size,-size*.9],[size,size*.1],[-size,size*.1]].map(([u,v])=>rotate(u,v));
+                            for(let i=0;i<4;i++)doc.line(...p[i],...p[(i+1)%4]);
+                            const chair=[[-size*.5,size*.6],[size*.5,size*.6],[size*.5,size*1.15],[-size*.5,size*1.15]].map(([u,v])=>rotate(u,v));
+                            for(let i=0;i<4;i++)doc.line(...chair[i],...chair[(i+1)%4]);
+                        }
+
+                    }
+                    if(o.type==='rack'){
+                        const n=Math.max(1,Math.round(o.verticals||Math.floor(o.h_m/1.5)));
+                        for(let i=1;i<n;i++){const yy=-h/2+h*i/n;doc.line(...rotate(-w/2,yy),...rotate(w/2,yy))}
+                    }
+                    if(o.type==='road')doc.line(...rotate(0,-h/2),...rotate(0,h/2));
+                }
+                if(o.label && !['hydrant','extinguisher','pedestrian_path','wc_fixture'].includes(o.type)){doc.setTextColor(20,30,45);doc.setFontSize(Math.max(5,Math.min(10,scale*.38)));
+                    doc.text(String(o.label).slice(0,100),cx,['office','toilet'].includes(o.type)?cy+h*.37:cy,{align:'center',baseline:'middle',maxWidth:Math.max(w,12)});}
+            }
+            objects.slice().sort((a,b)=>(a.zIndex||0)-(b.zIndex||0)).forEach(o=>render(o));
+            doc.setProperties({title:'MagacinCAD - Tlocrt',creator:'MagacinCAD v5'});
+            doc.save('MagacinCAD_tlocrt_'+new Date().toISOString().slice(0,10)+'.pdf');
+        }
+
+        function loadTemplate(templateType) {
+            if (!templateType) return;
+            
+            if (objects.length > 0 && !confirm('Učitavanje šablona će zameniti trenutni nacrt. Nastaviti?')) {
+                document.getElementById('template-select').value = "";
+                return;
+            }
+
+            objects = [];
+            selectedObjectIds = [];
+            activePolylinePoints = [];
+            currentDrawingObj = null;
+
+            if (templateType === 'standard') {
+                objects.push({ id: generateId(), type: 'wall', x_m: 5, y_m: 5, w_m: 40, h_m: 25, color: '#334155', strokeColor: '#64748b', strokeWidth: 2, label: 'Hala Magacina', zIndex: 0 });
+                objects.push({ id: generateId(), type: 'office', x_m: 6, y_m: 6, w_m: 7, h_m: 5, color: '#0284c7', strokeColor: '#38bdf8', strokeWidth: 2, label: 'Upravna Kancelarija', zIndex: 1 });
+                objects.push({ id: generateId(), type: 'toilet', x_m: 13.5, y_m: 6, w_m: 3.5, h_m: 5, color: '#0891b2', strokeColor: '#22d3ee', strokeWidth: 2, label: 'Toalet WC', zIndex: 1 });
+                objects.push({ id: generateId(), type: 'dock', x_m: 5, y_m: 12, w_m: 2, h_m: 4, color: '#9333ea', strokeColor: '#c084fc', strokeWidth: 2, label: 'Rampa 1', zIndex: 1 });
+                objects.push({ id: generateId(), type: 'zone_inbound', x_m: 8, y_m: 12, w_m: 8, h_m: 6, color: '#10b981', strokeColor: '#34d399', strokeWidth: 2, label: 'Prijem robe', zIndex: 1 });
+
+                for (let row = 0; row < 3; row++) {
+                    objects.push({ id: generateId(), type: 'rack', x_m: 20, y_m: 6 + (row * 5), w_m: 1.2, h_m: 12, color: '#2563eb', strokeColor: '#60a5fa', strokeWidth: 2, label: `Regal A${row+1}`, levels: 5, palletsPerLevel: 8, zIndex: 2 });
+                }
+            } 
+            else if (templateType === 'crossdock') {
+                objects.push({ id: generateId(), type: 'wall', x_m: 5, y_m: 5, w_m: 50, h_m: 20, color: '#1e293b', strokeColor: '#475569', strokeWidth: 2, label: 'Cross-Dock Terminal', zIndex: 0 });
+                for(let i=0; i<4; i++) {
+                    objects.push({ id: generateId(), type: 'dock', x_m: 5, y_m: 7 + (i*4), w_m: 2, h_m: 3, color: '#9333ea', strokeColor: '#c084fc', strokeWidth: 2, label: `In-Rampa ${i+1}`, zIndex: 1 });
+                    objects.push({ id: generateId(), type: 'dock', x_m: 53, y_m: 7 + (i*4), w_m: 2, h_m: 3, color: '#9333ea', strokeColor: '#c084fc', strokeWidth: 2, label: `Out-Rampa ${i+1}`, zIndex: 1 });
+                }
+                objects.push({ id: generateId(), type: 'road', x_m: 10, y_m: 12, w_m: 40, h_m: 6, color: '#334155', strokeColor: '#eab308', strokeWidth: 2, label: 'Glavna Sortirnica', zIndex: 1 });
+            }
+            else if (templateType === 'robotics') {
+                objects.push({ id: generateId(), type: 'wall', x_m: 5, y_m: 5, w_m: 45, h_m: 22, color: '#1e293b', strokeColor: '#475569', strokeWidth: 2, label: 'Robotička Hala Auto-Industrije', zIndex: 0 });
+                objects.push({ id: generateId(), type: 'road', x_m: 8, y_m: 13, w_m: 38, h_m: 3, color: '#334155', strokeColor: '#eab308', strokeWidth: 2, label: 'Traka za sklapanje karoserije', zIndex: 1 });
+
+                for (let i = 0; i < 4; i++) {
+                    objects.push({ id: generateId(), type: 'robot_comau', x_m: 12 + (i * 8), y_m: 9, w_m: 3, h_m: 3, color: '#dc2626', strokeColor: '#f87171', strokeWidth: 2, label: `Comau R${i+1}`, zIndex: 2 });
+                    objects.push({ id: generateId(), type: 'robot_comau', x_m: 12 + (i * 8), y_m: 17, w_m: 3, h_m: 3, color: '#dc2626', strokeColor: '#f87171', strokeWidth: 2, label: `Comau R${i+5}`, zIndex: 2 });
+                }
+
+                objects.push({ id: generateId(), type: 'office', x_m: 38, y_m: 6, w_m: 10, h_m: 5, color: '#0284c7', strokeColor: '#38bdf8', strokeWidth: 2, label: 'Kontrolna Soba', zIndex: 1 });
+            }
+
+            document.getElementById('template-select').value = "";
+            updateInspector();
+            updateStats();
+            requestAnimationFrame(() => draw());
+        }
+
+        // Sačuvaj automatski rezervnu kopiju u lokalnoj memoriji pregledača.
+        window.addEventListener('beforeunload',()=>{try{localStorage.setItem('magacincad_backup',JSON.stringify(objects))}catch(e){}});
+        window.onload = function() {
+            resizeCanvas();
+            try {const backup=JSON.parse(localStorage.getItem('magacincad_backup')||'null');
+                if(Array.isArray(backup)&&backup.length&&confirm('Pronađena je prethodna radna verzija. Vratiti je?')){
+                    objects=backup;updateStats();fitDrawing();return;
+                }}catch(e){}
+            loadTemplate('standard');
+        };
+    </script>
+</body>
+</html>
