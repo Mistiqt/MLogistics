@@ -717,7 +717,15 @@ let lastHr=hourFloor(Date.now());
 setInterval(()=>{const h=hourFloor(Date.now());if(h===lastHr)return;const a=document.activeElement;
   if(a&&a.closest&&a.closest('#p-cv')&&/INPUT|TEXTAREA/.test(a.tagName))return;
   lastHr=h;renderParts();renderCov();toast('Stanje je preračunato za novi sat')},15000);
-setInterval(()=>{const a=document.activeElement;if(!document.hidden&&!editId&&!(a&&a.closest&&a.closest('#p-cv')&&/INPUT|TEXTAREA/.test(a.tagName)))refresh()},60000);
+// Automatska sinhronizacija sa Google Sheets na svakih 20 sekundi.
+// Ne prekidaj aktivnu izmenu vozila ili unos podataka u Pokrivenosti.
+let autoRefreshBusy=false;
+setInterval(async()=>{
+  const a=document.activeElement;
+  if(document.hidden||editId||autoRefreshBusy||(a&&a.closest&&a.closest('#p-cv')&&/INPUT|TEXTAREA/.test(a.tagName)))return;
+  autoRefreshBusy=true;
+  try{await refresh()}finally{autoRefreshBusy=false}
+},20000);
 </script>
 </body>
 </html>
