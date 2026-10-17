@@ -265,8 +265,8 @@
 
             <!-- CANVAS OVERLAY TOOLBAR (ZOOM CONTROLS & HUD) -->
             <div class="absolute bottom-4 left-4 bg-slate-800/90 backdrop-blur border border-slate-700 rounded-lg p-1.5 flex items-center space-x-2 text-xs shadow-xl text-slate-300">
-                <button onclick="zoomDelta(1.1)" title="Uvećaj (+)" class="w-7 h-7 flex items-center justify-center hover:bg-slate-700 rounded"><i class="fa-solid fa-plus"></i></button>
-                <button onclick="zoomDelta(0.9)" title="Umanji (-)" class="w-7 h-7 flex items-center justify-center hover:bg-slate-700 rounded"><i class="fa-solid fa-minus"></i></button>
+                <button onclick="zoomDelta(1.25)" title="Uvećaj (+)" class="w-7 h-7 flex items-center justify-center hover:bg-slate-700 rounded"><i class="fa-solid fa-plus"></i></button>
+                <button onclick="zoomDelta(0.8)" title="Umanji (-)" class="w-7 h-7 flex items-center justify-center hover:bg-slate-700 rounded"><i class="fa-solid fa-minus"></i></button>
                 <button onclick="fitDrawing()" title="Prikaži ceo nacrt" class="px-2 h-7 flex items-center justify-center hover:bg-slate-700 rounded font-medium">100%</button>
                 <span class="text-slate-600">|</span>
                 <span id="hud-coords" class="font-mono text-slate-400 px-1">X: 0.0m | Y: 0.0m</span>
@@ -808,7 +808,9 @@
         }
         function drawGrid() {
             CTX.save();
-            const meterPixels = PIXELS_PER_METER * zoom * (zoom < 0.45 ? 5 : 1);
+            const baseGridPixels = PIXELS_PER_METER * zoom;
+            const gridMultiplier = Math.max(1, Math.pow(5, Math.ceil(Math.log(8 / baseGridPixels) / Math.log(5))));
+            const meterPixels = baseGridPixels * gridMultiplier;
             
             const startX = ((panX % meterPixels) + meterPixels) % meterPixels;
             const startY = ((panY % meterPixels) + meterPixels) % meterPixels;
@@ -1127,17 +1129,36 @@
                     CTX.fillRect(-w/2, -h/2, w, h);
             }
 
-            if (zoom > 0.35 && obj.label && !['hydrant','extinguisher','pedestrian_path','wc_fixture'].includes(obj.type)) {
-                // Na PDF izvozu (bela pozadina) tekst mora biti taman da bi se dobro video
+            if (obj.label && !['hydrant','extinguisher','pedestrian_path','wc_fixture'].includes(obj.type)) {
+                // Manji font koji prati zoom i ostaje u granicama objekta.
                 CTX.fillStyle = forExport ? '#0f172a' : (obj.type==='text' ? (obj.strokeColor||'#e879f9') : '#ffffff');
-                CTX.font = `bold ${Math.max(10, Math.min(16, 12 * zoom))}px sans-serif`;
                 CTX.textAlign = 'center';
                 CTX.textBaseline = 'middle';
                 if (!forExport) {
                     CTX.shadowColor = 'black';
                     CTX.shadowBlur = 4;
                 }
-                CTX.fillText(obj.label, 0, ['office','toilet'].includes(obj.type) ? Math.max(0,h/2-12) : 0);
+
+                CTX.save();
+                const isRack = obj.type === 'rack';
+                // Regal: natpis ide duz duze ose regala i rotira se zajedno sa njim.
+                const rackVertical = isRack && h > w;
+                if (rackVertical) CTX.rotate(-Math.PI / 2);
+                const availableWidth = Math.max(0, (rackVertical ? h : w) * 0.88);
+                const availableHeight = Math.max(0, (rackVertical ? w : h) * 0.75);
+                let fontSize = Math.min(9 * zoom, availableHeight * 0.7);
+                CTX.font = `bold ${fontSize}px sans-serif`;
+                const textWidth = CTX.measureText(obj.label).width;
+                if (textWidth > availableWidth && textWidth > 0) {
+                    fontSize *= availableWidth / textWidth;
+                    CTX.font = `bold ${fontSize}px sans-serif`;
+                }
+                if (fontSize > 0.01 && availableWidth > 0) {
+                    const bottomLabel = ['office','toilet'].includes(obj.type);
+                    const labelY = bottomLabel ? Math.max(0, h/2 - fontSize * 0.9) : 0;
+                    CTX.fillText(obj.label, 0, labelY, availableWidth);
+                }
+                CTX.restore();
                 CTX.shadowBlur = 0;
             }
 
@@ -1666,7 +1687,7 @@
         }, { passive: false });
 
         function zoomDelta(factor, mouseX = CANVAS.width / 2, mouseY = CANVAS.height / 2) {
-            const newZoom = Math.min(Math.max(0.2, zoom * factor), 5.0);
+            const newZoom = Math.min(Math.max(0.002, zoom * factor), 100.0);
             
             panX = mouseX - (mouseX - panX) * (newZoom / zoom);
             panY = mouseY - (mouseY - panY) * (newZoom / zoom);
