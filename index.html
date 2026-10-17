@@ -179,6 +179,8 @@
                 
                 <!-- PLANIRANJE KAO KARTICA -->
                 <a href="material-planner.html" target="_blank" class="nav-tab-item" id="navPlaniranje">Planiranje</a>
+                <!-- LayoutCAD: vidljiv isključivo MASTER korisniku nakon prijave -->
+                <a href="layoutcad.html" target="_blank" rel="noopener noreferrer" class="nav-tab-item" id="navLayoutCad" style="display:none;" onclick="return otvoriLayoutCad(event)">LayoutCAD</a>
 
                 <div class="dropdown" id="navTransport">
                     <a class="nav-tab-item">Transport ▾</a>
@@ -428,6 +430,7 @@
                         const isMasterAdmin = (userRole === 'MASTER' || userRole === 'ADMIN');
                         
                         document.getElementById('navPlaniranje').style.display = isGuest ? 'none' : 'inline-block';
+                        document.getElementById('navLayoutCad').style.display = (userRole === 'MASTER') ? 'inline-block' : 'none';
                         document.getElementById('navTransport').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navPopis').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navTimeSheet').style.display = isGuest ? 'none' : 'inline-block';
@@ -444,6 +447,35 @@
                     }
                 })
                 .catch(err => { showLoading(false); document.getElementById('loginError').style.display = "block"; });
+        }
+
+        // Provera prava na serveru pre otvaranja LayoutCAD kartice.
+        // Napomena: sam statički layoutcad.html mora biti dodatno zaštićen na hostingu
+        // ako se zahteva zabrana direktnog otvaranja putem URL-a.
+        async function otvoriLayoutCad(event) {
+            event.preventDefault();
+            if (userRole !== 'MASTER' || !loggedUser) {
+                alert('LayoutCAD je dostupan samo MASTER korisnicima.');
+                return false;
+            }
+            const prozor = window.open('', '_blank');
+            if (!prozor) { alert('Dozvolite iskačuće prozore za ovaj sajt.'); return false; }
+            try {
+                const url = GOOGLE_SCRIPT_URL + '?akcija=proveriLayoutCad&sifra=' + encodeURIComponent(loggedUser);
+                const odgovor = await fetch(url, {cache: 'no-store'});
+                if (!odgovor.ok) throw new Error('Provera nije uspela');
+                const data = await odgovor.json();
+                if (data.status === 'OK' && data.dozvoljeno === true) {
+                    prozor.location.replace('layoutcad.html');
+                } else {
+                    prozor.close();
+                    alert('Pristup LayoutCAD-u dozvoljen je samo aktivnim MASTER korisnicima.');
+                }
+            } catch (err) {
+                prozor.close();
+                alert('Nije moguće proveriti pristup LayoutCAD-u. Pokušajte ponovo.');
+            }
+            return false;
         }
 
         function ucitajSveObjaveSaGoogleTabele(isManual = false) {
