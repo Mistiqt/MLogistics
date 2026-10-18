@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LayoutCad v5.0 - Dizajner Layout-a Skladišta</title>
+    <title>LayoutCad v1.0 - Dizajner Layout-a Skladišta</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for CAD & Warehouse Icons -->
@@ -49,7 +49,7 @@
                 <i class="fa-solid fa-boxes-packing text-lg"></i>
                 <span class="tracking-wide">MAGACIN<span class="text-blue-300 font-light">CAD</span></span>
             </div>
-            <span class="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded border border-slate-600">v5.0 CAD</span>
+            <span class="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded border border-slate-600">v1.0 CAD</span>
         </div>
 
         <!-- QUICK CANVAS CONTROLS -->
@@ -70,10 +70,12 @@
                 <i class="fa-regular fa-circle"></i> Krug
             </button>
             <button id="btn-draw-line" onclick="setMode('draw_line')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition hover:bg-slate-800">
-                <i class="fa-solid fa-slash"></i> Linija
+                <i class="fa-solid fa-slash"></i> Linija (Grid) (F2)
             </button>
+            <button id="btn-draw-free-line" onclick="setMode('draw_free_line')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold hover:bg-slate-800" title="Slobodna linija bez snap-a i ograničenja">✎ Slobodna linija (F1)</button>
+            <button id="btn-draw-polygon" onclick="setMode('draw_polygon')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold hover:bg-slate-800" title="F4: Klikni uglove, zatvori klikom na početnu tačku ili Enter">⬡ Poligon (F4)</button>
             <button id="btn-draw-polyline" onclick="setMode('draw_polyline')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition hover:bg-slate-800" title="Linija sa više segmenta (Klik za tačke, Enter za kraj)">
-                <i class="fa-solid fa-route"></i> Polilinija
+                <i class="fa-solid fa-route"></i> Polilinija (F3)
             </button>
         </div>
 
@@ -82,6 +84,7 @@
             <button onclick="groupSelected()" title="Grupiši Selektovano (Ctrl+G)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600 flex items-center gap-1">
                 <i class="fa-solid fa-object-group"></i> Grupiši
             </button>
+            <button onclick="duplicateSelected()" title="Dupliraj selektovane objekte uz precizan razmak" class="bg-blue-700 hover:bg-blue-600 text-white text-xs px-2 py-1.5 rounded-lg">Kopiraj / Razmak</button>
             <button onclick="ungroupSelected()" title="Razgrupiši (Ctrl+Shift+G)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600 flex items-center gap-1">
                 <i class="fa-solid fa-object-ungroup"></i> Razgrupiši
             </button>
@@ -96,7 +99,7 @@
                     <input type="checkbox" id="chk-snap" onchange="toggleSnap()" class="rounded bg-slate-800 border-slate-600 text-blue-600">
                     <span class="text-slate-300">Snap</span>
                 </label>
-                <select id="snap-step" onchange="setSnapStep(this.value)" title="Korak preciznosti" class="bg-slate-800 text-xs rounded border border-slate-600">
+                <select id="snap-step" onchange="setSnapStep(this.value)" title="Korak Grid linije: 1 mm, 1 cm, 10 cm ili metar" class="bg-slate-800 text-xs rounded border border-slate-600">
                     <option value="0.001">1 mm</option><option value="0.01">1 cm</option><option value="0.1">10 cm</option><option value="0.5">0.5 m</option><option value="1">1 m</option>
                 </select>
                 <button onclick="exactCAD()" class="bg-blue-700 px-2 py-1 rounded" title="Unesi tačne koordinate u metrima, do milimetra">Tačne koordinate</button>
@@ -152,9 +155,9 @@
                         </div>
                         <div onclick="addPreset('wc_fixture')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-cyan-500 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-toilet text-cyan-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">WC šolja (posebno)</span></div>
                         <div onclick="addPreset('door')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-sky-500 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-door-open text-sky-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Vrata (CAD luk)</span></div>
-                        <div onclick="addPreset('circle')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-teal-500 cursor-pointer flex flex-col items-center text-center group transition">
-                            <i class="fa-regular fa-circle text-teal-400 text-lg group-hover:scale-110 transition"></i>
-                            <span class="text-[11px] font-medium text-slate-300 mt-1">Krug / Stub</span>
+                        <div onclick="addPreset('column_cross')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-teal-500 cursor-pointer flex flex-col items-center text-center group transition">
+                            <i class="fa-solid fa-plus text-teal-400 text-lg group-hover:scale-110 transition"></i>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Stub (krst)</span>
                         </div>
                         <div onclick="setMode('draw_polyline')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-indigo-500 cursor-pointer flex flex-col items-center text-center group transition">
                             <i class="fa-solid fa-route text-indigo-400 text-lg group-hover:scale-110 transition"></i>
@@ -251,6 +254,23 @@
 
             </div>
 
+            <!-- LAYERS / SKLADISTENJE -->
+            <div class="p-3 border-t border-slate-700 space-y-2 text-xs" style="max-height:48vh;overflow-y:auto">
+                <div class="flex justify-between items-center"><b class="text-cyan-300">LAYERS / SLOJEVI</b><button onclick="addCADLayer()" class="bg-blue-700 px-2 py-1 rounded">+ Layer</button></div>
+                <div id="cad-layer-list" class="space-y-1"></div>
+                <div class="flex gap-1"><button onclick="moveSelectionToActiveLayer()" class="bg-slate-700 px-2 py-1 rounded flex-1" title="Premesti selektovane elemente u aktivni sloj">Premesti izbor</button><button onclick="mergeCADLayers()" class="bg-slate-700 px-2 py-1 rounded flex-1" title="Spoji izabrani i aktivni sloj">Spoji slojeve</button></div>
+                <div class="border-t border-slate-700 pt-2 space-y-2">
+                    <b class="text-emerald-300">KUTIJE I KAPACITET</b>
+                    <div class="grid grid-cols-2 gap-1"><label>Širina (m)<input id="box-w" type="number" min="0.001" step="0.001" value="0.6" class="w-full bg-slate-900 rounded p-1"></label><label>Dužina (m)<input id="box-h" type="number" min="0.001" step="0.001" value="0.4" class="w-full bg-slate-900 rounded p-1"></label></div>
+                    <div class="grid grid-cols-2 gap-1"><label>Razmak (m)<input id="box-gap" type="number" min="0" step="0.001" value="0" class="w-full bg-slate-900 rounded p-1"></label><label>Visina kutije (m)<input id="box-z" type="number" min="0.001" step="0.001" value="0.3" class="w-full bg-slate-900 rounded p-1"></label></div>
+                    <div class="grid grid-cols-2 gap-1"><label>Visina prostora (m)<input id="space-z" type="number" min="0.001" step="0.001" value="3" class="w-full bg-slate-900 rounded p-1"></label><label>Max komada<input id="box-limit" type="number" min="1" max="10000" step="1" value="2000" class="w-full bg-slate-900 rounded p-1"></label></div>
+                    <button onclick="createCADBox()" class="w-full bg-blue-700 rounded p-1.5">Dodaj jednu kutiju u aktivni layer</button>
+                    <button onclick="calculateBoxCapacity()" class="w-full bg-emerald-700 rounded p-1.5">Popuni izabranu pravougaonu zonu</button>
+                    <div id="box-capacity-result" class="text-slate-300 whitespace-pre-line"></div>
+                    <p class="text-slate-400 text-[10px]">Izaberi pravougaoni objekat kao zonu. Raspored je pravougaona mreža; ne uzima u obzir prolaze, nosivost i prepreke. Broj po visini je teorijski.</p>
+                </div>
+            </div>
+
             <!-- MINI STATS FOOTER -->
             <div class="p-3 border-t border-slate-700 bg-slate-850 text-xs text-slate-400 space-y-1">
                 <div class="flex justify-between"><span>Ukupno Objekata:</span> <span id="stat-count" class="font-bold text-slate-200">0</span></div>
@@ -266,7 +286,7 @@
             <!-- CANVAS OVERLAY TOOLBAR (ZOOM CONTROLS & HUD) -->
             <div class="absolute bottom-4 left-4 bg-slate-800/90 backdrop-blur border border-slate-700 rounded-lg p-1.5 flex items-center space-x-2 text-xs shadow-xl text-slate-300">
                 <button onclick="zoomDelta(1.25)" title="Uvećaj (+)" class="w-7 h-7 flex items-center justify-center hover:bg-slate-700 rounded"><i class="fa-solid fa-plus"></i></button>
-                <button onclick="zoomDelta(0.8)" title="Umanji (-)" class="w-7 h-7 flex items-center justify-center hover:bg-slate-700 rounded"><i class="fa-solid fa-minus"></i></button>
+                <button onclick="zoomDelta(0.9)" title="Umanji (-)" class="w-7 h-7 flex items-center justify-center hover:bg-slate-700 rounded"><i class="fa-solid fa-minus"></i></button>
                 <button onclick="fitDrawing()" title="Prikaži ceo nacrt" class="px-2 h-7 flex items-center justify-center hover:bg-slate-700 rounded font-medium">100%</button>
                 <span class="text-slate-600">|</span>
                 <span id="hud-coords" class="font-mono text-slate-400 px-1">X: 0.0m | Y: 0.0m</span>
@@ -280,8 +300,10 @@
                 <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Delete</kbd> Obriši</div>
                 <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Shift + Drag</kbd> Box Selekcija</div>
                 <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+G / Ctrl+Shift+G</kbd> Grupa</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">F1/F2/F3/F4</kbd> Linija / Grid / Polilinija / Poligon</div>
                 <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Enter / Esc</kbd> Završi Poliliniju</div>
                 <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">R</kbd> Rotiraj za 45°</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+C / Ctrl+V</kbd> Kopiraj / nalepi sa razmakom</div>
             </div>
         </main>
 
@@ -322,14 +344,14 @@
                         <div>
                             <label class="font-semibold text-slate-400 text-[10px]">Boja Linije / Okvira</label>
                             <div class="flex items-center gap-1.5 mt-1">
-                                <input type="color" id="prop-stroke-color" onchange="updateSelectedProp('strokeColor', this.value)" class="w-7 h-7 rounded bg-transparent border border-slate-700 cursor-pointer">
+                                <input type="color" id="prop-stroke-color" oninput="updateSelectedProp('strokeColor', this.value)" class="w-7 h-7 rounded bg-transparent border border-slate-700 cursor-pointer">
                                 <span id="prop-stroke-color-hex" class="font-mono text-[10px] text-slate-400">#3b82f6</span>
                             </div>
                         </div>
                         <div>
                             <label class="font-semibold text-slate-400 text-[10px]">Boja Ispune</label>
                             <div class="flex items-center gap-1.5 mt-1">
-                                <input type="color" id="prop-color" onchange="updateSelectedProp('color', this.value)" class="w-7 h-7 rounded bg-transparent border border-slate-700 cursor-pointer">
+                                <input type="color" id="prop-color" oninput="updateSelectedProp('color', this.value)" class="w-7 h-7 rounded bg-transparent border border-slate-700 cursor-pointer">
                                 <span id="prop-color-hex" class="font-mono text-[10px] text-slate-400">#3b82f6</span>
                             </div>
                         </div>
@@ -463,6 +485,15 @@
         let activePolylinePoints = [];
         let polylineHoverPoint = null;
 
+        let cadLayers = [
+            {id:'base',name:'Tlocrt',visible:true,locked:false,color:'#60a5fa'},
+            {id:'zones',name:'Zone skladištenja',visible:true,locked:false,color:'#34d399'},
+            {id:'boxes',name:'Kutije',visible:true,locked:false,color:'#fbbf24'}
+        ];
+        let activeLayerId = 'base';
+        function layerOf(o){return cadLayers.find(l=>l.id===(o.layerId||'base'))||cadLayers[0];}
+        function layerVisible(o){return layerOf(o).visible;}
+        function layerEditable(o){const l=layerOf(o);return l.visible&&!l.locked;}
         let objects = [];
         let selectedObjectIds = [];
 
@@ -482,7 +513,9 @@
         function setMode(newMode) {
             measureStart=null;measureEnd=null;measureHover=null;
 
-            if (mode === 'draw_polyline' && activePolylinePoints.length > 1) {
+            if (mode === 'draw_free_line' && freeLineAwaitingEnd) { currentDrawingObj = null; freeLineAwaitingEnd = false; freeLineMouseDown = false; freeLineDragStarted = false; freeLinePressPos = null; }
+            if (mode === 'draw_line' && gridLineAwaitingEnd) { currentDrawingObj = null; gridLineAwaitingEnd = false; gridLineMouseDown = false; gridLineDragStarted = false; }
+            if ((mode === 'draw_polyline' || mode === 'draw_polygon') && activePolylinePoints.length > 1) {
                 finishPolyline();
             }
 
@@ -530,13 +563,13 @@
                 alert(mode === 'measure_area' ? `Pravougaona površina: ${(Math.abs(dx*dy)).toFixed(6)} m²\nŠirina: ${Math.abs(dx).toFixed(3)} m; dužina: ${Math.abs(dy).toFixed(3)} m` : `Dužina: ${length.toFixed(3)} m (${(length*1000).toFixed(0)} mm)\nΔX=${dx.toFixed(3)} m, ΔY=${dy.toFixed(3)} m`);
                 return;
             }
-            if (mode === 'draw_polyline') {
+            if (mode === 'draw_polyline' || mode === 'draw_polygon') {
                 activePolylinePoints.push(a,b); finishPolyline(); return;
             }
             const type=mode === 'draw_wall' ? 'wall' : mode === 'draw_circle' ? 'circle' : 'line';
             const o={id:generateId(),type,x_m:Math.min(a.x,b.x),y_m:Math.min(a.y,b.y),w_m:Math.max(.001,Math.abs(dx)),h_m:Math.max(.001,Math.abs(dy)),angle:0,color:'#3b82f6',strokeColor:'#60a5fa',strokeWidth:2,label:type==='line'?'Linija':type==='wall'?'Zid':'Krug',zIndex:objects.length};
             if(type==='line') o.lineReverse=(dx*dy<0);
-            objects.push(o); selectedObjectIds=[o.id]; setMode('select');updateInspector();updateStats();draw();
+            o.layerId=activeLayerId; objects.push(o); selectedObjectIds=[o.id]; setMode('select');updateInspector();updateStats();draw();
             alert(`Uneto: ΔX=${dx.toFixed(3)} m, ΔY=${dy.toFixed(3)} m, dijagonala=${length.toFixed(3)} m`);
         }
 
@@ -544,7 +577,7 @@
             const worldX = (screenX - panX) / (PIXELS_PER_METER * zoom);
             const worldY = (screenY - panY) / (PIXELS_PER_METER * zoom);
             
-            if (snapEnabled) {
+            if (snapEnabled && mode !== 'draw_free_line' && mode !== 'draw_line') {
                 return {
                     x: Math.round(worldX / snapGridSize) * snapGridSize,
                     y: Math.round(worldY / snapGridSize) * snapGridSize
@@ -553,6 +586,63 @@
             return { x: worldX, y: worldY };
         }
 
+        // Isti korak i isti koordinatni pocetak kao u drawGrid().
+        function visibleGridStep() {
+            const px = PIXELS_PER_METER * zoom;
+            return Math.max(1, Math.pow(5, Math.ceil(Math.log(8 / px) / Math.log(5))));
+        }
+        // Slobodna linija: klik-klik bez ogranicenja ili pritisni-povuci-pusti.
+        let freeLineAwaitingEnd = false;
+        let freeLineMouseDown = false;
+        let freeLineDragStarted = false;
+        let freeLinePressPos = null;
+        let gridLineAwaitingEnd = false;
+        let gridLineMouseDown = false;
+        let gridLineDragStarted = false;
+        let gridLinePressPos = null;
+        function rawLineWorldPoint(mouse) {
+            const scale = PIXELS_PER_METER * zoom;
+            return {x:(mouse.x-panX)/scale, y:(mouse.y-panY)/scale};
+        }
+        // Grid linija koristi izabranu preciznost, ne razmak velikih linija mreže.
+        // Uvek ostaje horizontalna ili vertikalna, ali može biti duga samo 1 mm.
+        function gridSnap(v) {
+            const step = Math.max(0.001, Number(snapGridSize) || 0.001);
+            return Math.round(Math.round(v / step) * step * 1000) / 1000;
+        }
+        // Pocetak klik-klik linije je tacno na VIDLJIVOJ mrezi.
+        // Kraj ostaje na istoj osi, sa preciznoscu izabranog mm/cm koraka.
+        function gridStartPoint(mouse) {
+            const raw = rawLineWorldPoint(mouse);
+            const step = visibleGridStep();
+            return {x: Math.round(raw.x / step) * step,
+                    y: Math.round(raw.y / step) * step};
+        }
+        function lineWorldPoint(mouse) {
+            const raw = rawLineWorldPoint(mouse);
+            if (mode !== 'draw_line') return raw;
+            if (!gridLineAwaitingEnd || !currentDrawingObj) return gridStartPoint(mouse);
+            const dx = raw.x - drawingStart.x;
+            const dy = raw.y - drawingStart.y;
+            return Math.abs(dx) >= Math.abs(dy)
+                ? {x: drawingStart.x + gridSnap(dx), y: drawingStart.y}
+                : {x: drawingStart.x, y: drawingStart.y + gridSnap(dy)};
+        }
+        // Drzanje levog tastera: bez snap-a, ali strogo horizontalno ili vertikalno.
+        function freeOrthogonalEndpoint(mouse) {
+            const raw = rawLineWorldPoint(mouse);
+            const dx = raw.x - drawingStart.x;
+            const dy = raw.y - drawingStart.y;
+            return Math.abs(dx) >= Math.abs(dy)
+                ? {x: raw.x, y: drawingStart.y}
+                : {x: drawingStart.x, y: raw.y};
+        }
+        function lineFromEndpoints(o,a,b) {
+            o.x_m=Math.min(a.x,b.x);o.y_m=Math.min(a.y,b.y);
+            o.w_m=Math.abs(b.x-a.x);o.h_m=Math.abs(b.y-a.y);
+            o.lineReverse=(b.x-a.x)*(b.y-a.y)<0;
+
+        }
         function worldToScreen(worldX, worldY) {
             return {
                 x: worldX * PIXELS_PER_METER * zoom + panX,
@@ -578,6 +668,9 @@
             };
 
             switch (type) {
+                case 'column_cross':
+                    Object.assign(newObj,{w_m:0.45,h_m:0.45,color:'#14b8a6',strokeColor:'#2dd4bf',label:'Stub'});
+                    break;
                 case 'circle':
                     newObj.w_m = 3.0;
                     newObj.h_m = 3.0;
@@ -697,6 +790,7 @@
                     break;
             }
 
+            newObj.layerId = activeLayerId;
             objects.push(newObj);
             selectedObjectIds = [newObj.id];
             updateInspector();
@@ -727,6 +821,7 @@
                 zIndex: objects.length
             };
 
+            newObj.layerId = activeLayerId;
             objects.push(newObj);
             selectedObjectIds = [newObj.id];
             updateInspector();
@@ -758,6 +853,7 @@
             const sortedObjects = [...objects].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
             sortedObjects.forEach(obj => {
+                if (!layerVisible(obj)) return;
                 drawObject(obj, false, forExport);
             });
 
@@ -772,14 +868,14 @@
                 if (resizing) drawLiveDimensions(resizing);
             }
 
-            if (mode === 'draw_polyline' && activePolylinePoints.length > 0) {
+            if ((mode === 'draw_polyline' || mode === 'draw_polygon') && activePolylinePoints.length > 0) {
                 drawActivePolylinePreview();
             }
 
             if (mode === 'select' && selectedObjectIds.length > 0) {
                 selectedObjectIds.forEach(id => {
                     const selected = objects.find(o => o.id === id);
-                    if (selected) drawSelectionControls(selected);
+                    if (selected && layerEditable(selected)) drawSelectionControls(selected);
                 });
             }
 
@@ -808,45 +904,28 @@
         }
         function drawGrid() {
             CTX.save();
-            const baseGridPixels = PIXELS_PER_METER * zoom;
-            const gridMultiplier = Math.max(1, Math.pow(5, Math.ceil(Math.log(8 / baseGridPixels) / Math.log(5))));
-            const meterPixels = baseGridPixels * gridMultiplier;
-            
-            const startX = ((panX % meterPixels) + meterPixels) % meterPixels;
-            const startY = ((panY % meterPixels) + meterPixels) % meterPixels;
-
-            // AutoCAD stil tanke i precizne linije mreže na crnoj podlozi
+            const scale = PIXELS_PER_METER * zoom;
+            const step = visibleGridStep();
+            const left = -panX / scale, right = (CANVAS.width-panX)/scale;
+            const top = -panY / scale, bottom = (CANVAS.height-panY)/scale;
+            const x0 = Math.ceil(left/step), x1 = Math.floor(right/step);
+            const y0 = Math.ceil(top/step), y1 = Math.floor(bottom/step);
             CTX.lineWidth = 0.8;
-            CTX.strokeStyle = 'rgba(95, 125, 175, 0.22)';
-            
-            CTX.beginPath();
-            for (let x = startX; x < CANVAS.width; x += meterPixels) {
-                CTX.moveTo(x, 0);
-                CTX.lineTo(x, CANVAS.height);
+            for (let pass=0;pass<2;pass++) {
+                CTX.strokeStyle = pass ? 'rgba(105,145,205,0.36)' : 'rgba(95,125,175,0.22)';
+                CTX.beginPath();
+                for(let i=x0;i<=x1;i++) {
+                    if ((i%5===0)!==Boolean(pass)) continue;
+                    const x=worldToScreen(i*step,0).x;
+                    CTX.moveTo(x,0);CTX.lineTo(x,CANVAS.height);
+                }
+                for(let i=y0;i<=y1;i++) {
+                    if ((i%5===0)!==Boolean(pass)) continue;
+                    const y=worldToScreen(0,i*step).y;
+                    CTX.moveTo(0,y);CTX.lineTo(CANVAS.width,y);
+                }
+                CTX.stroke();
             }
-            for (let y = startY; y < CANVAS.height; y += meterPixels) {
-                CTX.moveTo(0, y);
-                CTX.lineTo(CANVAS.width, y);
-            }
-            CTX.stroke();
-
-            // Glavne 5m linije mreže
-            const majorPixels = meterPixels * 5;
-            const majorStartX = ((panX % majorPixels) + majorPixels) % majorPixels;
-            const majorStartY = ((panY % majorPixels) + majorPixels) % majorPixels;
-
-            CTX.strokeStyle = 'rgba(105, 145, 205, 0.36)';
-            CTX.beginPath();
-            for (let x = majorStartX; x < CANVAS.width; x += majorPixels) {
-                CTX.moveTo(x, 0);
-                CTX.lineTo(x, CANVAS.height);
-            }
-            for (let y = majorStartY; y < CANVAS.height; y += majorPixels) {
-                CTX.moveTo(0, y);
-                CTX.lineTo(CANVAS.width, y);
-            }
-            CTX.stroke();
-
             CTX.restore();
         }
 
@@ -868,12 +947,29 @@
         }
         function drawObject(obj, isPreview = false, forExport = false) {
             if (!obj) return;
+            if (obj.type === 'group') {
+                (obj.children || []).forEach(child => {
+                    const moved={...child,x_m:obj.x_m+child.x_m,y_m:obj.y_m+child.y_m};
+                    if(child.startPoint) moved.startPoint={x:obj.x_m+child.startPoint.x,y:obj.y_m+child.startPoint.y};
+                    if(child.endPoint) moved.endPoint={x:obj.x_m+child.endPoint.x,y:obj.y_m+child.endPoint.y};
+                    drawObject(moved,isPreview,forExport);
+                });
+                return;
+            }
             CTX.save();
             
             const screen = worldToScreen(obj.x_m, obj.y_m);
             const w = obj.w_m * PIXELS_PER_METER * zoom;
             const h = obj.h_m * PIXELS_PER_METER * zoom;
 
+            if (obj.type === 'line') {
+                const a = obj.startPoint || {x:obj.x_m,y:obj.y_m+(obj.lineReverse?obj.h_m:0)};
+                const b = obj.endPoint || {x:obj.x_m+obj.w_m,y:obj.y_m+(obj.lineReverse?0:obj.h_m)};
+                const pa=worldToScreen(a.x,a.y),pb=worldToScreen(b.x,b.y);
+                CTX.strokeStyle=obj.strokeColor||'#60a5fa'; CTX.lineWidth=obj.strokeWidth||2;
+                CTX.globalAlpha=isPreview?.6:1;
+                CTX.beginPath();CTX.moveTo(pa.x,pa.y);CTX.lineTo(pb.x,pb.y);CTX.stroke();CTX.restore();return;
+            }
             CTX.translate(screen.x + w / 2, screen.y + h / 2);
             CTX.rotate((obj.angle * Math.PI) / 180);
 
@@ -905,14 +1001,14 @@
                 }
                 case 'crosswalk':
                     CTX.strokeStyle=strokeC;CTX.lineWidth=strokeW;CTX.strokeRect(-w/2,-h/2,w,h);
-                    CTX.fillStyle=forExport?'#334155':'#f8fafc';
+                    CTX.fillStyle=obj.color||'#f8fafc';
                     for(let i=0;i<5;i++)CTX.fillRect(-w*.42,-h*.43+i*h*.18,w*.84,h*.10);
                     break;
                 case 'direction_arrow':
                     CTX.fillStyle=forExport?'#15803d':(obj.color||'#22c55e');CTX.beginPath();
                     CTX.moveTo(-w/2,-h*.18);CTX.lineTo(w*.15,-h*.18);CTX.lineTo(w*.15,-h*.43);CTX.lineTo(w/2,0);CTX.lineTo(w*.15,h*.43);CTX.lineTo(w*.15,h*.18);CTX.lineTo(-w/2,h*.18);CTX.closePath();CTX.fill();break;
                 case 'warning':
-                    CTX.fillStyle='#facc15';CTX.strokeStyle='#b45309';CTX.lineWidth=strokeW;
+                    CTX.fillStyle=obj.color||'#facc15';CTX.strokeStyle=strokeC;CTX.lineWidth=strokeW;
                     CTX.beginPath();CTX.moveTo(0,-h*.47);CTX.lineTo(w*.48,h*.43);CTX.lineTo(-w*.48,h*.43);CTX.closePath();CTX.fill();CTX.stroke();
                     CTX.fillStyle='#111827';CTX.font=`bold ${Math.max(12,Math.min(w,h)*.62)}px sans-serif`;CTX.textAlign='center';CTX.textBaseline='middle';CTX.fillText('!',0,h*.12);break;
                 case 'extinguisher': {
@@ -921,7 +1017,7 @@
                 }
                 case 'hydrant': {
                     const side=Math.min(w,h);
-                    CTX.fillStyle='#dc2626';CTX.fillRect(-w/2,-h/2,w,h);
+                    CTX.fillStyle=obj.color||'#dc2626';CTX.fillRect(-w/2,-h/2,w,h);
                     CTX.fillStyle='#ffffff';CTX.font=`900 ${Math.max(9,side*.72)}px Arial,sans-serif`;
                     CTX.textAlign='center';CTX.textBaseline='middle';CTX.fillText('H',0,side*.025);
                     break;
@@ -937,6 +1033,7 @@
                     CTX.stroke();
                     break;
 
+                case 'polygon':
                 case 'polyline':
                     if (obj.points && obj.points.length > 1) {
                         CTX.strokeStyle = strokeC;
@@ -948,17 +1045,19 @@
                             if (index === 0) CTX.moveTo(px, py);
                             else CTX.lineTo(px, py);
                         });
+                        if (obj.type === 'polygon') {
+                            CTX.closePath();
+                            CTX.fillStyle = obj.color || '#6366f1';
+                            CTX.globalAlpha *= (obj.fillOpacity ?? 35) / 100;
+                            CTX.fill();
+                            CTX.globalAlpha = isPreview ? 0.6 : 1;
+                        }
                         CTX.stroke();
                     }
                     break;
 
                 case 'group':
-                    if (obj.children && Array.isArray(obj.children)) {
-                        obj.children.forEach(child => {
-                             const absolute = {...child, x_m: obj.x_m + child.x_m, y_m: obj.y_m + child.y_m};
-                             drawObject(absolute, false, forExport);
-                         });
-                    }
+                    // Deca grupe se crtaju samo jednom, u apsolutnim koordinatama.
                     break;
 
                 case 'wall':
@@ -972,6 +1071,9 @@
                     CTX.strokeRect(-w/2, -h/2, w, h);
                     break;
 
+                case 'column_cross':
+                    CTX.strokeStyle=strokeC;CTX.lineWidth=Math.max(2,strokeW);CTX.beginPath();
+                    CTX.moveTo(-w/2,0);CTX.lineTo(w/2,0);CTX.moveTo(0,-h/2);CTX.lineTo(0,h/2);CTX.stroke();break;
                 case 'line':
                     CTX.strokeStyle = strokeC;
                     CTX.lineWidth = strokeW;
@@ -984,7 +1086,7 @@
                 case 'door': {
                     // CAD vrata: šarka u donjem levom uglu, krilo otvoreno 90°, luk otvaranja.
                     const radius=Math.max(1,Math.min(w,h));
-                    CTX.strokeStyle=forExport?'#334155':'#e2e8f0'; CTX.lineWidth=Math.max(1.3,strokeW);
+                    CTX.strokeStyle=strokeC; CTX.lineWidth=Math.max(1.3,strokeW);
                     CTX.beginPath();CTX.moveTo(-w/2,-h/2);CTX.lineTo(-w/2,-h/2+radius);CTX.stroke();
                     CTX.beginPath();CTX.arc(-w/2,-h/2+radius,radius,-Math.PI/2,0,false);CTX.stroke();
                     CTX.beginPath();CTX.moveTo(-w/2,-h/2+radius);CTX.lineTo(-w/2+radius,-h/2+radius);CTX.stroke();
@@ -1211,6 +1313,12 @@
                 if (index === 0) CTX.moveTo(screen.x, screen.y);
                 else CTX.lineTo(screen.x, screen.y);
             });
+            if (mode === 'draw_polygon' && activePolylinePoints.length >= 3) {
+                const first=worldToScreen(activePolylinePoints[0].x,activePolylinePoints[0].y);
+                CTX.lineTo(first.x,first.y);
+                CTX.closePath();
+                CTX.fillStyle='rgba(99,102,241,0.16)';CTX.fill();
+            }
             // Ziva linija od poslednje tacke do kursora, kao u AutoCAD-u.
             if (polylineHoverPoint) {
                 const last = activePolylinePoints[activePolylinePoints.length - 1];
@@ -1276,6 +1384,7 @@
                 CTX.fill();
             }
 
+            if (obj.type === 'group') { CTX.restore(); return; }
             const handleY = obj.type === 'circle' ? w/2 : h/2;
             CTX.fillStyle = '#3b82f6';
             CTX.fillRect(w/2 + 1, handleY + 1, 8, 8);
@@ -1297,6 +1406,7 @@
             CTX.stroke();
 
             let areaText = '';
+            if (obj.type === 'group') { CTX.restore(); return; }
             if (obj.type === 'circle') {
                 const r = obj.w_m / 2;
                 const area = (Math.PI * r * r).toFixed(2);
@@ -1351,17 +1461,38 @@
 
         function isPointInObject(worldX, worldY, obj) {
             if (!obj) return false;
+            if (obj.type === 'group') {
+                return (obj.children || []).some(child => {
+                    const moved = {...child, x_m:obj.x_m+child.x_m, y_m:obj.y_m+child.y_m};
+                    if (child.startPoint) moved.startPoint={x:obj.x_m+child.startPoint.x,y:obj.y_m+child.startPoint.y};
+                    if (child.endPoint) moved.endPoint={x:obj.x_m+child.endPoint.x,y:obj.y_m+child.endPoint.y};
+                    return isPointInObject(worldX,worldY,moved);
+                });
+            }
             if (obj.type === 'line') {
                 const d = obj.lineReverse ? distToSegment(worldX,worldY,obj.x_m,obj.y_m+obj.h_m,obj.x_m+obj.w_m,obj.y_m) : distToSegment(worldX,worldY,obj.x_m,obj.y_m,obj.x_m+obj.w_m,obj.y_m+obj.h_m);
-                return d <= 0.6;
+                return d <= Math.max(0.08,8/(PIXELS_PER_METER*zoom));
             }
 
-            if (obj.type === 'polyline' && obj.points) {
+            if ((obj.type === 'polyline' || obj.type === 'polygon') && obj.points) {
+                if (obj.type === 'polygon') {
+                    const px=worldX-obj.x_m, py=worldY-obj.y_m;
+                    let inside=false;
+                    for(let i=0,j=obj.points.length-1;i<obj.points.length;j=i++) {
+                        const a=obj.points[i], b=obj.points[j];
+                        if ((a.y>py)!==(b.y>py) && px<(b.x-a.x)*(py-a.y)/(b.y-a.y)+a.x) inside=!inside;
+                    }
+                    if(inside) return true;
+                }
                 for (let i = 0; i < obj.points.length - 1; i++) {
                     const p1 = obj.points[i];
                     const p2 = obj.points[i+1];
                     const d = distToSegment(worldX, worldY, obj.x_m + p1.x, obj.y_m + p1.y, obj.x_m + p2.x, obj.y_m + p2.y);
-                    if (d <= 0.6) return true;
+                    if (d <= Math.max(0.08, 8/(PIXELS_PER_METER*zoom))) return true;
+                }
+                if (obj.type === 'polygon' && obj.points.length > 2) {
+                    const a=obj.points[obj.points.length-1],b=obj.points[0];
+                    return distToSegment(worldX,worldY,obj.x_m+a.x,obj.y_m+a.y,obj.x_m+b.x,obj.y_m+b.y) <= Math.max(0.08,8/(PIXELS_PER_METER*zoom));
                 }
                 return false;
             }
@@ -1391,9 +1522,11 @@
             }
         }
         CANVAS.addEventListener('contextmenu', (e) => {
-            if (mode === 'draw_polyline') {
+            if (mode === 'draw_polyline' || mode === 'draw_polygon') {
                 e.preventDefault();
                 finishPolyline();
+                if (mode === 'draw_polygon') setMode('select');
+                requestAnimationFrame(() => draw());
                 return;
             }
             exitMeasureOnRightClick(e);
@@ -1403,7 +1536,7 @@
         });
         CANVAS.addEventListener('mousedown', (e) => {
             const mouse = getCanvasMousePos(e);
-            const world = screenToWorld(mouse.x, mouse.y);
+            const world = (mode === 'draw_line' || mode === 'draw_free_line') ? lineWorldPoint(mouse) : screenToWorld(mouse.x, mouse.y);
 
             document.getElementById('hud-coords').innerText = `X: ${world.x.toFixed(3)}m | Y: ${world.y.toFixed(3)}m`;
 
@@ -1416,6 +1549,8 @@
             }
 
             if (e.button === 0) {
+                if (mode === 'draw_line' && !gridLineAwaitingEnd) { gridLineMouseDown = true; gridLineDragStarted = false; gridLinePressPos = mouse; }
+                if (mode === 'draw_free_line' && !freeLineAwaitingEnd) { freeLineMouseDown = true; freeLineDragStarted = false; freeLinePressPos = mouse; }
                 if(mode.startsWith('measure_')){
                     if(!measureStart || measureEnd){measureStart={...world};measureEnd=null}
                     else{measureEnd={...world};measureHover=null}
@@ -1424,7 +1559,7 @@
                 if (mode === 'select') {
                     if (selectedObjectIds.length === 1) {
                         const selected = objects.find(o => o.id === selectedObjectIds[0]);
-                        if (selected) {
+                        if (selected && layerEditable(selected) && selected.type !== 'group') {
                             const hY = selected.type === 'circle' ? selected.w_m / 2 : selected.h_m / 2;
                             const screenCenter = worldToScreen(selected.x_m + selected.w_m / 2, selected.y_m + hY);
                             const dx = mouse.x - screenCenter.x;
@@ -1450,7 +1585,7 @@
                         }
                     }
 
-                    const clicked = [...objects].reverse().find(o => isPointInObject(world.x, world.y, o));
+                    const clicked = [...objects].reverse().find(o => layerEditable(o) && isPointInObject(world.x, world.y, o));
 
                     if (clicked) {
                         if (e.shiftKey || e.ctrlKey) {
@@ -1482,16 +1617,53 @@
 
                     updateInspector();
                 } 
-                else if (mode === 'draw_polyline') {
+                else if (mode === 'draw_polyline' || mode === 'draw_polygon') {
+                    if (mode === 'draw_polygon' && activePolylinePoints.length >= 3) {
+                        const first = worldToScreen(activePolylinePoints[0].x, activePolylinePoints[0].y);
+                        if (Math.hypot(mouse.x-first.x,mouse.y-first.y) <= 12) { finishPolyline(); return; }
+                    }
                     activePolylinePoints.push({ x: world.x, y: world.y });
                     polylineHoverPoint = {x:world.x,y:world.y};
                     requestAnimationFrame(() => draw());
                 }
-                else if (mode === 'draw_wall' || mode === 'draw_line' || mode === 'draw_circle') {
+                else if (mode === 'draw_free_line' && freeLineAwaitingEnd && currentDrawingObj) {
+                    // Drugi klik: bez snap-a, ali strogo horizontalno ili vertikalno.
+                    const endpoint = freeOrthogonalEndpoint(mouse);
+                    lineFromEndpoints(currentDrawingObj, drawingStart, endpoint);
+                    if (Math.hypot(endpoint.x-drawingStart.x, endpoint.y-drawingStart.y) > 1e-9) {
+                        currentDrawingObj.layerId=activeLayerId; objects.push(currentDrawingObj);
+                        selectedObjectIds = [currentDrawingObj.id];
+                    }
+                    currentDrawingObj = null;
+                    freeLineAwaitingEnd = false;
+                    freeLineMouseDown = false;
+                    freeLineDragStarted = false;
+                    freeLinePressPos = null;
+                    setMode('select'); updateInspector(); updateStats(); draw();
+                    return;
+                }
+                else if (mode === 'draw_line' && gridLineAwaitingEnd && currentDrawingObj) {
+                    // Drugi klik završava Grid liniju, bez potrebe za držanjem tastera.
+                    const endpoint = lineWorldPoint(mouse);
+                    lineFromEndpoints(currentDrawingObj, drawingStart, endpoint);
+                    if (Math.hypot(endpoint.x-drawingStart.x, endpoint.y-drawingStart.y) > 1e-9) {
+                        currentDrawingObj.layerId=activeLayerId; objects.push(currentDrawingObj);
+                        selectedObjectIds = [currentDrawingObj.id];
+                    }
+                    currentDrawingObj = null;
+                    gridLineAwaitingEnd = false;
+                    gridLineMouseDown = false; gridLineDragStarted = false; gridLinePressPos = null;
+                    setMode('select'); updateInspector(); updateStats(); draw();
+                    return;
+                }
+                else if (mode === 'draw_wall' || mode === 'draw_line' || mode === 'draw_free_line' || mode === 'draw_circle') {
                     drawingStart = {...world};
+                    if (mode === 'draw_line') gridLineAwaitingEnd = true;
+                    if (mode === 'draw_free_line') freeLineAwaitingEnd = true;
                     currentDrawingObj = {
                         id: generateId(),
                         type: mode === 'draw_wall' ? 'wall' : (mode === 'draw_circle' ? 'circle' : 'line'),
+                        gridLine: mode === 'draw_line',
                         x_m: world.x,
                         y_m: world.y,
                         w_m: 0.5,
@@ -1510,12 +1682,12 @@
         });
 
         CANVAS.addEventListener('dblclick', () => {
-            if (mode === 'draw_polyline') finishPolyline();
+            if (mode === 'draw_polyline' || mode === 'draw_polygon') finishPolyline();
         });
 
         function finishPolyline() {
             polylineHoverPoint = null;
-            if (activePolylinePoints.length < 2) {
+            if (activePolylinePoints.length < (mode === 'draw_polygon' ? 3 : 2)) {
                 activePolylinePoints = [];
                 return;
             }
@@ -1528,12 +1700,12 @@
                 maxY = Math.max(maxY, pt.y);
             });
 
-            const width = Math.max(0.5, maxX - minX);
-            const height = Math.max(0.5, maxY - minY);
+            const width = Math.max(0.001, maxX - minX);
+            const height = Math.max(0.001, maxY - minY);
 
             const polyObj = {
                 id: generateId(),
-                type: 'polyline',
+                type: mode === 'draw_polygon' ? 'polygon' : 'polyline',
                 x_m: minX,
                 y_m: minY,
                 w_m: width,
@@ -1542,7 +1714,7 @@
                 color: '#6366f1',
                 strokeColor: '#818cf8',
                 strokeWidth: 3,
-                label: 'Polilinija',
+                label: mode === 'draw_polygon' ? 'Poligon' : 'Polilinija',
                 points: activePolylinePoints.map(pt => ({ x: pt.x - minX, y: pt.y - minY })),
                 zIndex: objects.length
             };
@@ -1558,7 +1730,7 @@
 
         CANVAS.addEventListener('mousemove', (e) => {
             const mouse = getCanvasMousePos(e);
-            const world = screenToWorld(mouse.x, mouse.y);
+            const world = (mode === 'draw_line' || mode === 'draw_free_line') ? lineWorldPoint(mouse) : screenToWorld(mouse.x, mouse.y);
 
             document.getElementById('hud-coords').innerText = `X: ${world.x.toFixed(3)}m | Y: ${world.y.toFixed(3)}m`;
             if(mode.startsWith('measure_') && measureStart && !measureEnd){measureHover={...world};draw();return;}
@@ -1587,13 +1759,15 @@
                         selected.angle = deg;
                     } 
                     else if (transformType === 'resize') {
-                        const newW = Math.max(0.2, world.x - selected.x_m);
-                        const newH = Math.max(0.2, world.y - selected.y_m);
-                        selected.w_m = snapEnabled ? Math.round(newW / snapGridSize) * snapGridSize : newW;
+                        const isGridLine = selected.type === 'line' && selected.gridLine;
+                        const minDim = isGridLine ? 0.001 : 0.2;
+                        const newW = Math.max(minDim, world.x - selected.x_m);
+                        const newH = Math.max(minDim, world.y - selected.y_m);
+                        selected.w_m = isGridLine ? (selected.h_m <= 0.000001 ? Math.max(0.001,gridSnap(newW)) : 0) : (snapEnabled ? Math.round(newW / snapGridSize) * snapGridSize : newW);
                         if (selected.type === 'circle') {
                             selected.h_m = selected.w_m;
                         } else {
-                            selected.h_m = snapEnabled ? Math.round(newH / snapGridSize) * snapGridSize : newH;
+                            selected.h_m = isGridLine ? (selected.w_m === 0 ? Math.max(0.001,gridSnap(newH)) : 0) : (snapEnabled ? Math.round(newH / snapGridSize) * snapGridSize : newH);
                         }
                     }
                     updateInspector();
@@ -1609,8 +1783,13 @@
                 selectedObjectIds.forEach(id => {
                     const obj = objects.find(o => o.id === id);
                     if (obj) {
-                        obj.x_m += deltaX;
-                        obj.y_m += deltaY;
+                        if (obj.type === 'line' && obj.gridLine) {
+                            const nx=gridSnap(obj.x_m + deltaX), ny=gridSnap(obj.y_m + deltaY);
+                            obj.x_m=nx; obj.y_m=ny;
+                        } else {
+                            obj.x_m += deltaX;
+                            obj.y_m += deltaY;
+                        }
                     }
                 });
 
@@ -1622,23 +1801,75 @@
             }
 
             if (currentDrawingObj) {
-                const dx = world.x - drawingStart.x, dy = world.y - drawingStart.y;
-                currentDrawingObj.x_m = Math.min(drawingStart.x, world.x);
-                currentDrawingObj.y_m = Math.min(drawingStart.y, world.y);
+                if (mode === 'draw_free_line' && freeLineMouseDown && freeLinePressPos && (e.buttons & 1) &&
+                    Math.hypot(mouse.x-freeLinePressPos.x, mouse.y-freeLinePressPos.y) > 5) freeLineDragStarted = true;
+                if (mode === 'draw_line' && gridLineMouseDown && gridLinePressPos && (e.buttons & 1) &&
+                    Math.hypot(mouse.x-gridLinePressPos.x, mouse.y-gridLinePressPos.y) > 5) gridLineDragStarted = true;
+                // Klik-klik: po mrezi. Drzanje levog klika: mimo mreze, ali samo horizontalno/vertikalno.
+                if (mode === 'draw_line' && gridLineDragStarted && gridLinePressPos) drawingStart = rawLineWorldPoint(gridLinePressPos);
+                const drawingWorld = mode === 'draw_line' && gridLineDragStarted ? freeOrthogonalEndpoint(mouse)
+                    : mode === 'draw_free_line' && !freeLineDragStarted ? freeOrthogonalEndpoint(mouse)
+                    : world;
+                const dx = drawingWorld.x - drawingStart.x, dy = drawingWorld.y - drawingStart.y;
+                currentDrawingObj.x_m = Math.min(drawingStart.x, drawingWorld.x);
+                currentDrawingObj.y_m = Math.min(drawingStart.y, drawingWorld.y);
                 const w = Math.max(0.05, Math.abs(dx)), h = Math.max(0.05, Math.abs(dy));
                 currentDrawingObj.w_m = w;
                 currentDrawingObj.h_m = currentDrawingObj.type === 'circle' ? w : h;
-                if(currentDrawingObj.type === 'line') currentDrawingObj.lineReverse = dx*dy<0;
+                if(currentDrawingObj.type === 'line') lineFromEndpoints(currentDrawingObj,drawingStart,drawingWorld);
                 requestAnimationFrame(() => draw());
             }
 
-            if (mode === 'draw_polyline' && activePolylinePoints.length > 0) {
+            if ((mode === 'draw_polyline' || mode === 'draw_polygon') && activePolylinePoints.length > 0) {
                 polylineHoverPoint = {x: world.x, y: world.y};
                 requestAnimationFrame(() => draw());
             }
         });
 
-        CANVAS.addEventListener('mouseup', () => {
+        CANVAS.addEventListener('mouseup', (e) => {
+            if (e.button === 0 && mode === 'draw_free_line' && freeLineMouseDown) {
+                freeLineMouseDown = false;
+                if (freeLineDragStarted && currentDrawingObj) {
+                    const endpoint = rawLineWorldPoint(getCanvasMousePos(e));
+                    lineFromEndpoints(currentDrawingObj, drawingStart, endpoint);
+                    if (Math.hypot(endpoint.x-drawingStart.x, endpoint.y-drawingStart.y) > 1e-9) {
+                        currentDrawingObj.layerId=activeLayerId; objects.push(currentDrawingObj);
+                        selectedObjectIds = [currentDrawingObj.id];
+                    }
+                    currentDrawingObj = null;
+                    freeLineAwaitingEnd = false;
+                    freeLineDragStarted = false;
+                    freeLinePressPos = null;
+                    setMode('select'); updateInspector(); updateStats(); draw();
+                    return;
+                }
+                // Samo klik: ostavi liniju aktivnu do drugog klika.
+                freeLinePressPos = null;
+                return;
+            }
+            if (e.button === 0 && mode === 'draw_line' && gridLineMouseDown) {
+                gridLineMouseDown = false;
+                if (gridLineDragStarted && currentDrawingObj) {
+                    const endpoint = freeOrthogonalEndpoint(getCanvasMousePos(e));
+                    lineFromEndpoints(currentDrawingObj, drawingStart, endpoint);
+                    if (Math.hypot(endpoint.x-drawingStart.x, endpoint.y-drawingStart.y) > 1e-9) {
+                        currentDrawingObj.layerId=activeLayerId; objects.push(currentDrawingObj);
+                        selectedObjectIds = [currentDrawingObj.id];
+                    }
+                    currentDrawingObj = null;
+                    gridLineAwaitingEnd = false;
+                    gridLineDragStarted = false;
+                    gridLinePressPos = null;
+                    setMode('select'); updateInspector(); updateStats(); draw();
+                    return;
+                }
+                gridLinePressPos = null;
+            }
+            if (currentDrawingObj && currentDrawingObj.type === 'line' && mode !== 'draw_line' && mode !== 'draw_free_line') {
+                const m = getCanvasMousePos(e);
+                const endpoint = lineWorldPoint(m);
+                lineFromEndpoints(currentDrawingObj, drawingStart, endpoint);
+            }
             if (isPanning) {
                 isPanning = false;
                 if (mode === 'pan') CANVAS.style.cursor = 'grab';
@@ -1669,8 +1900,8 @@
                 boxSelectStartWorld = null;
                 boxSelectEndWorld = null;
             }
-            if (currentDrawingObj) {
-                objects.push(currentDrawingObj);
+            if (currentDrawingObj && mode !== 'draw_line' && mode !== 'draw_free_line') {
+                currentDrawingObj.layerId=activeLayerId; objects.push(currentDrawingObj);
                 selectedObjectIds = [currentDrawingObj.id];
                 currentDrawingObj = null;
                 setMode('select');
@@ -1682,12 +1913,13 @@
 
         CANVAS.addEventListener('wheel', (e) => {
             e.preventDefault();
-            const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-            zoomDelta(zoomFactor, e.clientX - CANVAS.getBoundingClientRect().left, e.clientY - CANVAS.getBoundingClientRect().top);
+            const zoomFactor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+            zoomDelta(zoomFactor); // zumiranje oko centra platna, bez bočnog pomeranja
         }, { passive: false });
 
         function zoomDelta(factor, mouseX = CANVAS.width / 2, mouseY = CANVAS.height / 2) {
-            const newZoom = Math.min(Math.max(0.002, zoom * factor), 100.0);
+            const newZoom = Math.min(Math.max(0.05, zoom * factor), 100.0);
+            if (newZoom === zoom) return;
             
             panX = mouseX - (mouseX - panX) * (newZoom / zoom);
             panY = mouseY - (mouseY - panY) * (newZoom / zoom);
@@ -1726,9 +1958,12 @@
                 w_m: maxX - minX,
                 h_m: maxY - minY,
                 angle: 0,
-                label: 'Grupa Elemenata',
-                children: selectedObjs.map(o => ({...o, x_m: o.x_m - minX, y_m: o.y_m - minY})),
-                zIndex: objects.length
+                label: '',
+                children: selectedObjs.map(o => ({...o, x_m: o.x_m - minX, y_m: o.y_m - minY,
+                    ...(o.startPoint ? {startPoint:{x:o.startPoint.x-minX,y:o.startPoint.y-minY}} : {}),
+                    ...(o.endPoint ? {endPoint:{x:o.endPoint.x-minX,y:o.endPoint.y-minY}} : {})})),
+                zIndex: objects.length,
+                layerId: activeLayerId
             };
 
             objects = objects.filter(o => !selectedObjectIds.includes(o.id));
@@ -1750,6 +1985,8 @@
             groupObj.children.forEach(child => {
                 child.x_m += groupObj.x_m;
                 child.y_m += groupObj.y_m;
+                if(child.startPoint){child.startPoint.x+=groupObj.x_m;child.startPoint.y+=groupObj.y_m;}
+                if(child.endPoint){child.endPoint.x+=groupObj.x_m;child.endPoint.y+=groupObj.y_m;}
                 objects.push(child);
                 newIds.push(child.id);
             });
@@ -1856,14 +2093,13 @@
             selected.w_m = Math.max(0.1, diam);
             selected.h_m = selected.w_m;
 
-            updateInspector();
-            requestAnimationFrame(() => draw());
+            updateStats();
         }
 
         function updateSelectedProp(prop, value) {
             selectedObjectIds.forEach(id => {
                 const selected = objects.find(o => o.id === id);
-                if (!selected) return;
+                if (!selected || !layerEditable(selected)) return;
 
                 selected[prop] = value;
 
@@ -1884,36 +2120,48 @@
                 }
             });
 
-            updateInspector();
+            // Ne resetuj input type=color dok je sistemski color picker otvoren.
+            if (!['color','strokeColor','fillOpacity'].includes(prop)) updateInspector();
             updateStats();
             requestAnimationFrame(() => draw());
         }
 
-        function duplicateSelected() {
-            if (selectedObjectIds.length === 0) return;
-            const newSelectedIds = [];
-
-            selectedObjectIds.forEach(id => {
-                const selected = objects.find(o => o.id === id);
-                if (selected) {
-                    const copy = JSON.parse(JSON.stringify(selected));
-                    copy.id = generateId();
-                    copy.x_m += 1.0;
-                    copy.y_m += 1.0;
-                    objects.push(copy);
-                    newSelectedIds.push(copy.id);
-                }
+        let cadClipboard = [];
+        function copySelected() {
+            if (!selectedObjectIds.length) { alert('Prvo selektujte jedan ili više objekata.'); return; }
+            cadClipboard = objects.filter(o=>selectedObjectIds.includes(o.id)).map(o=>structuredClone(o));
+        }
+        function pasteCopied() {
+            if (!cadClipboard.length) { alert('Prvo selektujte objekte i pritisnite Ctrl+C.'); return; }
+            const direction=prompt('Smer kopiranja: L = Levo, D = Desno, G = Gore, Do = Dole','D');
+            if (direction===null) return;
+            const dir=direction.trim().toUpperCase();
+            if (!['L','D','G','DO'].includes(dir)) { alert('Unesite L, D, G ili Do.'); return; }
+            const raw=prompt('Razmak između ivica originala i kopije (metri):','1');
+            if(raw===null)return;
+            const gap=Number(raw.trim().replace(',','.'));
+            if(!Number.isFinite(gap)||gap<0){alert('Razmak mora biti broj veći ili jednak nuli.');return;}
+            const minX=Math.min(...cadClipboard.map(o=>o.x_m));
+            const maxX=Math.max(...cadClipboard.map(o=>o.x_m+o.w_m));
+            const minY=Math.min(...cadClipboard.map(o=>o.y_m));
+            const maxY=Math.max(...cadClipboard.map(o=>o.y_m+o.h_m));
+            const dx=dir==='D'?maxX-minX+gap:dir==='L'?-(maxX-minX+gap):0;
+            const dy=dir==='DO'?maxY-minY+gap:dir==='G'?-(maxY-minY+gap):0;
+            const freshIds=o=>{o.id=generateId();if(o.children)o.children.forEach(freshIds);};
+            const ids=[];
+            cadClipboard.forEach(original=>{
+                const copy=structuredClone(original);freshIds(copy);
+                copy.x_m+=dx;copy.y_m+=dy;
+                copy.zIndex=objects.length;
+                objects.push(copy);ids.push(copy.id);
             });
-
-            selectedObjectIds = newSelectedIds;
-            updateInspector();
-            updateStats();
-            requestAnimationFrame(() => draw());
+            selectedObjectIds=ids;updateInspector();updateStats();draw();
         }
+        function duplicateSelected() { copySelected(); if(cadClipboard.length)pasteCopied(); }
 
         function deleteSelected() {
             if (selectedObjectIds.length === 0) return;
-            objects = objects.filter(o => !selectedObjectIds.includes(o.id));
+            objects = objects.filter(o => !selectedObjectIds.includes(o.id) || !layerEditable(o));
             selectedObjectIds = [];
             updateInspector();
             updateStats();
@@ -1945,9 +2193,13 @@
 
         window.addEventListener('keydown', (e) => {
             if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='c') { e.preventDefault();copySelected();return; }
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='v') { e.preventDefault();pasteCopied();return; }
 
+            const functionModes = {F1:'draw_free_line',F2:'draw_line',F3:'draw_polyline',F4:'draw_polygon'};
+            if (functionModes[e.key]) { e.preventDefault(); setMode(functionModes[e.key]); return; }
             if (e.key === 'Enter' || e.key === 'Escape') {
-                if (mode === 'draw_polyline') finishPolyline();
+                if (mode === 'draw_polyline' || mode === 'draw_polygon') finishPolyline();
             }
 
             if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -1965,7 +2217,7 @@
             if (e.key === 'r' || e.key === 'R') {
                 selectedObjectIds.forEach(id => {
                     const selected = objects.find(o => o.id === id);
-                    if (selected) selected.angle = ((selected.angle || 0) + 45) % 360;
+                    if (selected && selected.type !== 'group') selected.angle = ((selected.angle || 0) + 45) % 360;
                 });
                 updateInspector();
                 requestAnimationFrame(() => draw());
@@ -1976,9 +2228,68 @@
             }
         });
 
+        // Layer-i su organizacione grupe; spajanje slojeva ne menja geometriju objekata.
+        function renderCADLayers(){
+            const host=document.getElementById('cad-layer-list');if(!host)return;
+            host.replaceChildren();
+            cadLayers.forEach(layer=>{
+                const row=document.createElement('div');row.className='flex items-center gap-1 bg-slate-900 rounded p-1';
+                const radio=document.createElement('input');radio.type='radio';radio.name='active-cad-layer';radio.checked=activeLayerId===layer.id;radio.title='Aktivan sloj';radio.onchange=()=>{activeLayerId=layer.id;renderCADLayers();};
+                const color=document.createElement('input');color.type='color';color.value=layer.color;color.className='w-6 h-6';color.title='Boja sloja';color.oninput=()=>{layer.color=color.value;};
+                const name=document.createElement('span');name.textContent=layer.name;name.className='flex-1 truncate';name.title=layer.name;
+                const eye=document.createElement('input');eye.type='checkbox';eye.checked=layer.visible;eye.title='Vidljivost';eye.onchange=()=>{layer.visible=eye.checked;selectedObjectIds=selectedObjectIds.filter(id=>{const o=objects.find(x=>x.id===id);return o&&layerEditable(o)});updateInspector();draw();};
+                const lock=document.createElement('input');lock.type='checkbox';lock.checked=layer.locked;lock.title='Zaključaj sloj';lock.onchange=()=>{layer.locked=lock.checked;selectedObjectIds=selectedObjectIds.filter(id=>{const o=objects.find(x=>x.id===id);return o&&layerEditable(o)});updateInspector();draw();};
+                row.append(radio,color,name,eye,lock);host.append(row);
+            });
+        }
+        function addCADLayer(){const name=prompt('Naziv novog layer-a:','Novi layer');if(!name?.trim())return;
+            const layer={id:generateId(),name:name.trim(),visible:true,locked:false,color:'#60a5fa'};
+            cadLayers.push(layer);activeLayerId=layer.id;renderCADLayers();}
+        function moveSelectionToActiveLayer(){const l=cadLayers.find(x=>x.id===activeLayerId);if(!l||l.locked){alert('Aktivni layer je zaključan.');return;}
+            objects.filter(o=>selectedObjectIds.includes(o.id)&&layerEditable(o)).forEach(o=>o.layerId=activeLayerId);
+            renderCADLayers();draw();}
+        function mergeCADLayers(){if(cadLayers.length<2){alert('Potrebna su dva layer-a.');return;}
+            const choices=cadLayers.filter(l=>l.id!==activeLayerId).map((l,i)=>`${i+1}: ${l.name}`).join('\n');
+            const sourceName=prompt('Unesi TAČAN naziv sloja koji spajaš u aktivni sloj:\n'+choices);
+            if(!sourceName)return;const source=cadLayers.find(l=>l.name===sourceName&&l.id!==activeLayerId);
+            if(!source){alert('Layer nije pronađen.');return;}
+            if(!confirm(`Spojiti sloj "${source.name}" u "${cadLayers.find(l=>l.id===activeLayerId).name}"?`))return;
+            objects.forEach(o=>{if((o.layerId||'base')===source.id)o.layerId=activeLayerId;});
+            cadLayers=cadLayers.filter(l=>l.id!==source.id);renderCADLayers();draw();}
+        function readBoxNumber(id,allowZero=false){const v=Number(document.getElementById(id).value);if(!Number.isFinite(v)||(allowZero?v<0:v<=0))throw Error('Neispravna vrednost: '+id);return v;}
+        function createCADBox(){try{
+            const l=cadLayers.find(x=>x.id===activeLayerId);if(!l||l.locked||!l.visible)throw Error('Aktivni sloj mora biti vidljiv i otključan.');
+            const w=readBoxNumber('box-w'),h=readBoxNumber('box-h');const pt=screenToWorld(CANVAS.width/2,CANVAS.height/2);
+            const o={id:generateId(),type:'rect',x_m:pt.x-w/2,y_m:pt.y-h/2,w_m:w,h_m:h,angle:0,label:'Kutija',color:l.color,strokeColor:'#f8fafc',strokeWidth:1,fillOpacity:65,layerId:activeLayerId,zIndex:objects.length,boxHeight:readBoxNumber('box-z')};
+            objects.push(o);selectedObjectIds=[o.id];updateInspector();updateStats();draw();
+        }catch(e){alert(e.message)}}
+        function calculateBoxCapacity(){try{
+            if(selectedObjectIds.length!==1)throw Error('Selektuj jedan pravougaoni objekat kao skladišnu zonu.');
+            const zone=objects.find(o=>o.id===selectedObjectIds[0]);
+            if(!zone||!['rect','wall','office','ground_storage','zone_inbound','zone_outbound'].includes(zone.type))throw Error('Zona mora biti pravougaoni objekat.');
+            if((zone.angle||0)%180!==0)throw Error('Za ovu proveru zona mora biti bez rotacije (0° ili 180°).');
+            const w=readBoxNumber('box-w'),h=readBoxNumber('box-h'),gap=readBoxNumber('box-gap',true),z=readBoxNumber('box-z'),height=readBoxNumber('space-z');
+            const limit=Math.min(10000,Math.floor(readBoxNumber('box-limit')));
+            const count=(bw,bh)=>({cols:Math.max(0,Math.floor((zone.w_m+gap+1e-9)/(bw+gap))),rows:Math.max(0,Math.floor((zone.h_m+gap+1e-9)/(bh+gap)))});
+            const a=count(w,h),b=count(h,w);const rotated=b.cols*b.rows>a.cols*a.rows;
+            const bw=rotated?h:w,bh=rotated?w:h,cols=rotated?b.cols:a.cols,rows=rotated?b.rows:a.rows;
+            const total=cols*rows,levels=Math.floor((height+1e-9)/z);
+            if(total===0)throw Error('Nijedna kutija ne staje u izabranu zonu.');
+            const layer=cadLayers.find(l=>l.id===activeLayerId);
+            if(!layer||!layer.visible||layer.locked)throw Error('Izaberi vidljiv, otključan layer za kutije.');
+            if(!confirm(`Raspored: ${cols} × ${rows} = ${total} kutija po nivou.\nKreiraće se ${Math.min(total,limit)} kutija na aktivnom sloju. Nastaviti?`))return;
+            const ids=[];let made=0;
+            for(let r=0;r<rows&&made<limit;r++)for(let c=0;c<cols&&made<limit;c++){
+                const o={id:generateId(),type:'rect',x_m:zone.x_m+c*(bw+gap),y_m:zone.y_m+r*(bh+gap),w_m:bw,h_m:bh,angle:0,label:'',color:layer.color,strokeColor:layer.color,strokeWidth:1,fillOpacity:35,layerId:activeLayerId,boxHeight:z,zIndex:objects.length};
+                objects.push(o);ids.push(o.id);made++;
+            }
+            selectedObjectIds=[];updateInspector();updateStats();draw();
+            document.getElementById('box-capacity-result').textContent=`Zona: ${zone.w_m.toFixed(3)} × ${zone.h_m.toFixed(3)} m\nPo nivou: ${total} kutija (${cols} × ${rows})\nTeorijski nivoa: ${levels}\nUkupno teorijski: ${total*levels}\nUcrtano: ${made}${made<total?' (ograničenje prikaza)':''}\nOrijentacija: ${rotated?'rotirana 90°':'osnovna'}`;
+        }catch(e){alert(e.message)}}
+
         // CAD projekat je izvor istine; PDF je vektorski izlaz za pregled i štampu.
         function saveProject() {
-            const data = {format:'MagacinCAD',version:5,unit:'m',objects};
+            const data = {format:'MagacinCAD',version:6,unit:'m',objects,layers:cadLayers,activeLayerId};
             const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
             const url = URL.createObjectURL(blob);
             const a=document.createElement('a'); a.href=url; a.download='MagacinCAD_projekat.json';a.click();
@@ -1991,7 +2302,13 @@
                 const list=Array.isArray(data)?data:data.objects;
                 if(!Array.isArray(list)||list.length>100000||!list.every(o=>o&&typeof o.type==='string'&&Number.isFinite(o.x_m)&&Number.isFinite(o.y_m)&&Number.isFinite(o.w_m)&&Number.isFinite(o.h_m)))throw Error('Neispravan format');
                 if(objects.length&&!confirm('Zameniti trenutni nacrt?'))return;
-                objects=list;selectedObjectIds=[];updateInspector();updateStats();fitDrawing();
+                objects=list;
+                if(Array.isArray(data.layers)&&data.layers.length) {
+                    cadLayers=data.layers.filter(l=>l&&typeof l.id==='string'&&typeof l.name==='string').map(l=>({id:l.id,name:l.name,visible:l.visible!==false,locked:!!l.locked,color:l.color||'#60a5fa'}));
+                    if(!cadLayers.length)cadLayers=[{id:'base',name:'Tlocrt',visible:true,locked:false,color:'#60a5fa'}];
+                }
+                activeLayerId=cadLayers.some(l=>l.id===data.activeLayerId)?data.activeLayerId:cadLayers[0].id;
+                selectedObjectIds=[];renderCADLayers();updateInspector();updateStats();fitDrawing();
             }catch(err){alert('Nije moguće otvoriti projekat: '+err.message)}
             finally{event.target.value=''}
         }
@@ -2168,12 +2485,17 @@
         }
 
         // Sačuvaj automatski rezervnu kopiju u lokalnoj memoriji pregledača.
-        window.addEventListener('beforeunload',()=>{try{localStorage.setItem('magacincad_backup',JSON.stringify(objects))}catch(e){}});
+        window.addEventListener('beforeunload',()=>{try{localStorage.setItem('magacincad_backup',JSON.stringify({objects,layers:cadLayers,activeLayerId}))}catch(e){}});
         window.onload = function() {
+            renderCADLayers();
             resizeCanvas();
             try {const backup=JSON.parse(localStorage.getItem('magacincad_backup')||'null');
-                if(Array.isArray(backup)&&backup.length&&confirm('Pronađena je prethodna radna verzija. Vratiti je?')){
-                    objects=backup;updateStats();fitDrawing();return;
+                const backupObjects=Array.isArray(backup)?backup:backup?.objects;
+                if(Array.isArray(backupObjects)&&backupObjects.length&&confirm('Pronađena je prethodna radna verzija. Vratiti je?')){
+                    objects=backupObjects;
+                    if(Array.isArray(backup.layers)&&backup.layers.length)cadLayers=backup.layers;
+                    if(backup.activeLayerId&&cadLayers.some(l=>l.id===backup.activeLayerId))activeLayerId=backup.activeLayerId;
+                    renderCADLayers();updateStats();fitDrawing();return;
                 }}catch(e){}
             loadTemplate('standard');
         };
