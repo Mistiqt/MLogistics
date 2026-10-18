@@ -48,8 +48,10 @@
         .nav-tab-item { display: inline-block; background: var(--panel); border: 1px solid var(--border); padding: 12px 28px; border-radius: 30px; font-weight: 500; color: var(--text-dim) !important; text-decoration: none !important; transition: all 0.2s; cursor: pointer; line-height: 1.2; }
         .nav-tab-item:hover { background: var(--brand); color: #ffffff !important; border-color: var(--brand); }
 
-        .counter-box { background: var(--panel); border: 1px solid var(--border); padding: 10px 20px; border-radius: 30px; display: flex; gap: 20px; align-items: center; }
-        .counter-item { text-align: center; cursor: pointer; }
+        .counter-box { background: var(--panel); border: 1px solid var(--border); padding: 10px 16px; border-radius: 18px; display: flex; flex-direction: column; gap: 9px; align-items: stretch; min-width: 235px; max-width: 100%; }
+        .counter-item { text-align: center; cursor: default; width: 100%; }
+        .counter-item + .counter-item { border-top: 1px solid var(--border); padding-top: 9px; }
+        .counter-value-row { display: flex; justify-content: center; align-items: center; gap: 12px; min-height: 26px; }
         .counter-label { font-size: 9px; font-weight: 700; color: var(--brand-light); text-transform: uppercase; }
         .counter-value { font-size: 18px; font-weight: 700; color: var(--text); }
         .btn-next { font-size: 10px; padding: 2px 8px; margin-top: 5px; background: var(--brand); color: white; border: none; border-radius: 4px; }
@@ -144,6 +146,72 @@
             .logout-wrapper { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); margin-top: 0; }
             .custom-container { padding: 0 10px; }
         }
+
+        /* Responsive layout enhancement — original Stellantis visual identity preserved */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { max-width: 100%; overflow-x: hidden; }
+        img, video, canvas { max-width: 100%; }
+        .custom-container { width: 100%; max-width: 1440px; padding-left: clamp(12px, 2.5vw, 30px); padding-right: clamp(12px, 2.5vw, 30px); }
+        .nav-clean-tabs { gap: 10px; margin-top: 20px; }
+        .nav-tab-item { padding: 11px 19px; white-space: nowrap; }
+        .counter-box { padding: 8px 15px; gap: 9px; }
+        .slider-wrapper { height: clamp(220px, 35vw, 480px); }
+        .content-section { margin-top: 30px; }
+        #portalFeed { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-left: 0; margin-right: 0; align-items: start; }
+        #portalFeed > .col-md-6 { width: 100%; max-width: none; flex: none; padding: 0; margin-bottom: 0 !important; min-width: 0; }
+        .announcement-card { height: 100%; min-width: 0; display: flex; flex-direction: column; }
+        .announcement-body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+        .announcement-body h5 { font-size: clamp(15px, 1.3vw, 19px); line-height: 1.45; }
+        .announcement-img { height: clamp(155px, 18vw, 220px); }
+        .post-meta-container { gap: 6px; }
+        .meta-tag { max-width: 100%; overflow-wrap: anywhere; }
+        .clean-card { padding: clamp(15px, 2vw, 25px); }
+        .section-heading { gap: 12px; flex-wrap: wrap; }
+        .dropdown-menu { max-width: min(90vw, 320px); }
+        @media (min-width: 1200px) {
+            #feedColumn:only-child #portalFeed { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @media (max-width: 1100px) {
+            .nav-clean-tabs { justify-content: center; }
+            .nav-tab-item { padding: 10px 15px; font-size: 13px; }
+        }
+        @media (max-width: 991.98px) {
+            #adminPanelBox, #feedColumn { flex: 0 0 100%; max-width: 100%; }
+            #portalFeed { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .slider-wrapper { height: clamp(210px, 40vw, 350px); }
+        }
+        @media (max-width: 767.98px) {
+            .header-clean { padding: 18px 80px 18px 12px; min-height: 70px; display: flex; align-items: center; justify-content: center; }
+            .brand-logo { width: auto; font-size: clamp(15px, 4vw, 21px); letter-spacing: 2px; overflow-wrap: anywhere; }
+            .logout-wrapper { right: 12px; }
+            .logout-wrapper .btn { font-size: 11px; padding: 5px 8px; }
+            .nav-clean-tabs { justify-content: center; gap: 7px; margin-top: 14px; }
+            .nav-tab-item { font-size: 12px; padding: 10px 13px; }
+            .counter-box { width: 100%; justify-content: center; border-radius: 12px; }
+            .dropdown-menu { left: 0; transform: none; min-width: min(260px, 88vw); }
+            .slider-section { margin-top: 18px; }
+            .slider-wrapper { height: clamp(175px, 46vw, 270px) !important; border-radius: 12px; }
+            .content-section { margin-top: 24px; }
+            #portalFeed { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+            .announcement-img { height: 155px; }
+            .announcement-body { padding: 12px !important; }
+            .meta-tag { font-size: 10px; }
+            .section-heading { font-size: 17px; }
+        }
+        @media (max-width: 575.98px) {
+            .custom-container { padding-left: 12px; padding-right: 12px; }
+            #portalFeed { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+            .announcement-img { height: clamp(190px, 55vw, 260px); }
+            .announcement-body h5 { font-size: 17px; }
+            .nav-tab-item { flex: 1 1 auto; text-align: center; }
+            .dropdown { flex: 1 1 auto; text-align: center; }
+            .dropdown > .nav-tab-item { display: block; }
+            .slider-wrapper { height: 190px !important; }
+            .clean-card { padding: 16px; }
+            .post-meta-container { gap: 5px; }
+            .meta-tag { font-size: 10px; }
+            #chatBox { width: 100%; max-width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -204,16 +272,14 @@
                 <a href="zaposleni.html" target="_blank" class="nav-tab-item" id="navZaposleni">Zaposleni</a>
                 <a href="https://202.37.103.104:9091/stdauth/login?logoutNew=true" target="_blank" class="nav-tab-item" id="navETS" style="display: none;">ETS</a>
                 
-                <div class="counter-box">
-                    <div class="counter-item" onclick="povecajBrojac('proforma')">
-                        <div class="counter-label">Proforma / DDT</div>
-                        <div id="val-proforma" class="counter-value">---</div>
-                        <button id="btn-next-proforma" class="btn-next" style="display:none;">SLEDEĆI</button>
+                <div class="counter-box" aria-label="Sledeći brojevi dokumenata">
+                    <div class="counter-item">
+                        <div class="counter-label">PROFORMA / DDT · SLEDEĆI BROJ</div>
+                        <div class="counter-value-row"><span id="val-proforma" class="counter-value">---</span><button type="button" id="btn-next-proforma" class="btn-next" onclick="povecajBrojac('proforma')" style="display:none;">SLEDEĆI</button></div>
                     </div>
-                    <div class="counter-item" onclick="povecajBrojac('cmr')">
-                        <div class="counter-label">CMR</div>
-                        <div id="val-cmr" class="counter-value">---</div>
-                        <button id="btn-next-cmr" class="btn-next" style="display:none;">SLEDEĆI</button>
+                    <div class="counter-item">
+                        <div class="counter-label">CMR · SLEDEĆI BROJ</div>
+                        <div class="counter-value-row"><span id="val-cmr" class="counter-value">---</span><button type="button" id="btn-next-cmr" class="btn-next" onclick="povecajBrojac('cmr')" style="display:none;">SLEDEĆI</button></div>
                     </div>
                 </div>
             </nav>
@@ -323,36 +389,21 @@
                 });
         }
 
-        function povecajBrojac(tip) {
-            if (userRole === "MASTER" || userRole === "ADMIN") {
-                let novaVrednost = prompt("Unesite novu vrednost za " + tip + ":");
-                if (novaVrednost !== null) {
-                    showLoading(true);
-                    fetch(GOOGLE_SCRIPT_URL, { 
-                        method: 'POST', 
-                        body: JSON.stringify({ akcija: "postaviBrojac", tip: tip, vrednost: novaVrednost, user: loggedUser }) 
-                    })
-                    .then(res => res.json())
-                    .then(() => { ucitajBrojace(); showLoading(false); });
-                }
-            } 
-            else if (userRole !== "GUEST") {
-                if(confirm("Povećati "+tip+" za 1?")) {
-                    showLoading(true);
-                    fetch(GOOGLE_SCRIPT_URL, { 
-                        method: 'POST', 
-                        body: JSON.stringify({ akcija: "povecajBrojac", tip: tip, user: loggedUser }) 
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if(data.status === "OK") ucitajBrojace();
-                        else alert(data.poruka);
-                        showLoading(false);
-                    });
-                }
-            } else {
-                alert("Nemate ovlašćenje za izmenu brojača.");
-            }
+        async function povecajBrojac(tip) {
+            if (userRole !== 'MASTER') return;
+            const naziv = tip === 'proforma' ? 'PROFORMA / DDT' : 'CMR';
+            if (tip !== 'proforma' && tip !== 'cmr') return;
+            const trenutni = Number(document.getElementById('val-' + tip).innerText);
+            if (!Number.isSafeInteger(trenutni)) { alert('Sačekajte učitavanje brojača.'); return; }
+            if (!confirm('Povećati sledeći broj za ' + naziv + ' sa ' + trenutni + ' na ' + (trenutni + 1) + '?')) return;
+            showLoading(true);
+            try {
+                const r = await fetch(GOOGLE_SCRIPT_URL, {method:'POST',body:JSON.stringify({akcija:'povecajBrojac',tip,user:loggedUser,ocekuje:trenutni})});
+                const odgovor = await r.json();
+                if (odgovor.status !== 'OK') throw new Error(odgovor.poruka || 'Izmena nije uspela.');
+                await ucitajBrojace();
+            } catch (e) { alert(e.message || 'Greška pri promeni broja.'); }
+            finally { showLoading(false); }
         }
 
         // Automatski smanjuje sliku (dimenzije i/ili kvalitet) sve dok rezultat ne stane
@@ -422,7 +473,7 @@
                         document.getElementById('mainPortal').style.display = "block";
                         document.getElementById('adminPanelBox').style.display = (userRole === 'MASTER' || userRole === 'ADMIN') ? "block" : "none";
                         
-                        const canModify = (userRole !== 'GUEST');
+                        const canModify = (userRole === 'MASTER');
                         document.getElementById('btn-next-proforma').style.display = canModify ? 'block' : 'none';
                         document.getElementById('btn-next-cmr').style.display = canModify ? 'block' : 'none';
                         
@@ -711,7 +762,7 @@
     }
 </style>
 
-<button id="chatFab" onclick="chatToggle()" aria-label="Chat">💬<span id="chatBadge">0</span></button>
+
 
 <!-- ============================================================
      CHAT WIDGET v2 (oznake @ime + slike) - nalepiti ISPRED </body> taga.
