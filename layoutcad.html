@@ -38,13 +38,60 @@
             color: white;
             border-color: #60a5fa;
         }
+
+        /* Responsive CAD: controls wrap into rows; no controls disappear off-screen. */
+        .cad-header {display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding-top:7px;padding-bottom:7px;max-height:38vh;overflow-y:auto;overflow-x:hidden;}
+        .cad-brand {flex:0 0 auto;min-width:0;}
+        .cad-tools {flex:1 1 680px;min-width:0;flex-wrap:wrap;gap:3px!important;}
+        .cad-actions {flex:1 1 100%;min-width:0;flex-wrap:wrap;gap:5px!important;}
+        .cad-header button,.cad-header select,.cad-header label {font-size:11px;line-height:1.2;white-space:nowrap;}
+        .cad-header button {padding:6px 8px;min-height:28px;}
+        .cad-header .cad-tools button {padding:5px 7px;}
+        .cad-header .cad-actions > div {flex-wrap:wrap;gap:5px;}
+        .cad-group-pair {display:flex;align-items:stretch;gap:4px;flex:0 0 auto;}
+        .cad-group-pair button {min-width:86px;}
+        .cad-left-panel {width:clamp(175px,18vw,256px);}
+        .cad-right-panel {width:clamp(185px,20vw,288px);}
+        .cad-workspace {min-width:0;}
+        .cad-left-panel,.cad-right-panel {min-height:0;}
+        .cad-left-panel input,.cad-right-panel input,.cad-right-panel select {max-width:100%;min-width:0;}
+        .cad-left-panel .grid > *, .cad-right-panel .grid > * {min-width:0;}
+        .cad-panel-toggle {background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:5px;padding:5px 8px;font-size:11px;}
+        .cad-left-panel.cad-collapsed,.cad-right-panel.cad-collapsed {display:none;}
+        @media(max-width:1450px) {
+          .cad-header {gap:5px 8px;max-height:34vh;}
+          .cad-header button,.cad-header select,.cad-header label {font-size:10px;}
+          .cad-tools {flex-basis:100%;}
+          .cad-actions {flex-basis:100%;}
+          .cad-left-panel {width:200px;}
+          .cad-right-panel {width:225px;}
+          .cad-right-panel .p-4 {padding:10px;}
+          .cad-left-panel .p-3 {padding:9px;}
+        }
+        @media(max-width:1050px) {
+          .cad-header {max-height:39vh;}
+          .cad-brand {font-size:11px;}
+          .cad-tools button {font-size:10px;}
+          .cad-left-panel {width:175px;}
+          .cad-right-panel {width:190px;}
+          .cad-header .cad-actions > div {max-width:100%;}
+          .cad-group-pair button {min-width:70px;}
+          .cad-right-panel input[type=number] {font-size:11px;}
+        }
+        @media(max-width:720px) {
+          .cad-header {max-height:43vh;}
+          .cad-left-panel {width:150px;}
+          .cad-right-panel {width:160px;}
+          .cad-left-panel .grid-cols-2 {grid-template-columns:1fr;}
+          .cad-tools {max-height:100px;overflow-y:auto;}
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 h-screen flex flex-col">
 
     <!-- TOP NAVBAR / HEADER -->
-    <header class="h-14 bg-slate-800 border-b border-slate-700 px-4 flex items-center justify-between z-10 shrink-0">
-        <div class="flex items-center space-x-3">
+    <header class="cad-header bg-slate-800 border-b border-slate-700 px-3 z-10 shrink-0">
+        <div class="cad-brand flex items-center space-x-3">
             <div class="bg-blue-600 p-2 rounded-lg text-white font-bold flex items-center gap-2">
                 <i class="fa-solid fa-boxes-packing text-lg"></i>
                 <span class="tracking-wide">MAGACIN<span class="text-blue-300 font-light">CAD</span></span>
@@ -53,7 +100,7 @@
         </div>
 
         <!-- QUICK CANVAS CONTROLS -->
-        <div class="flex items-center space-x-2 bg-slate-900 p-1 rounded-lg border border-slate-700">
+        <div class="cad-tools flex items-center space-x-2 bg-slate-900 p-1 rounded-lg border border-slate-700">
             <button id="btn-select" onclick="setMode('select')" class="tool-btn active px-2.5 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition" title="Selektuj i pomeraj objekat">
                 <i class="fa-solid fa-arrow-pointer"></i> Selektuj (S)
             </button>
@@ -80,19 +127,30 @@
         </div>
 
         <!-- GROUPING & UTILITY ACTIONS -->
-        <div class="flex items-center space-x-2">
-            <button onclick="groupSelected()" title="Grupiši Selektovano (Ctrl+G)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600 flex items-center gap-1">
-                <i class="fa-solid fa-object-group"></i> Grupiši
-            </button>
+        <div class="cad-actions flex items-center space-x-2">
+            <button type="button" class="cad-panel-toggle" onclick="toggleCADPanel('left')" title="Prikaži ili sakrij paletu">☰ Paleta</button>
+            <button type="button" class="cad-panel-toggle" onclick="toggleCADPanel('right')" title="Prikaži ili sakrij inspektor">⚙ Inspektor</button>
+            <button onclick="selectAllCAD()" title="Selektuj sve vidljive i otključane objekte (Ctrl+A)" class="bg-blue-700 hover:bg-blue-600 text-white text-xs px-2 py-1.5 rounded-lg">Selektuj sve (Ctrl+A)</button>
+            <div class="cad-group-pair" aria-label="Grupisanje objekata">
+                <button onclick="groupSelected()" title="Grupiši selektovano (Ctrl+G)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600 flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-object-group"></i> Grupiši
+                </button>
+                <button onclick="ungroupSelected()" title="Razgrupiši (Ctrl+Shift+G)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600 flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-object-ungroup"></i> Razgrupiši
+                </button>
+            </div>
             <button onclick="duplicateSelected()" title="Dupliraj selektovane objekte uz precizan razmak" class="bg-blue-700 hover:bg-blue-600 text-white text-xs px-2 py-1.5 rounded-lg">Kopiraj / Razmak</button>
-            <button onclick="ungroupSelected()" title="Razgrupiši (Ctrl+Shift+G)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600 flex items-center gap-1">
-                <i class="fa-solid fa-object-ungroup"></i> Razgrupiši
-            </button>
 
             <div class="flex items-center bg-slate-900 rounded-lg border border-slate-700 px-2 py-1 text-xs space-x-2">
                 <label class="flex items-center gap-1 cursor-pointer select-none">
                     <input type="checkbox" id="chk-grid" checked onchange="toggleGrid()" class="rounded bg-slate-800 border-slate-600 text-blue-600">
                     <span class="text-slate-300">Mreža</span>
+                </label>
+                <label class="flex items-center gap-1" title="Razmak malih linija u metrima">Mali (m)
+                    <input id="grid-minor" type="number" min="0.001" step="0.1" value="1" onchange="setGridSpacing()" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 py-0.5 text-xs">
+                </label>
+                <label class="flex items-center gap-1" title="Razmak velikih linija u metrima">Veliki (m)
+                    <input id="grid-major" type="number" min="0.001" step="0.5" value="5" onchange="setGridSpacing()" class="w-16 bg-slate-800 border border-slate-600 rounded px-1 py-0.5 text-xs">
                 </label>
                 <span class="text-slate-600">|</span>
                 <label class="flex items-center gap-1 cursor-pointer select-none">
@@ -131,7 +189,7 @@
     <div class="flex flex-1 overflow-hidden relative">
 
         <!-- LEFT SIDEBAR: PALETTE OF ELEMENTS -->
-        <aside class="w-64 bg-slate-800 border-r border-slate-700 flex flex-col shrink-0 select-none z-10">
+        <aside class="cad-left-panel w-64 bg-slate-800 border-r border-slate-700 flex flex-col shrink-0 select-none z-10">
             <div class="p-3 border-b border-slate-700 font-semibold text-xs tracking-wider uppercase text-slate-400 flex justify-between items-center">
                 <span>Paleta Elemenata</span>
                 <i class="fa-solid fa-cubes text-slate-500"></i>
@@ -280,7 +338,7 @@
         </aside>
 
         <!-- CENTER CANVAS WORKSPACE -->
-        <main class="flex-1 relative bg-slate-950 overflow-hidden flex items-center justify-center">
+        <main class="cad-workspace flex-1 relative bg-slate-950 overflow-hidden flex items-center justify-center">
             <canvas id="cadCanvas" class="w-full h-full cursor-crosshair"></canvas>
 
             <!-- CANVAS OVERLAY TOOLBAR (ZOOM CONTROLS & HUD) -->
@@ -308,7 +366,7 @@
         </main>
 
         <!-- RIGHT SIDEBAR: PROPERTIES / INSPECTOR PANEL -->
-        <aside class="w-72 bg-slate-800 border-l border-slate-700 flex flex-col shrink-0 select-none z-10">
+        <aside class="cad-right-panel w-72 bg-slate-800 border-l border-slate-700 flex flex-col shrink-0 select-none z-10">
             <div class="p-3 border-b border-slate-700 font-semibold text-xs tracking-wider uppercase text-slate-400 flex justify-between items-center">
                 <span>Inspektor Svojstava</span>
                 <i class="fa-solid fa-sliders text-slate-500"></i>
@@ -454,6 +512,12 @@
 
     <!-- MAIN APPLICATION SCRIPT -->
     <script>
+        function toggleCADPanel(side) {
+            const panel = document.querySelector(side === 'left' ? '.cad-left-panel' : '.cad-right-panel');
+            if (!panel) return;
+            panel.classList.toggle('cad-collapsed');
+            requestAnimationFrame(() => { if (typeof resizeCanvas === 'function') resizeCanvas(); });
+        }
         const CANVAS = document.getElementById('cadCanvas');
         const CTX = CANVAS.getContext('2d');
         const PIXELS_PER_METER = 20;
@@ -462,6 +526,26 @@
         let gridEnabled = true;
         let snapEnabled = false;
         let snapGridSize = 0.001;
+        let gridMinorSpacing = 1;
+        let gridMajorSpacing = 5;
+        function setGridSpacing() {
+            const minor = Number(document.getElementById('grid-minor').value);
+            const major = Number(document.getElementById('grid-major').value);
+            if (!Number.isFinite(minor) || !Number.isFinite(major) || minor < .001 || major < minor || major > 100000) {
+                alert('Unesi ispravne razmake: mali najmanje 0.001 m, veliki mora biti veći ili jednak malom.');
+                document.getElementById('grid-minor').value = gridMinorSpacing;
+                document.getElementById('grid-major').value = gridMajorSpacing;
+                return;
+            }
+            gridMinorSpacing = minor;
+            gridMajorSpacing = major;
+            draw();
+        }
+        function selectAllCAD() {
+            setMode('select');
+            selectedObjectIds = objects.filter(o => layerEditable(o)).map(o => o.id);
+            updateInspector(); draw();
+        }
 
         let zoom = 1.0;
         let panX = 100;
@@ -588,8 +672,8 @@
 
         // Isti korak i isti koordinatni pocetak kao u drawGrid().
         function visibleGridStep() {
-            const px = PIXELS_PER_METER * zoom;
-            return Math.max(1, Math.pow(5, Math.ceil(Math.log(8 / px) / Math.log(5))));
+            // F2 počinje na korisnički zadatoj maloj mreži.
+            return gridMinorSpacing;
         }
         // Slobodna linija: klik-klik bez ogranicenja ili pritisni-povuci-pusti.
         let freeLineAwaitingEnd = false;
@@ -905,27 +989,21 @@
         function drawGrid() {
             CTX.save();
             const scale = PIXELS_PER_METER * zoom;
-            const step = visibleGridStep();
             const left = -panX / scale, right = (CANVAS.width-panX)/scale;
             const top = -panY / scale, bottom = (CANVAS.height-panY)/scale;
-            const x0 = Math.ceil(left/step), x1 = Math.floor(right/step);
-            const y0 = Math.ceil(top/step), y1 = Math.floor(bottom/step);
-            CTX.lineWidth = 0.8;
-            for (let pass=0;pass<2;pass++) {
-                CTX.strokeStyle = pass ? 'rgba(105,145,205,0.36)' : 'rgba(95,125,175,0.22)';
-                CTX.beginPath();
-                for(let i=x0;i<=x1;i++) {
-                    if ((i%5===0)!==Boolean(pass)) continue;
-                    const x=worldToScreen(i*step,0).x;
-                    CTX.moveTo(x,0);CTX.lineTo(x,CANVAS.height);
-                }
-                for(let i=y0;i<=y1;i++) {
-                    if ((i%5===0)!==Boolean(pass)) continue;
-                    const y=worldToScreen(0,i*step).y;
-                    CTX.moveTo(0,y);CTX.lineTo(CANVAS.width,y);
-                }
+            // Ograničenje broja linija štiti browser pri ekstremnom zoom-out-u.
+            const drawLines = (step, color, width) => {
+                if (step * scale < 4) return;
+                const x0 = Math.ceil(left/step), x1 = Math.floor(right/step);
+                const y0 = Math.ceil(top/step), y1 = Math.floor(bottom/step);
+                if (x1-x0+y1-y0 > 3500) return;
+                CTX.strokeStyle=color; CTX.lineWidth=width; CTX.beginPath();
+                for(let i=x0;i<=x1;i++) {const x=worldToScreen(i*step,0).x;CTX.moveTo(x,0);CTX.lineTo(x,CANVAS.height);}
+                for(let i=y0;i<=y1;i++) {const y=worldToScreen(0,i*step).y;CTX.moveTo(0,y);CTX.lineTo(CANVAS.width,y);}
                 CTX.stroke();
-            }
+            };
+            drawLines(gridMinorSpacing,'rgba(95,125,175,0.22)',0.8);
+            drawLines(gridMajorSpacing,'rgba(105,145,205,0.45)',1.1);
             CTX.restore();
         }
 
@@ -2193,6 +2271,7 @@
 
         window.addEventListener('keydown', (e) => {
             if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='a') { e.preventDefault();selectAllCAD();return; }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='c') { e.preventDefault();copySelected();return; }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='v') { e.preventDefault();pasteCopied();return; }
 
@@ -2289,7 +2368,7 @@
 
         // CAD projekat je izvor istine; PDF je vektorski izlaz za pregled i štampu.
         function saveProject() {
-            const data = {format:'MagacinCAD',version:6,unit:'m',objects,layers:cadLayers,activeLayerId};
+            const data = {format:'MagacinCAD',version:6,unit:'m',objects,layers:cadLayers,activeLayerId,gridMinorSpacing,gridMajorSpacing};
             const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
             const url = URL.createObjectURL(blob);
             const a=document.createElement('a'); a.href=url; a.download='MagacinCAD_projekat.json';a.click();
@@ -2303,6 +2382,10 @@
                 if(!Array.isArray(list)||list.length>100000||!list.every(o=>o&&typeof o.type==='string'&&Number.isFinite(o.x_m)&&Number.isFinite(o.y_m)&&Number.isFinite(o.w_m)&&Number.isFinite(o.h_m)))throw Error('Neispravan format');
                 if(objects.length&&!confirm('Zameniti trenutni nacrt?'))return;
                 objects=list;
+                gridMinorSpacing = Number.isFinite(Number(data.gridMinorSpacing)) && Number(data.gridMinorSpacing) >= .001 ? Number(data.gridMinorSpacing) : 1;
+                gridMajorSpacing = Number.isFinite(Number(data.gridMajorSpacing)) && Number(data.gridMajorSpacing) >= gridMinorSpacing ? Number(data.gridMajorSpacing) : 5;
+                document.getElementById('grid-minor').value = gridMinorSpacing;
+                document.getElementById('grid-major').value = gridMajorSpacing;
                 if(Array.isArray(data.layers)&&data.layers.length) {
                     cadLayers=data.layers.filter(l=>l&&typeof l.id==='string'&&typeof l.name==='string').map(l=>({id:l.id,name:l.name,visible:l.visible!==false,locked:!!l.locked,color:l.color||'#60a5fa'}));
                     if(!cadLayers.length)cadLayers=[{id:'base',name:'Tlocrt',visible:true,locked:false,color:'#60a5fa'}];
