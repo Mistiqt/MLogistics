@@ -247,8 +247,8 @@
                 
                 <!-- PLANIRANJE KAO KARTICA -->
                 <a href="material-planner.html" target="_blank" class="nav-tab-item" id="navPlaniranje">Planiranje</a>
-                <!-- LayoutCAD: vidljiv isključivo MASTER korisniku nakon prijave -->
-                <a href="magacincad.html" target="_blank" rel="noopener noreferrer" class="nav-tab-item" id="navLayoutCad" style="display:none;" onclick="return otvoriLayoutCad(event)">LayoutCAD</a>
+                <!-- MagacinCAD: vidljiv isključivo MASTER korisniku nakon prijave -->
+                <a href="magacincad.html" target="_blank" rel="noopener noreferrer" class="nav-tab-item" id="navMagacinCad" style="display:none;" onclick="return otvoriMagacinCad(event)">MagacinCAD</a>
 
                 <div class="dropdown" id="navTransport">
                     <a class="nav-tab-item">Transport ▾</a>
@@ -485,7 +485,7 @@
                         const isMasterAdmin = (userRole === 'MASTER' || userRole === 'ADMIN');
                         
                         document.getElementById('navPlaniranje').style.display = isGuest ? 'none' : 'inline-block';
-                        document.getElementById('navLayoutCad').style.display = (userRole === 'MASTER') ? 'inline-block' : 'none';
+                        document.getElementById('navMagacinCad').style.display = (userRole === 'MASTER') ? 'inline-block' : 'none';
                         document.getElementById('navTransport').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navPopis').style.display = isGuest ? 'none' : 'inline-block';
                         document.getElementById('navTimeSheet').style.display = isGuest ? 'none' : 'inline-block';
@@ -504,19 +504,19 @@
                 .catch(err => { showLoading(false); document.getElementById('loginError').style.display = "block"; });
         }
 
-        // Provera prava na serveru pre otvaranja LayoutCAD kartice.
+        // Provera prava na serveru pre otvaranja MagacinCAD kartice.
         // Napomena: sam statički magacincad.html mora biti dodatno zaštićen na hostingu
         // ako se zahteva zabrana direktnog otvaranja putem URL-a.
-        async function otvoriLayoutCad(event) {
+        async function otvoriMagacinCad(event) {
             event.preventDefault();
             if (userRole !== 'MASTER' || !loggedUser) {
-                alert('LayoutCAD je dostupan samo MASTER korisnicima.');
+                alert('MagacinCAD je dostupan samo MASTER korisnicima.');
                 return false;
             }
             const prozor = window.open('', '_blank');
             if (!prozor) { alert('Dozvolite iskačuće prozore za ovaj sajt.'); return false; }
             try {
-                const url = GOOGLE_SCRIPT_URL + '?akcija=proveriLayoutCad&sifra=' + encodeURIComponent(loggedUser);
+                const url = GOOGLE_SCRIPT_URL + '?akcija=proveriMagacinCad&sifra=' + encodeURIComponent(loggedUser);
                 const odgovor = await fetch(url, {cache: 'no-store'});
                 if (!odgovor.ok) throw new Error('Provera nije uspela');
                 const data = await odgovor.json();
@@ -524,11 +524,11 @@
                     prozor.location.replace('magacincad.html');
                 } else {
                     prozor.close();
-                    alert('Pristup LayoutCAD-u dozvoljen je samo aktivnim MASTER korisnicima.');
+                    alert('Pristup MagacinCAD-u dozvoljen je samo aktivnim MASTER korisnicima.');
                 }
             } catch (err) {
                 prozor.close();
-                alert('Nije moguće proveriti pristup LayoutCAD-u. Pokušajte ponovo.');
+                alert('Nije moguće proveriti pristup MagacinCAD-u. Pokušajte ponovo.');
             }
             return false;
         }
