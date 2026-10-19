@@ -1706,14 +1706,39 @@
     // Centralna numeracija sa portala. Brojaci u listu Brojaci predstavljaju SLEDECI broj.
     const DOC_COUNTER_API = 'https://script.google.com/macros/s/AKfycbx9dmnfozKUQplxXWzfxUx5YIGyGOJqwuhvQ1uQxejE37NgTSbdHrJryYZ2HCK-Rn-o/exec';
     let docSaving = false;
-    async function ucitajSledeceBrojeveDokumentacije() {
+    let docServerNumbers = null;
+    let docUserRole = '';
+    async function ucitajUloguDokumentacije() {
+        const sifra = localStorage.getItem('sifra') || '';
+        if (!sifra) { docUserRole = ''; return; }
+        try {
+            const r = await fetch(DOC_COUNTER_API + '?akcija=proveriKorisnika&sifra=' + encodeURIComponent(sifra));
+            const d = await r.json();
+            docUserRole = d.status === 'OK' ? String(d.uloga || '').toUpperCase().replace(/[ -]/g, '_') : '';
+        } catch(e) { docUserRole = ''; console.warn('Provera uloge:',e); }
+        const master = docUserRole === 'MASTER';
+        ['inputDdtBroj','inputCmrBroj','inputBrojOtpremnice'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.readOnly = !master; el.title = master ? 'MASTER: ručna promena dozvoljena' : 'Broj se dodeljuje automatski'; }
+        });
+    }
+    function docDozvoljenoCuvanje() {
+        if (!['MASTER','ADMIN','TEAM_LEADER'].includes(docUserRole)) throw new Error('Samo MASTER, ADMIN i TEAM_LEADER mogu da evidentiraju dokumente. Prijavite se preko index.html.');
+    }
+    async function ucitajSledeceBrojeveDokumentacije(preskociMasterIzmene = false) {
         const r = await fetch(DOC_COUNTER_API + '?akcija=ucitajBrojace&_=' + Date.now());
         if (!r.ok) throw new Error('Nije dostupna evidencija brojeva');
         const d = await r.json();
         if (!Number.isSafeInteger(Number(d.proforma)) || !Number.isSafeInteger(Number(d.cmr))) throw new Error('Neispravni brojevi na serveru');
-        document.getElementById('inputDdtBroj').value = d.proforma;
-        document.getElementById('inputCmrBroj').value = d.cmr;
-        if (Number.isSafeInteger(Number(d.otpremnica))) { document.getElementById('inputBrojOtpremnice').value = d.otpremnica; azurirajOtpremnicuKontrole(); }
+        const prethodni = docServerNumbers;
+        const masterIzmena = preskociMasterIzmene && docUserRole === 'MASTER' && prethodni;
+        if (!masterIzmena || Number(document.getElementById('inputDdtBroj').value) === Number(prethodni.proforma)) document.getElementById('inputDdtBroj').value = d.proforma;
+        if (!masterIzmena || Number(document.getElementById('inputCmrBroj').value) === Number(prethodni.cmr)) document.getElementById('inputCmrBroj').value = d.cmr;
+        if (Number.isSafeInteger(Number(d.otpremnica))) {
+            if (!masterIzmena || Number(document.getElementById('inputBrojOtpremnice').value) === Number(prethodni.otpremnica)) document.getElementById('inputBrojOtpremnice').value = d.otpremnica;
+            azurirajOtpremnicuKontrole();
+        }
+        docServerNumbers = d;
         azurirajBrojeve();
         return d;
     }
@@ -1732,15 +1757,21 @@
         return result;
     }
     window.addEventListener('load', () => {
-        ucitajSledeceBrojeveDokumentacije().catch(e => console.warn('Brojaci:',e.message));
+        ucitajUloguDokumentacije().then(() => ucitajSledeceBrojeveDokumentacije()).catch(e => console.warn('Brojaci:',e.message));
     });
 
     async function sacuvajGlavneDokumente() {
         if (docSaving) return;
         docSaving = true;
         try {
-            const aktuelni = await ucitajSledeceBrojeveDokumentacije();
-            if (!confirm(`Sačuvati PF/DDT ${aktuelni.proforma} i CMR ${aktuelni.cmr}?`)) return;
+            await ucitajUloguDokumentacije();
+            docDozvoljenoCuvanje();
+            const aktuelni = await ucitajSledeceBrojeveDokumentacije(true);
+            const izabraniDdt = document.getElementById('inputDdtBroj').value.trim();
+            const izabraniCmr = document.getElementById('inputCmrBroj').value.trim();
+            if (!/^\d+$/.test(izabraniDdt) || !/^\d+$/.test(izabraniCmr)) throw new Error('Brojevi moraju biti pozitivni celi brojevi.');
+            if (docUserRole !== 'MASTER' && (Number(izabraniDdt) !== Number(aktuelni.proforma) || Number(izabraniCmr) !== Number(aktuelni.cmr))) throw new Error('Broj je promenjen na serveru. Osvežite dokumentaciju.');
+            if (!confirm(`Sačuvati PF/DDT ${izabraniDdt} i CMR ${izabraniCmr}?`)) return;
         let ddtBr = document.getElementById("inputDdtBroj").value.trim() || "973";
         let godina = document.getElementById("selectDdtGodina").value;
         let cmrBr = document.getElementById("inputCmrBroj").value.trim();
@@ -1807,6 +1838,7 @@
         const requestId = (crypto.randomUUID ? crypto.randomUUID() : Date.now()+'-'+Math.random().toString(36).slice(2));
         try {
             await evidentirajSacuvanuDokumentaciju(ddtBr, cmrBr, godina, nazivFajla, requestId);
+            await ucitajSledeceBrojeveDokumentacije();
             alert('PDF sacuvan i brojevi uspesno evidentirani. Sledeci brojevi su ucitani.');
         } catch (e) {
             alert('VAZNO: PDF je sacuvan, ali brojevi NISU potvrdjeni na serveru. '+e.message+' Ne cuvajte isti dokument ponovo bez provere evidencije.');
@@ -1821,8 +1853,13 @@
         if (otpSaving) return;
         otpSaving = true;
         try {
-        const current = await ucitajSledeceBrojeveDokumentacije();
-        if (!confirm('Sačuvati otpremnicu broj ' + current.otpremnica + '?')) return;
+        await ucitajUloguDokumentacije();
+        docDozvoljenoCuvanje();
+        const current = await ucitajSledeceBrojeveDokumentacije(true);
+        const izabraniOtp = document.getElementById('inputBrojOtpremnice').value.trim();
+        if (!/^\d+$/.test(izabraniOtp)) throw new Error('Broj otpremnice mora biti pozitivan ceo broj.');
+        if (docUserRole !== 'MASTER' && Number(izabraniOtp) !== Number(current.otpremnica)) throw new Error('Broj otpremnice je promenjen na serveru. Osvežite dokumentaciju.');
+        if (!confirm('Sačuvati otpremnicu broj ' + izabraniOtp + '?')) return;
         let otpBr = document.getElementById("inputBrojOtpremnice").value.trim() || "400";
         let godina = document.getElementById("selectGodinaOtpremnice").value;
         let nazivFajla = `Otpremnica_${otpBr}_${godina}.pdf`;
@@ -1865,6 +1902,7 @@
             if (result.status !== 'OK') throw new Error(result.poruka || 'Evidencija nije uspela.');
             document.getElementById('inputBrojOtpremnice').value = result.otpremnica;
             azurirajOtpremnicuKontrole();
+            await ucitajSledeceBrojeveDokumentacije();
             alert('Otpremnica je sačuvana. Sledeći broj: ' + result.otpremnica);
         } catch (err) {
             alert('VAŽNO: PDF je sačuvan, ali broj NIJE potvrđen na serveru. ' + err.message + ' Proverite evidenciju pre ponovnog čuvanja.');
