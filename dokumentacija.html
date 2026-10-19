@@ -420,7 +420,7 @@
             <input type="text" id="inputDapGrad" value="Zagreb" placeholder="Unesi grad" oninput="azurirajIncoterm()">
         </div>
         <button class="btn-stampaj" onclick="stampajGlavneDokumente()">🖨️ Štampaj PF, DDT, CMR</button>
-        <button class="btn-sacuvaj" onclick="sacuvajGlavneDokumente()">💾 Sačuvaj PF, DDT, CMR (Izaberi folder)</button>
+        <button class="btn-sacuvaj" onclick="pokreniCuvanjeDokumenta('glavni')">💾 Sačuvaj PF, DDT, CMR (Izaberi folder)</button>
     </div>
 
     <div class="sidebar no-print" id="sidebarOtpremnica" style="display: none;">
@@ -476,7 +476,7 @@
             <input type="text" id="inputTabliceOtpremnica" value="KG 380 BT" placeholder="Unesi tablice" oninput="azurirajOtpremnicuKontrole()" style="display: none; margin-top: 5px;">
         </div>
         <button class="btn-stampaj" onclick="stampajOtpremnicu()">🖨️ Štampaj Otpremnicu</button>
-        <button class="btn-sacuvaj" onclick="sacuvajOtpremnicu()">💾 Sačuvaj Otpremnicu (Izaberi folder)</button>
+        <button class="btn-sacuvaj" onclick="pokreniCuvanjeDokumenta('otpremnica')">💾 Sačuvaj Otpremnicu (Izaberi folder)</button>
     </div>
 
     <div class="main-container">
@@ -1744,7 +1744,7 @@
     }
     async function evidentirajSacuvanuDokumentaciju(ddt,cmr,godina,nazivFajla,requestId) {
         let user = localStorage.getItem('sifra') || '';
-        if (!user) user = prompt('Unesite sifru aktivnog MASTER/ADMIN korisnika za evidenciju:') || '';
+        if (!user) user = prompt('Unesite sifru aktivnog korisnika za evidenciju:') || '';
         if (!user) throw new Error('PDF je sacuvan, ali nije evidentiran: nedostaje prijava.');
         const r = await fetch(DOC_COUNTER_API, {method:'POST',body:JSON.stringify({
             akcija:'evidentirajDokumentaciju',user,ddtBroj:Number(ddt),cmrBroj:Number(cmr),godina,nazivFajla,requestId
@@ -1760,7 +1760,21 @@
         ucitajUloguDokumentacije().then(() => ucitajSledeceBrojeveDokumentacije()).catch(e => console.warn('Brojaci:',e.message));
     });
 
-    async function sacuvajGlavneDokumente() {
+    // Dijalog za izbor lokacije mora biti pozvan DIREKTNO iz korisnickog klika.
+    // Svaki await (provera uloge, ucitavanje brojeva) pre dijaloga gubi user activation.
+    function pokreniCuvanjeDokumenta(tip) {
+        if (tip === 'glavni' && docSaving) return;
+        if (tip === 'otpremnica' && otpSaving) return;
+        const broj = tip === 'glavni'
+            ? `Proforma_DDT_${document.getElementById('inputDdtBroj').value.trim()}_CMR_${document.getElementById('inputCmrBroj').value.trim()}_${document.getElementById('selectDdtGodina').value}.pdf`
+            : `Otpremnica_${document.getElementById('inputBrojOtpremnice').value.trim()}_${document.getElementById('selectGodinaOtpremnice').value}.pdf`;
+        // Poziv odmah u event handleru, bez prethodnog await.
+        const izbor = zatraziLokacijuZaCuvanjePdf(broj);
+        if (tip === 'glavni') sacuvajGlavneDokumente(izbor);
+        else sacuvajOtpremnicu(izbor);
+    }
+
+    async function sacuvajGlavneDokumente(izborLokacije) {
         if (docSaving) return;
         docSaving = true;
         try {
@@ -1779,7 +1793,7 @@
 
         let handle;
         try {
-            handle = await zatraziLokacijuZaCuvanjePdf(nazivFajla);
+            handle = await izborLokacije;
         } catch (err) {
             if (err.name === 'AbortError') return; // korisnik je otkazao dijalog
             console.log("Greška pri otvaranju dijaloga za čuvanje:", err);
@@ -1828,7 +1842,7 @@
         if (!handle) {
             // Standardni download ne potvrdjuje zavrsetak preuzimanja.
             await upisiPdfBlobNaLokaciju(handle, blob, nazivFajla);
-            alert('Preuzimanje PDF-a je pokrenuto. Brojaci NISU promenjeni jer browser ne moze da potvrdi cuvanje. Koristite Chrome/Edge i izbor lokacije za automatsku evidenciju.');
+            alert('PDF je preuzet, ali automatska evidencija nije izvrsšena jer izbor lokacije nije dostupan. Otvorite stranicu u Chrome/Edge preko HTTPS.');
             return;
         }
         // Za glavni paket ne prelazimo na download ako direktan upis ne uspe.
@@ -1849,7 +1863,7 @@
 
 
     let otpSaving = false;
-    async function sacuvajOtpremnicu() {
+    async function sacuvajOtpremnicu(izborLokacije) {
         if (otpSaving) return;
         otpSaving = true;
         try {
@@ -1866,7 +1880,7 @@
 
         let handle;
         try {
-            handle = await zatraziLokacijuZaCuvanjePdf(nazivFajla);
+            handle = await izborLokacije;
         } catch (err) {
             if (err.name === 'AbortError') return; // korisnik je otkazao dijalog
             console.log("Greška pri otvaranju dijaloga za čuvanje:", err);
