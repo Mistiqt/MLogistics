@@ -380,13 +380,17 @@
 
         function showLoading(show) { document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; }
 
-        function ucitajBrojace() {
-            fetch(GOOGLE_SCRIPT_URL + "?akcija=ucitajBrojace")
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('val-proforma').innerText = data.proforma;
-                    document.getElementById('val-cmr').innerText = data.cmr;
-                });
+        async function ucitajBrojace() {
+            try {
+                const res = await fetch(GOOGLE_SCRIPT_URL + '?akcija=ucitajBrojace&_=' + Date.now(), {cache:'no-store'});
+                if (!res.ok) throw new Error('Server nije dostupan');
+                const data = await res.json();
+                for (const tip of ['proforma','cmr']) {
+                    const broj = Number(data[tip]);
+                    if (!Number.isSafeInteger(broj)) throw new Error('Neispravan brojač: '+tip);
+                    document.getElementById('val-' + tip).innerText = broj;
+                }
+            } catch(e) { console.error('Brojači:',e); }
         }
 
         async function povecajBrojac(tip) {
