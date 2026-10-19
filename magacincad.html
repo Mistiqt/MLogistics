@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for CAD & Warehouse Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
     <!-- jsPDF for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -335,6 +336,8 @@
                 <div class="flex gap-1"><button onclick="moveSelectionToActiveLayer()" class="bg-slate-700 px-2 py-1 rounded flex-1" title="Premesti selektovane elemente u aktivni sloj">Premesti izbor</button><button onclick="mergeCADLayers()" class="bg-slate-700 px-2 py-1 rounded flex-1" title="Spoji izabrani i aktivni sloj">Spoji slojeve</button></div>
                 <div class="border-t border-slate-700 pt-2 space-y-2">
                     <b class="text-emerald-300">KUTIJE I KAPACITET</b>
+                     <label class="block mt-1">Materijal<select id="box-material" class="w-full bg-slate-900 rounded p-1"><option value="cardboard">Karton — braon</option><option value="metal">Metal — bordo</option></select></label>
+                     <label class="block mt-1">Maksimalno slaganje (stackable)<input id="box-stack" type="number" min="1" max="100" step="1" value="3" class="w-full bg-slate-900 rounded p-1"></label>
                     <div class="grid grid-cols-2 gap-1"><label>Širina (m)<input id="box-w" type="number" min="0.001" step="0.001" value="0.6" class="w-full bg-slate-900 rounded p-1"></label><label>Dužina (m)<input id="box-h" type="number" min="0.001" step="0.001" value="0.4" class="w-full bg-slate-900 rounded p-1"></label></div>
                     <div class="grid grid-cols-2 gap-1"><label>Razmak (m)<input id="box-gap" type="number" min="0" step="0.001" value="0" class="w-full bg-slate-900 rounded p-1"></label><label>Visina kutije (m)<input id="box-z" type="number" min="0.001" step="0.001" value="0.3" class="w-full bg-slate-900 rounded p-1"></label></div>
                     <div class="grid grid-cols-2 gap-1"><label>Visina prostora (m)<input id="space-z" type="number" min="0.001" step="0.001" value="3" class="w-full bg-slate-900 rounded p-1"></label><label>Max komada<input id="box-limit" type="number" min="1" max="10000" step="1" value="2000" class="w-full bg-slate-900 rounded p-1"></label></div>
@@ -356,6 +359,9 @@
         <!-- CENTER CANVAS WORKSPACE -->
         <main class="cad-workspace flex-1 relative bg-slate-950 overflow-hidden flex items-center justify-center">
             <canvas id="cadCanvas" class="w-full h-full cursor-crosshair"></canvas>
+             <div id="cad3d" class="hidden absolute inset-0 bg-slate-950" style="z-index:2"></div>
+            <div id="cad3d-help" class="hidden absolute bottom-14 right-3 bg-slate-800/90 border border-slate-600 rounded p-2 text-[11px] text-slate-200 pointer-events-none" style="z-index:5">3D: levi drag = rotacija oko objekta · desni drag = pomeranje pogleda · klik na kutiju = slaganje · Shift + levi drag na objektu = pomeranje objekta · točkić = zoom · WASD = kretanje</div>
+             <div class="absolute top-3 left-3 flex gap-1" style="z-index:5"><button onclick="switchCADView(false)" class="bg-blue-700 px-3 py-1.5 rounded text-xs">2D</button><button onclick="switchCADView(true)" class="bg-violet-700 px-3 py-1.5 rounded text-xs">3D prikaz</button></div>
 
             <!-- CANVAS OVERLAY TOOLBAR (ZOOM CONTROLS & HUD) -->
             <div class="absolute bottom-4 left-4 bg-slate-800/90 backdrop-blur border border-slate-700 rounded-lg p-1.5 flex items-center space-x-2 text-xs shadow-xl text-slate-300">
@@ -506,6 +512,8 @@
                             <input type="number" min="1" max="20" id="prop-pallets" onchange="updateSelectedProp('palletsPerLevel', parseInt(this.value))" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none">
                         </div>
                     </div>
+                    <div><label class="font-semibold text-slate-400 text-[10px]">Broj spojenih regala (jedan pored drugog)</label><input type="number" min="1" max="20" id="prop-rack-doubles" onchange="updateSelectedProp('rackDoubles', Math.max(1,Math.min(20,parseInt(this.value)||1)))" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none"></div>
+                    <p class="text-[10px] text-slate-400">Broj spojenih regala povećava širinu celog regalskog bloka. Nivoi i polja vide se u 3D.</p>
                     <div><label class="font-semibold text-slate-400 text-[10px]">Broj vertikala / polja regala</label><input type="number" min="1" max="200" id="prop-verticals" onchange="updateSelectedProp('verticals', parseInt(this.value))" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none"></div>
                     <div class="bg-blue-950/40 p-2 rounded border border-blue-800/50 text-blue-300 text-[11px] flex justify-between">
                         <span>Ukupan Kapacitet:</span>
@@ -900,6 +908,7 @@
                     newObj.levels = 4;
                     newObj.palletsPerLevel = 6;
                     newObj.verticals = 6;
+                    newObj.rackDoubles = 1;
                     break;
                 case 'ground_storage':
                     newObj.w_m = 5.0;
@@ -1000,6 +1009,7 @@
         }
 
         function draw(forExport = false) {
+            if(!forExport)queueCAD3DRefresh();
             // requestAnimationFrame prosledjuje timestamp; nikad ga ne tretirati kao PDF rezim.
             forExport = (forExport === true);
             CTX.save();
@@ -1326,15 +1336,33 @@
                     CTX.lineWidth = strokeW;
                     CTX.strokeRect(-w/2, -h/2, w, h);
 
+                    const rackCopies=Math.max(1,Math.min(20,Math.round(Number(obj.rackDoubles)||1)));
+                    CTX.strokeStyle='#fbbf24';CTX.lineWidth=Math.max(1,strokeW*.75);
+                    // Dodatni regali nacrtani neposredno pored prvog, u istom lokalnom koordinatnom sistemu.
+                    for(let ri=1;ri<rackCopies;ri++){
+                        if(obj.h_m>=obj.w_m){
+                            const rx=-w/2+ri*w;
+                            CTX.fillStyle='rgba(37,99,235,.13)';CTX.fillRect(rx,-h/2,w,h);
+                            CTX.strokeRect(rx,-h/2,w,h);
+                        }else{
+                            const ry=-h/2+ri*h;
+                            CTX.fillStyle='rgba(37,99,235,.13)';CTX.fillRect(-w/2,ry,w,h);
+                            CTX.strokeRect(-w/2,ry,w,h);
+                        }
+                    }
                     const numBeams = Math.max(1, Math.round(obj.verticals || Math.floor(obj.h_m / 1.5)));
                     CTX.strokeStyle = '#60a5fa';
                     CTX.lineWidth = 1;
-                    for (let i = 1; i < numBeams; i++) {
-                        let yPos = -h/2 + (h / numBeams) * i;
-                        CTX.beginPath();
-                        CTX.moveTo(-w/2, yPos);
-                        CTX.lineTo(w/2, yPos);
-                        CTX.stroke();
+                    for(let ri=0;ri<rackCopies;ri++){
+                        for(let i=1;i<numBeams;i++){
+                            if(obj.h_m>=obj.w_m){
+                                const yy=-h/2+h*i/numBeams,xx=-w/2+ri*w;
+                                CTX.beginPath();CTX.moveTo(xx,yy);CTX.lineTo(xx+w,yy);CTX.stroke();
+                            }else{
+                                const xx=-w/2+w*i/numBeams,yy=-h/2+ri*h;
+                                CTX.beginPath();CTX.moveTo(xx,yy);CTX.lineTo(xx,yy+h);CTX.stroke();
+                            }
+                        }
                     }
                     break;
 
@@ -1380,15 +1408,18 @@
                     CTX.fillRect(-w/2, h/2 - 4, w, 4);
                     break;
 
-                case 'truck':
-                    CTX.fillStyle = '#312e81';
-                    CTX.fillRect(-w/2, -h/2, w, h);
-                    CTX.strokeStyle = strokeC;
-                    CTX.lineWidth = strokeW;
-                    CTX.strokeRect(-w/2, -h/2, w, h);
-                    CTX.fillStyle = '#4338ca';
-                    CTX.fillRect(-w/2, -h/2, w, h * 0.2);
+                case 'truck': {
+                    // Pogled odozgo: prikolica, kabina, šoferšajbna, točkovi i detalji.
+                    const trailerH=h*.75, cabY=-h/2+trailerH;
+                    CTX.fillStyle='#475569';CTX.fillRect(-w*.47,-h/2,w*.94,trailerH);
+                    CTX.strokeStyle='#cbd5e1';CTX.lineWidth=Math.max(1,strokeW);CTX.strokeRect(-w*.47,-h/2,w*.94,trailerH);
+                    CTX.fillStyle='#64748b';CTX.fillRect(-w*.40,-h/2+4,w*.80,Math.max(2,trailerH-8));
+                    CTX.fillStyle='#1d4ed8';CTX.beginPath();CTX.roundRect(-w*.44,cabY+2,w*.88,h*.22,Math.max(2,w*.10));CTX.fill();
+                    CTX.fillStyle='#93c5fd';CTX.fillRect(-w*.35,cabY+h*.06,w*.70,h*.055);
+                    CTX.fillStyle='#0f172a';for(const side of [-1,1])for(const yy of [-h*.35,h*.13])CTX.fillRect(side*w*.46-(side<0?w*.12:0),yy,w*.12,Math.max(3,h*.075));
+                    CTX.fillStyle='#fef08a';CTX.fillRect(-w*.34,h*.46,w*.16,Math.max(2,h*.018));CTX.fillRect(w*.18,h*.46,w*.16,Math.max(2,h*.018));
                     break;
+                }
 
                 case 'forklift':
                     CTX.fillStyle = '#f59e0b';
@@ -2248,7 +2279,8 @@
                     document.getElementById('prop-levels').value = selected.levels || 4;
                     document.getElementById('prop-pallets').value = selected.palletsPerLevel || 6;
                     document.getElementById('prop-verticals').value = selected.verticals || 6;
-                    const total = (selected.levels || 4) * (selected.palletsPerLevel || 6) * (selected.verticals || 1);
+                    document.getElementById('prop-rack-doubles').value = selected.rackDoubles || 1;
+                    const total = (selected.levels || 4) * (selected.palletsPerLevel || 6) * (selected.verticals || 1) * (selected.rackDoubles || 1);
                     document.getElementById('prop-total-pallets').innerText = `${total} paletnih mesta`;
                 } else {
                     rackPanel.classList.add('hidden');
@@ -2351,6 +2383,7 @@
         }
 
         function updateStats() {
+            queueCAD3DRefresh();
             document.getElementById('stat-count').innerText = objects.length;
 
             let totalPallets = 0;
@@ -2359,7 +2392,7 @@
             objects.forEach(o => {
                 if (!o) return;
                 if (o.type === 'rack') {
-                    totalPallets += (o.levels || 4) * (o.palletsPerLevel || 6) * (o.verticals || 1);
+                    totalPallets += (o.levels || 4) * (o.palletsPerLevel || 6) * (o.verticals || 1) * (o.rackDoubles || 1);
                 }
                 if (o.type === 'circle') {
                     const r = o.w_m / 2;
@@ -2444,37 +2477,384 @@
             objects.forEach(o=>{if((o.layerId||'base')===source.id)o.layerId=activeLayerId;});
             cadLayers=cadLayers.filter(l=>l.id!==source.id);renderCADLayers();draw();}
         function readBoxNumber(id,allowZero=false){const v=Number(document.getElementById(id).value);if(!Number.isFinite(v)||(allowZero?v<0:v<=0))throw Error('Neispravna vrednost: '+id);return v;}
+        function boxSettings(){const material=document.getElementById("box-material").value;const stack=readBoxNumber("box-stack");if(!Number.isInteger(stack)||stack>100)throw Error("Stackable mora biti ceo broj od 1 do 100.");return {material,stack,color:material==="metal"?"#881337":"#92400e"};}
+        // 2D dugme: jedan klik = jedna fizicka kutija. Nakon limita novi stub.
+        let cadBox2DLastRoot=null;
         function createCADBox(){
-            snapshotCAD();try{
-            const l=cadLayers.find(x=>x.id===activeLayerId);if(!l||l.locked||!l.visible)throw Error('Aktivni sloj mora biti vidljiv i otključan.');
-            const w=readBoxNumber('box-w'),h=readBoxNumber('box-h');const pt=screenToWorld(CANVAS.width/2,CANVAS.height/2);
-            const o={id:generateId(),type:'rect',x_m:pt.x-w/2,y_m:pt.y-h/2,w_m:w,h_m:h,angle:0,label:'Kutija',color:l.color,strokeColor:'#f8fafc',strokeWidth:1,fillOpacity:65,layerId:activeLayerId,zIndex:objects.length,boxHeight:readBoxNumber('box-z')};
-            objects.push(o);selectedObjectIds=[o.id];updateInspector();updateStats();draw();
-        }catch(e){alert(e.message)}}
+            try {
+                const l=cadLayers.find(x=>x.id===activeLayerId);
+                if(!l||l.locked||!l.visible)throw Error('Aktivni sloj mora biti vidljiv i otključan.');
+                const w=readBoxNumber('box-w'),h=readBoxNumber('box-h'),settings=boxSettings(),z=readBoxNumber('box-z');
+                const signature=[w,h,z,settings.material,settings.stack,activeLayerId].join('|');
+                const root=objects.find(o=>o.id===cadBox2DLastRoot && o.boxSignature===signature);
+                if(root){
+                    stackCADBox3D(root,false);
+                    return;
+                }
+                snapshotCAD();
+                const pt=screenToWorld(CANVAS.width/2,CANVAS.height/2);
+                const o={id:generateId(),type:'rect',x_m:pt.x-w/2,y_m:pt.y-h/2,w_m:w,h_m:h,angle:0,
+                    label:settings.material==='metal'?'Metal':'Karton',material:settings.material,stackable:settings.stack,
+                    stackLevels:1,color:settings.color,strokeColor:'#f8fafc',strokeWidth:1,fillOpacity:65,
+                    layerId:activeLayerId,zIndex:objects.length,boxHeight:z,boxSignature:signature};
+                objects.push(o);cadBox2DLastRoot=o.id;selectedObjectIds=[o.id];updateInspector();updateStats();draw();
+                if(cad3dActive)buildCAD3D(true);
+            }catch(e){alert(e.message)}
+        }
         function calculateBoxCapacity(){
             snapshotCAD();try{
             if(selectedObjectIds.length!==1)throw Error('Selektuj jedan pravougaoni objekat kao skladišnu zonu.');
             const zone=objects.find(o=>o.id===selectedObjectIds[0]);
             if(!zone||!['rect','wall','office','ground_storage','zone_inbound','zone_outbound'].includes(zone.type))throw Error('Zona mora biti pravougaoni objekat.');
             if((zone.angle||0)%180!==0)throw Error('Za ovu proveru zona mora biti bez rotacije (0° ili 180°).');
-            const w=readBoxNumber('box-w'),h=readBoxNumber('box-h'),gap=readBoxNumber('box-gap',true),z=readBoxNumber('box-z'),height=readBoxNumber('space-z');
+            const w=readBoxNumber('box-w'),h=readBoxNumber('box-h'),gap=readBoxNumber('box-gap',true),z=readBoxNumber('box-z'),height=readBoxNumber('space-z'),settings=boxSettings();
             const limit=Math.min(10000,Math.floor(readBoxNumber('box-limit')));
             const count=(bw,bh)=>({cols:Math.max(0,Math.floor((zone.w_m+gap+1e-9)/(bw+gap))),rows:Math.max(0,Math.floor((zone.h_m+gap+1e-9)/(bh+gap)))});
             const a=count(w,h),b=count(h,w);const rotated=b.cols*b.rows>a.cols*a.rows;
             const bw=rotated?h:w,bh=rotated?w:h,cols=rotated?b.cols:a.cols,rows=rotated?b.rows:a.rows;
-            const total=cols*rows,levels=Math.floor((height+1e-9)/z);
+            const total=cols*rows,levels=Math.min(settings.stack,Math.floor((height+1e-9)/z));
             if(total===0)throw Error('Nijedna kutija ne staje u izabranu zonu.');
             const layer=cadLayers.find(l=>l.id===activeLayerId);
             if(!layer||!layer.visible||layer.locked)throw Error('Izaberi vidljiv, otključan layer za kutije.');
             if(!confirm(`Raspored: ${cols} × ${rows} = ${total} kutija po nivou.\nKreiraće se ${Math.min(total,limit)} kutija na aktivnom sloju. Nastaviti?`))return;
             const ids=[];let made=0;
             for(let r=0;r<rows&&made<limit;r++)for(let c=0;c<cols&&made<limit;c++){
-                const o={id:generateId(),type:'rect',x_m:zone.x_m+c*(bw+gap),y_m:zone.y_m+r*(bh+gap),w_m:bw,h_m:bh,angle:0,label:'',color:layer.color,strokeColor:layer.color,strokeWidth:1,fillOpacity:35,layerId:activeLayerId,boxHeight:z,zIndex:objects.length};
+                const o={id:generateId(),type:'rect',x_m:zone.x_m+c*(bw+gap),y_m:zone.y_m+r*(bh+gap),w_m:bw,h_m:bh,angle:0,label:'',material:settings.material,stackable:settings.stack,stackLevels:levels,color:settings.color,strokeColor:settings.color,strokeWidth:1,fillOpacity:65,layerId:activeLayerId,boxHeight:z,zIndex:objects.length};
                 objects.push(o);ids.push(o.id);made++;
             }
             selectedObjectIds=[];updateInspector();updateStats();draw();
-            document.getElementById('box-capacity-result').textContent=`Zona: ${zone.w_m.toFixed(3)} × ${zone.h_m.toFixed(3)} m\nPo nivou: ${total} kutija (${cols} × ${rows})\nTeorijski nivoa: ${levels}\nUkupno teorijski: ${total*levels}\nUcrtano: ${made}${made<total?' (ograničenje prikaza)':''}\nOrijentacija: ${rotated?'rotirana 90°':'osnovna'}`;
+            document.getElementById('box-capacity-result').textContent=`Zona: ${zone.w_m.toFixed(3)} × ${zone.h_m.toFixed(3)} m\nPo nivou: ${total} kutija (${cols} × ${rows})\nNivoa po visini i stackable ograničenju: ${levels}\nUkupno prema zadatom slaganju: ${total*levels}\nUcrtano: ${made}${made<total?' (ograničenje prikaza)':''}\nOrijentacija: ${rotated?'rotirana 90°':'osnovna'}`;
         }catch(e){alert(e.message)}}
+
+        // 3D editor: objects are the shared source for 2D and 3D.
+        // Svaki klik dodaje JEDNU fizičku kutiju: popuni stub do limita,
+        // pa započni sledeći stub u istom redu, čak i ako korisnik klikće stari stub.
+        function stackCADBox3D(clicked,rebuild=true){
+            if(!clicked || !['metal','cardboard'].includes(clicked.material) || !layerEditable(clicked))return;
+            const root=objects.find(q=>q.id===(clicked.stackParent||clicked.id))||clicked;
+            const max=Math.max(1,Math.floor(Number(root.stackable)||1));
+            const family=objects.filter(q=>q.id===root.id||q.stackParent===root.id);
+            // Poslednji stub je aktivan bez obzira na to koji stub iz porodice je kliknut.
+            const active=family[family.length-1];
+            const levels=Math.max(1,Math.min(max,Math.floor(Number(active.stackLevels)||1)));
+            snapshotCAD();
+            if(levels<max){
+                active.stackLevels=levels+1;
+                selectedObjectIds=[active.id];
+            }else{
+                const gap=Math.max(0.08,Number(document.getElementById('box-gap')?.value)||0);
+                const index=family.length;
+                const next={...root,id:generateId(),x_m:root.x_m+index*(root.w_m+gap),y_m:root.y_m,
+                    stackLevels:1,stackParent:root.id,zIndex:objects.length};
+                objects.push(next);
+                selectedObjectIds=[next.id];
+            }
+            updateInspector();updateStats();draw();if(rebuild && cad3dActive)buildCAD3D(true);
+        }
+        let cad3dActive=false,cad3dRenderer=null,cad3dScene=null,cad3dCamera=null,cad3dFrame=null;
+        let cad3dRefreshTimer=null;
+        function queueCAD3DRefresh(){
+            if(!cad3dActive)return;
+            clearTimeout(cad3dRefreshTimer);
+            cad3dRefreshTimer=setTimeout(()=>{cad3dRefreshTimer=null;if(cad3dActive)buildCAD3D(true);},90);
+        }
+        let cad3dOrbit={yaw:.65,pitch:.75,dist:65,cx:0,cz:0};
+        function switchCADView(active){
+            cad3dActive=active;
+            const host=document.getElementById('cad3d');host.classList.toggle('hidden',!active);
+            document.getElementById('cad3d-help').classList.toggle('hidden',!active);
+            if(cad3dFrame){cancelAnimationFrame(cad3dFrame);cad3dFrame=null;}
+            if(!active){clearTimeout(cad3dRefreshTimer);return;}
+            if(!window.THREE){alert('3D zahteva Three.js i internet konekciju.');cad3dActive=false;host.classList.add('hidden');return;}
+            buildCAD3D();
+        }
+        function buildCAD3D(preserveCamera=false){
+            const T=window.THREE,host=document.getElementById('cad3d');if(!T)return;
+            if(cad3dFrame){cancelAnimationFrame(cad3dFrame);cad3dFrame=null;}
+            if(cad3dRenderer){cad3dRenderer.dispose();cad3dRenderer.domElement.remove();}
+            cad3dScene=new T.Scene();cad3dScene.background=new T.Color('#18263b');cad3dScene.fog=new T.FogExp2('#18263b',0.0035);
+            cad3dScene.add(new T.HemisphereLight(0xffffff,0x52627a,2));
+            const light=new T.DirectionalLight(0xfff4df,2.3);light.position.set(25,55,30);cad3dScene.add(light);const fill=new T.DirectionalLight(0x9ac8ff,.7);fill.position.set(-25,18,-30);cad3dScene.add(fill);
+            const visible=objects.filter(o=>layerVisible(o));
+            const minX=Math.min(0,...visible.map(o=>o.x_m)),maxX=Math.max(10,...visible.map(o=>o.x_m+o.w_m));
+            const minZ=Math.min(0,...visible.map(o=>o.y_m)),maxZ=Math.max(10,...visible.map(o=>o.y_m+o.h_m));
+            if(!preserveCamera){cad3dOrbit.cx=(minX+maxX)/2;cad3dOrbit.cz=(minZ+maxZ)/2;cad3dOrbit.dist=Math.max(18,Math.hypot(maxX-minX,maxZ-minZ)*1.4);}
+            const ground=new T.GridHelper(Math.max(30,Math.ceil(Math.max(maxX-minX,maxZ-minZ)/10)*20),40,0x64748b,0x334155);
+            ground.position.set(cad3dOrbit.cx,.005,cad3dOrbit.cz);ground.material.transparent=true;ground.material.opacity=.32;cad3dScene.add(ground);const floorMesh=new T.Mesh(new T.PlaneGeometry(Math.max(100,maxX-minX+80),Math.max(100,maxZ-minZ+80)),new T.MeshStandardMaterial({color:0x233448,roughness:1}));floorMesh.rotation.x=-Math.PI/2;floorMesh.position.set(cad3dOrbit.cx,-.025,cad3dOrbit.cz);cad3dScene.add(floorMesh);
+            const editableMeshes=[];
+            function block(x,z,w,d,height,color,angle=0,y=0,source=null){
+                const mesh=new T.Mesh(new T.BoxGeometry(Math.max(.01,w),Math.max(.01,height),Math.max(.01,d)),new T.MeshStandardMaterial({color,roughness:.68,metalness:source?.material==='metal'?.45:.04}));
+                mesh.position.set(x+w/2,y+height/2,z+d/2);mesh.rotation.y=-angle*Math.PI/180;
+                if(source){mesh.userData.objectId=source.id;editableMeshes.push(mesh);}
+                cad3dScene.add(mesh);return mesh;
+            }
+            // Procedural 3D warehouse assets. Every component retains the parent CAD object ID.
+            function detailBox(o,x,z,w,d,h,color,y=0){return block(x,z,Math.max(.02,w),Math.max(.02,d),Math.max(.02,h),color,o.angle||0,y,o);}
+            function detailCylinder(o,x,z,r,h,color,y=0,rotX=0){
+                const m=new T.Mesh(new T.CylinderGeometry(Math.max(.01,r),Math.max(.01,r),Math.max(.01,h),20),new T.MeshStandardMaterial({color,roughness:.48,metalness:.08}));
+                m.position.set(x,y+h/2,z);m.rotation.x=rotX;m.userData.objectId=o.id;editableMeshes.push(m);cad3dScene.add(m);return m;
+            }
+            function detailTorus(o,x,z,r,tube,color,y=0){
+                const m=new T.Mesh(new T.TorusGeometry(r,tube,10,30),new T.MeshStandardMaterial({color,roughness:.3}));
+                m.position.set(x,y,z);m.rotation.x=-Math.PI/2;m.userData.objectId=o.id;editableMeshes.push(m);cad3dScene.add(m);return m;
+            }
+            function detailedObject(o,x,z,w,d){
+                const cx=x+w/2,cz=z+d/2;
+                // Warehouse docking bay: elevated loading platform, ramp lip, dock bumper, portal and door panels.
+                if(o.type==='dock'){
+                    const platformH=.95,front=z+d*.18;
+                    detailBox(o,x,z,w,d*.72,platformH,'#64748b');
+                    detailBox(o,x,front,w,d*.07,.12,'#f59e0b',platformH-.08);
+                    detailBox(o,x+w*.06,z+d*.08,w*.88,d*.12,.10,'#334155',platformH);
+                    for(const xx of [x+w*.07,x+w*.91]){
+                        detailBox(o,xx,z+d*.72,w*.045,d*.13,.65,'#111827',.1);
+                        detailBox(o,xx,z+d*.76,w*.045,d*.04,2.7,'#475569',platformH);
+                    }
+                    detailBox(o,x+w*.06,z+d*.78,w*.88,d*.055,.16,'#475569',platformH+2.6);
+                    detailBox(o,x+w*.11,z+d*.785,w*.78,d*.04,2.35,'#94a3b8',platformH+.12);
+                    for(let i=1;i<5;i++)detailBox(o,x+w*.11,z+d*.755+i*.002,w*.78,d*.025,.028,'#475569',platformH+.12+i*.43);
+                    // Dock leveler plate bridging the gap to the truck.
+                    detailBox(o,x+w*.17,z+d*.04,w*.66,d*.23,.065,'#eab308',platformH-.03);
+                    return true;
+                }
+                if(o.type==='extinguisher'){
+                    const r=Math.max(.075,Math.min(w,d)*.17),h=Math.max(.65,Math.min(1.1,Math.max(w,d)*.8));
+                    detailCylinder(o,cx,cz,r,h*.70,'#dc2626',.10);
+                    detailCylinder(o,cx,cz,r*.82,.10,'#991b1b',.07);
+                    detailCylinder(o,cx,cz,r*.52,.12,'#1f2937',h*.80);
+                    detailBox(o,cx-r*.8,cz-r*.2,r*1.6,r*.45,.06,'#111827',h*.91);
+                    detailBox(o,cx-r*.48,cz+r*.93,r*.96,.025,h*.25,'#f8fafc',h*.36);
+                    detailCylinder(o,cx+r*.72,cz+r*.30,r*.12,.26,'#111827',h*.67);
+                    return true;
+                }
+                if(o.type==='hydrant'){
+                    const r=Math.max(.13,Math.min(w,d)*.16),h=Math.max(.7,Math.min(1.25,Math.max(w,d)*.8));
+                    detailCylinder(o,cx,cz,r*1.25,.13,'#991b1b',0);
+                    detailCylinder(o,cx,cz,r,h*.68,'#dc2626',.13);
+                    detailCylinder(o,cx,cz,r*1.18,.13,'#b91c1c',h*.70);
+                    detailCylinder(o,cx,cz,r*.65,.17,'#ef4444',h*.82);
+                    detailBox(o,cx-r*1.75,cz-r*.45,r*3.5,r*.9,.15,'#dc2626',h*.44);
+                    for(const xx of [cx-r*1.75,cx+r*1.75])detailCylinder(o,xx,cz,r*.47,.12,'#d1d5db',h*.45);
+                    return true;
+                }
+                if(o.type==='crosswalk'){
+                    // Painted stripes lie just above the ground, without a raised block.
+                    const count=Math.max(3,Math.ceil(d/.40)),step=d/count;
+                    for(let i=0;i<count;i++){
+                        if(i%2===0)detailBox(o,x,z+i*step,w,step*.65,.006,'#f8fafc',.006);
+                    }
+                    return true;
+                }
+                if(o.type==='rack'){
+                    const copies=Math.max(1,Math.min(20,Math.round(Number(o.rackDoubles)||1)));
+                    const bays=Math.max(1,Math.min(200,Math.round(Number(o.verticals)||6)));
+                    const levels=Math.max(1,Math.min(10,Math.round(Number(o.levels)||4)));
+                    const longOnZ=d>=w,run=longOnZ?d:w,depth=longOnZ?w:d;
+                    const height=Math.max(1.4,levels*.86+.20),pitch=height/levels;
+                    const thickness=Math.min(.095,depth*.10,run/(bays*6));
+                    // Svaki modul dobija četiri stuba, horizontalne nosače i vidljive police po nivoima.
+                    function component(u,v,du,dv,h,color,y){
+                        // u = duž regala, v = širina pojedinačnog regala
+                        let bx=longOnZ?x+v:x+u;
+                        let bz=longOnZ?z+u:z+v;
+                        return detailBox(o,bx,bz,longOnZ?dv:du,longOnZ?du:dv,h,color,y);
+                    }
+                    for(let ri=0;ri<copies;ri++){
+                        const across=ri*depth;
+                        for(let bi=0;bi<=bays;bi++){
+                            const u=bi*run/bays;
+                            for(const v of [across,across+depth-thickness]){
+                                component(Math.max(0,u-thickness/2),v,thickness,thickness,height,'#2563eb',0);
+                            }
+                        }
+                        for(let li=1;li<=levels;li++){
+                            const yy=li*pitch;
+                            for(let bi=0;bi<bays;bi++){
+                                const u=bi*run/bays;
+                                const seg=run/bays;
+                                component(u,across,seg,thickness,.11,'#f59e0b',yy-.12);
+                                component(u,across+depth-thickness,seg,thickness,.11,'#f59e0b',yy-.12);
+                                // Tanka polica koja se vidi odozgo i iz ugla.
+                                component(u+thickness,across+thickness,Math.max(.03,seg-2*thickness),Math.max(.03,depth-2*thickness),.045,'#94a3b8',yy-.055);
+                            }
+                        }
+                        for(let bi=0;bi<=bays;bi+=Math.max(1,Math.floor(bays/5))){
+                            const u=Math.min(run-thickness,bi*run/bays);
+                            component(u,across,thickness,depth,.055,'#475569',Math.min(height*.50,1.2));
+                        }
+                    }
+                    return true;
+                }
+                if(o.type==='office'||o.type==='toilet'){
+                    // Room with low transparent walls: furniture remains visible from above.
+                    detailBox(o,x,z,w,d,.10,'#b6c5d3');
+                    const wall='#9eb4c8',th=.09,wh=1.8;
+                    detailBox(o,x,z,w,th,wh,wall);detailBox(o,x,z+d-th,w,th,wh,wall);
+                    detailBox(o,x,z,th,d,wh,wall);detailBox(o,x+w-th,z,th,d,wh,wall);
+                    if(o.type==='office'){
+                        const deskW=Math.min(1.6,w*.42),deskD=Math.min(.78,d*.27);
+                        detailBox(o,cx-deskW/2,cz-deskD/2,deskW,deskD,.075,'#a46b3c',.74);
+                        for(const dx of [-deskW*.42,deskW*.42])for(const dz of [-deskD*.37,deskD*.37])detailBox(o,cx+dx-.035,cz+dz-.035,.07,.07,.72,'#4b5563');
+                        const chairZ=cz+deskD/2+Math.min(.48,d*.12);
+                        detailBox(o,cx-.24,chairZ-.22,.48,.44,.10,'#1e40af',.43);
+                        detailBox(o,cx-.24,chairZ+.15,.48,.09,.48,'#1d4ed8',.48);
+                        for(const dx of [-.17,.17])for(const dz of [-.13,.13])detailBox(o,cx+dx-.025,chairZ+dz-.025,.05,.05,.43,'#374151');
+                        if(w>3.5){detailBox(o,x+.35,z+.4,.9,.35,.78,'#64748b');detailBox(o,x+.37,z+.42,.86,.31,.04,'#cbd5e1',.78);}
+                    }else{
+                        const bowlX=cx,bowlZ=cz;
+                        detailBox(o,bowlX-.25,bowlZ-.42,.5,.22,.76,'#f8fafc');
+                        detailCylinder(o,bowlX,bowlZ+.14,.30,.40,'#f8fafc',.12);
+                        detailTorus(o,bowlX,bowlZ+.14,.245,.052,'#e2e8f0',.55);
+                    }
+                    return true;
+                }
+                if(o.type==='wc_fixture'){
+                    const r=Math.min(w*.35,d*.26,.32);
+                    detailBox(o,cx-r,z+d*.04,2*r,d*.22,.75,'#f8fafc');
+                    detailCylinder(o,cx,z+d*.62,r,.40,'#ffffff',.13);
+                    detailTorus(o,cx,z+d*.62,r*.8,r*.15,'#cbd5e1',.55);
+                    detailBox(o,cx-r*.85,z+d*.22,r*1.7,d*.25,.28,'#e2e8f0',.12);
+                    return true;
+                }
+                if(o.type==='door'){
+                    const width=Math.max(.5,w),depth=Math.max(.08,d*.09);
+                    detailBox(o,x,z,depth,depth,2.15,'#64748b');
+                    detailBox(o,x+width-depth,z,depth,depth,2.15,'#64748b');
+                    detailBox(o,x,z,width,depth,.10,'#64748b',2.1);
+                    detailBox(o,x+depth,z,width*.8,depth*.7,1.95,'#b88a58',.08);
+                    detailCylinder(o,x+width*.75,z+depth*.65,.035,.07,'#facc15',.95);
+                    return true;
+                }
+                if(o.type==='truck'){
+                    // Longitudinal axis is Z, trailer at back, cabin at front.
+                    const trailerD=d*.74,cabD=d-trailerD;
+                    detailBox(o,x,z,w,trailerD,2.65,'#e2e8f0',.8);
+                    detailBox(o,x+.06*w,z+.05,w*.88,trailerD*.96,.08,'#94a3b8',3.46);
+                    detailBox(o,x+w*.09,z+trailerD+.08,w*.82,cabD*.84,2.25,'#2563eb',.55);
+                    detailBox(o,x+w*.15,z+trailerD+cabD*.55,w*.70,cabD*.16,.85,'#7dd3fc',1.65);
+                    detailBox(o,x+w*.2,z+d*.96,w*.60,.06,.22,'#f8fafc',.70);
+                    for(const zz of [z+trailerD*.17,z+trailerD*.76,z+trailerD*.89,z+trailerD+cabD*.67]){
+                        for(const xx of [x-.09,x+w+.09]){
+                            const wheel=detailCylinder(o,xx,zz,.34,.20,'#111827',.19,Math.PI/2);
+                            wheel.rotation.z=Math.PI/2;
+                            detailCylinder(o,xx,zz,.15,.205,'#94a3b8',.19,Math.PI/2).rotation.z=Math.PI/2;
+                        }
+                    }
+                    return true;
+                }
+                if(o.type==='forklift'){
+                    detailBox(o,x+w*.12,z+d*.20,w*.76,d*.56,.55,'#f59e0b',.35);
+                    detailBox(o,x+w*.16,z+d*.40,w*.68,d*.22,1.10,'#fbbf24',.75);
+                    for(const xx of [x+w*.15,x+w*.85])for(const zz of [z+d*.28,z+d*.75])detailCylinder(o,xx,zz,.16,.20,'#111827',.12);
+                    for(const xx of [x+w*.28,x+w*.72])detailBox(o,xx,z+d*.08,.06,.06,2.25,'#334155');
+                    detailBox(o,x+w*.28,z+d*.08,w*.44,.08,.10,'#334155',2.15);
+                    for(const xx of [x+w*.25,x+w*.70])detailBox(o,xx,z-.55,.10,.8,.09,'#94a3b8',.09);
+                    return true;
+                }
+                return false;
+            }
+            function addObject(o,ox=0,oz=0){
+                if(o.type==='group'){(o.children||[]).forEach(c=>addObject(c,ox+o.x_m,oz+o.y_m));return;}
+                const x=o.x_m+ox,z=o.y_m+oz,w=o.w_m,d=o.h_m,angle=o.angle||0;
+                if(o.type==='line'||o.type==='polyline'||o.type==='polygon'||o.type==='text')return;
+                if(detailedObject(o,x,z,w,d)){
+                    // Rendered as a composed recognizable model.
+                }else if(o.material==='metal'||o.material==='cardboard'){
+                    // A stackLevel of 0 is an empty placement; show one base box so it can be clicked.
+                    const levels=Math.max(1,Math.min(Math.max(1,Number(o.stackable)||1),Number(o.stackLevels)||1));
+                    const height=Math.max(.01,Number(o.boxHeight)||.3);
+                    for(let k=0;k<levels;k++){
+                        const mesh=block(x,z,w,d,height,o.material==='metal'?'#881337':'#92400e',angle,k*height,o);
+                        // Separate outline for EVERY stacked level, not a single solid block.
+                        const edges=new T.LineSegments(new T.EdgesGeometry(mesh.geometry),new T.LineBasicMaterial({color:o.material==='metal'?0xfda4af:0xfed7aa}));
+                        mesh.add(edges);
+                    }
+                }else{
+                    const height=o.type==='wall'?2.8:o.type==='rack'?3.5:o.type==='office'?2.7:o.type==='ground_storage'?.06:o.type==='road'?.05:o.type==='dock'?.6:.5;
+                    block(x,z,w,d,height,o.color||'#64748b',angle,0,o);
+                }
+            }
+            visible.forEach(o=>addObject(o));
+            cad3dCamera=new T.PerspectiveCamera(55,1,.1,10000);
+            cad3dRenderer=new T.WebGLRenderer({antialias:true,alpha:false});cad3dRenderer.outputColorSpace=T.SRGBColorSpace;cad3dRenderer.toneMapping=T.ACESFilmicToneMapping;cad3dRenderer.toneMappingExposure=1.35;cad3dRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));host.appendChild(cad3dRenderer.domElement);
+            const canvas=cad3dRenderer.domElement;canvas.style.cssText='width:100%;height:100%;display:block;cursor:grab;touch-action:none;';canvas.tabIndex=0;
+            const raycaster=new T.Raycaster(),pointer=new T.Vector2(),floor=new T.Plane(new T.Vector3(0,1,0),0);
+            function hitAt(e){const r=canvas.getBoundingClientRect();pointer.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);raycaster.setFromCamera(pointer,cad3dCamera);return raycaster.intersectObjects(editableMeshes,false)[0]||null;}
+            function groundAt(e){const r=canvas.getBoundingClientRect();pointer.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);raycaster.setFromCamera(pointer,cad3dCamera);const point=new T.Vector3();return raycaster.ray.intersectPlane(floor,point)?point:null;}
+            let state=null;
+            canvas.addEventListener('contextmenu',e=>e.preventDefault());
+            canvas.addEventListener('pointerdown',e=>{
+                if(e.button>2)return;
+                const hit=e.button===0?hitAt(e):null;
+                const obj=hit?objects.find(o=>o.id===hit.object.userData.objectId):null;
+                const target=obj&&layerEditable(obj)?obj:null;
+                state={id:e.pointerId,button:e.button,startX:e.clientX,startY:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false,kind:e.button===2?'pan':(e.shiftKey&&target?'object':'orbit'),obj:target,point:target?groundAt(e):null,origin:target?{x:target.x_m,y:target.y_m}:null,saved:false};
+                if(target){selectedObjectIds=[target.id];updateInspector();draw();}
+                canvas.setPointerCapture(e.pointerId);canvas.focus();canvas.style.cursor=(e.shiftKey&&target)?'move':'grabbing';
+            });
+            canvas.addEventListener('pointermove',e=>{
+                if(!state||e.pointerId!==state.id)return;
+                const dx=e.clientX-state.lastX,dy=e.clientY-state.lastY;
+                if(Math.hypot(e.clientX-state.startX,e.clientY-state.startY)>4)state.moved=true;
+                if(state.kind==='orbit'){
+                    cad3dOrbit.yaw-=dx*.008;
+                    cad3dOrbit.pitch=Math.max(.08,Math.min(1.5,cad3dOrbit.pitch-dy*.008));
+                }else if(state.kind==='pan'){
+                    // Grab the floor and move it with the cursor (not in the opposite direction).
+                    const a=cad3dOrbit,scale=a.dist*.002;
+                    a.cx+=(dx*Math.cos(a.yaw)-dy*Math.sin(a.yaw))*scale;
+                    a.cz+=(-dx*Math.sin(a.yaw)-dy*Math.cos(a.yaw))*scale;
+                }else if(state.kind==='object'&&state.moved&&state.obj){
+                    const at=groundAt(e);
+                    if(at&&state.point){
+                        if(!state.saved){snapshotCAD();state.saved=true;}
+                        state.obj.x_m=state.origin.x+at.x-state.point.x;
+                        state.obj.y_m=state.origin.y+at.z-state.point.z;
+                        // Update every mesh belonging to this object, including all stack levels.
+                        for(const mesh of editableMeshes)if(mesh.userData.objectId===state.obj.id){
+                            mesh.position.x+=state.obj.x_m-(state.prevX??state.origin.x);
+                            mesh.position.z+=state.obj.y_m-(state.prevY??state.origin.y);
+                        }
+                        state.prevX=state.obj.x_m;state.prevY=state.obj.y_m;
+                        draw();
+                    }
+                }
+                state.lastX=e.clientX;state.lastY=e.clientY;
+            });
+            canvas.addEventListener('pointerup',e=>{
+                if(!state||e.pointerId!==state.id)return;
+                const done=state;state=null;canvas.style.cursor='grab';
+                if(!done.moved&&done.obj&&(done.obj.material==='metal'||done.obj.material==='cardboard'))stackCADBox3D(done.obj);
+                if(done.kind==='object'&&done.obj){
+                    if(!done.moved){}
+                    else {updateInspector();updateStats();draw();}
+                }
+            });
+            canvas.addEventListener('pointercancel',()=>{state=null;canvas.style.cursor='grab';});
+            canvas.addEventListener('wheel',e=>{e.preventDefault();cad3dOrbit.dist=Math.max(1,Math.min(3000,cad3dOrbit.dist*(e.deltaY>0?1.12:.89)));},{passive:false});
+            canvas.addEventListener('keydown',e=>{
+                const a=cad3dOrbit,step=Math.max(.15,a.dist*.035);
+                const forward={x:-Math.sin(a.yaw),z:-Math.cos(a.yaw)},right={x:Math.cos(a.yaw),z:-Math.sin(a.yaw)};
+                let dx=0,dz=0;const k=e.key.toLowerCase();
+                if(k==='w'||e.key==='ArrowUp'){dx+=forward.x;dz+=forward.z;}
+                if(k==='s'||e.key==='ArrowDown'){dx-=forward.x;dz-=forward.z;}
+                if(k==='a'||e.key==='ArrowLeft'){dx-=right.x;dz-=right.z;}
+                if(k==='d'||e.key==='ArrowRight'){dx+=right.x;dz+=right.z;}
+                if(dx||dz){e.preventDefault();a.cx+=dx*step;a.cz+=dz*step;}
+                if((k==='delete'||k==='backspace')&&selectedObjectIds.length){e.preventDefault();deleteSelected();queueCAD3DRefresh();}
+            });
+            const animate=()=>{
+                if(!cad3dActive)return;
+                const rect=host.getBoundingClientRect();
+                if(rect.width&&rect.height){
+                    cad3dRenderer.setSize(rect.width,rect.height,false);cad3dCamera.aspect=rect.width/rect.height;cad3dCamera.updateProjectionMatrix();
+                    const a=cad3dOrbit;
+                    cad3dCamera.position.set(a.cx+a.dist*Math.sin(a.yaw)*Math.cos(a.pitch),a.dist*Math.sin(a.pitch),a.cz+a.dist*Math.cos(a.yaw)*Math.cos(a.pitch));
+                    cad3dCamera.lookAt(a.cx,0,a.cz);cad3dRenderer.render(cad3dScene,cad3dCamera);
+                }
+                cad3dFrame=requestAnimationFrame(animate);
+            };animate();
+        }
 
         // CAD projekat je izvor istine; PDF je vektorski izlaz za pregled i štampu.
         function saveProject() {
