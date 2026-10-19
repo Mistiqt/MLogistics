@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LayoutCad v1.0 - Dizajner Layout-a Skladišta</title>
+    <title>MagacinCad v1.0 - Dizajner Layout-a Skladišta</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for CAD & Warehouse Icons -->
@@ -113,6 +113,13 @@
             <button id="btn-draw-wall" onclick="setMode('draw_wall')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition hover:bg-slate-800">
                 <i class="fa-solid fa-vector-square"></i> Zid / Objekat
             </button>
+            <label class="flex items-center gap-1 text-[10px] text-slate-300 bg-slate-900 border border-slate-700 rounded px-1.5 py-1" title="Pozicioniranje zida i stuba: Bilo gde = bez grida, Presek = najbliži presek male mreže">
+                Zid / Stub:
+                <select id="wall-placement" onchange="setWallPlacement(this.value)" class="bg-slate-800 border border-slate-600 rounded px-1 py-1 text-[10px] max-w-[95px]">
+                    <option value="free">Bilo gde</option>
+                    <option value="intersection">Presek GRID linija</option>
+                </select>
+            </label>
             <button id="btn-draw-circle" onclick="setMode('draw_circle')" class="tool-btn px-2.5 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition hover:bg-slate-800">
                 <i class="fa-regular fa-circle"></i> Krug
             </button>
@@ -132,7 +139,8 @@
             <button type="button" class="cad-panel-toggle" onclick="toggleCADPanel('right')" title="Prikaži ili sakrij inspektor">⚙ Inspektor</button>
             <button onclick="selectAllCAD()" title="Selektuj sve vidljive i otključane objekte (Ctrl+A)" class="bg-blue-700 hover:bg-blue-600 text-white text-xs px-2 py-1.5 rounded-lg">Selektuj sve (Ctrl+A)</button>
             <div class="cad-group-pair" aria-label="Grupisanje objekata">
-                <button onclick="groupSelected()" title="Grupiši selektovano (Ctrl+G)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600 flex items-center justify-center gap-1">
+                <button onclick="undoCAD()" title="Vrati prethodnu izmenu (Ctrl+Z)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600"><i class="fa-solid fa-rotate-left"></i> Undo</button>
+            <button onclick="groupSelected()" title="Grupiši selektovano (Ctrl+G)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600 flex items-center justify-center gap-1">
                     <i class="fa-solid fa-object-group"></i> Grupiši
                 </button>
                 <button onclick="ungroupSelected()" title="Razgrupiši (Ctrl+Shift+G)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1.5 rounded-lg border border-slate-600 flex items-center justify-center gap-1">
@@ -180,7 +188,7 @@
             </button>
             <label title="Učitaj CAD projekat (JSON)" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition shadow-lg shadow-emerald-900/40">
                 <i class="fa-solid fa-folder-open"></i> Učitaj PDF
-                <input type="file" id="file-input" accept=".json" onchange="openProject(event)" class="hidden">
+                <input type="file" id="file-input" accept=".pdf,.json" onchange="openProject(event)" class="hidden">
             </label>
         </div>
     </header>
@@ -213,9 +221,9 @@
                         </div>
                         <div onclick="addPreset('wc_fixture')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-cyan-500 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-toilet text-cyan-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">WC šolja (posebno)</span></div>
                         <div onclick="addPreset('door')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-sky-500 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-door-open text-sky-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Vrata (CAD luk)</span></div>
-                        <div onclick="addPreset('column_cross')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-teal-500 cursor-pointer flex flex-col items-center text-center group transition">
+                        <div onclick="startColumnPlacement()" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-teal-500 cursor-pointer flex flex-col items-center text-center group transition">
                             <i class="fa-solid fa-plus text-teal-400 text-lg group-hover:scale-110 transition"></i>
-                            <span class="text-[11px] font-medium text-slate-300 mt-1">Stub (krst)</span>
+                            <span class="text-[11px] font-medium text-slate-300 mt-1">Stub (krst) – klik na platno</span>
                         </div>
                         <div onclick="setMode('draw_polyline')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-indigo-500 cursor-pointer flex flex-col items-center text-center group transition">
                             <i class="fa-solid fa-route text-indigo-400 text-lg group-hover:scale-110 transition"></i>
@@ -228,6 +236,14 @@
                     </div>
                 </div>
 
+                <div class="bg-slate-900 rounded border border-teal-800 p-2 text-xs">
+                    <label for="column-placement" class="text-teal-300 font-semibold">Pozicija stuba (krstića)</label>
+                    <select id="column-placement" onchange="setColumnPlacement(this.value)" class="w-full bg-slate-800 border border-slate-600 rounded mt-1 p-1.5">
+                        <option value="grid">Presek malih GRID linija</option>
+                        <option value="free" selected>Bilo gde (slobodno)</option>
+                    </select>
+                    <p class="text-slate-400 mt-1">Izaberi Stub, pomeri miš i klikni na željeno mesto. Esc za izlaz.</p>
+                </div>
                 <!-- ROBOTIKA I AUTOMATIZACIJA -->
                 <div>
                     <h4 class="text-xs font-bold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -355,6 +371,7 @@
             <!-- KEYBOARD SHORTCUTS HELP BOX -->
             <div class="absolute top-4 right-4 bg-slate-800/80 backdrop-blur border border-slate-700 rounded-lg px-3 py-2 text-[11px] text-slate-400 shadow-xl pointer-events-none">
                 <div class="font-semibold text-slate-300 mb-1">Prečice:</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+Z</kbd> Undo</div>
                 <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Delete</kbd> Obriši</div>
                 <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Shift + Drag</kbd> Box Selekcija</div>
                 <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+G / Ctrl+Shift+G</kbd> Grupa</div>
@@ -526,6 +543,8 @@
         let gridEnabled = true;
         let snapEnabled = false;
         let snapGridSize = 0.001;
+        let wallPlacement = 'free';
+        function setWallPlacement(value) { wallPlacement = value === 'intersection' ? 'intersection' : 'free'; columnPlacement = wallPlacement === 'intersection' ? 'grid' : 'free'; const sel=document.getElementById('column-placement'); if(sel) sel.value=columnPlacement; draw(); }
         let gridMinorSpacing = 1;
         let gridMajorSpacing = 5;
         function setGridSpacing() {
@@ -578,6 +597,28 @@
         function layerOf(o){return cadLayers.find(l=>l.id===(o.layerId||'base'))||cadLayers[0];}
         function layerVisible(o){return layerOf(o).visible;}
         function layerEditable(o){const l=layerOf(o);return l.visible&&!l.locked;}
+        // Istorija promena: Ctrl+Z vraca prethodno stanje nacrta.
+        const undoStack = [];
+        let lastUndoSnapshot = '';
+        function snapshotCAD() {
+            const snapshot = JSON.stringify({objects, cadLayers, activeLayerId});
+            if (snapshot === lastUndoSnapshot) return;
+            undoStack.push(snapshot);
+            if (undoStack.length > 80) undoStack.shift();
+            lastUndoSnapshot = snapshot;
+        }
+        function undoCAD() {
+            if (!undoStack.length) return;
+            const previous = JSON.parse(undoStack.pop());
+            objects = previous.objects;
+            cadLayers = previous.cadLayers;
+            activeLayerId = previous.activeLayerId;
+            selectedObjectIds = [];
+            currentDrawingObj = null;
+            setMode('select');
+            lastUndoSnapshot = '';
+            renderCADLayers(); updateInspector(); updateStats(); draw();
+        }
         let objects = [];
         let selectedObjectIds = [];
 
@@ -595,6 +636,7 @@
 
         let measureStart=null, measureEnd=null, measureHover=null;
         function setMode(newMode) {
+            if(newMode !== 'draw_column') columnPreview=null;
             measureStart=null;measureEnd=null;measureHover=null;
 
             if (mode === 'draw_free_line' && freeLineAwaitingEnd) { currentDrawingObj = null; freeLineAwaitingEnd = false; freeLineMouseDown = false; freeLineDragStarted = false; freeLinePressPos = null; }
@@ -629,6 +671,7 @@
 
         function setSnapStep(value) { snapGridSize = Number(value); }
         function exactCAD() {
+            snapshotCAD();
             const parsePoint = (raw) => {
                 if (raw === null) return null;
                 const parts = raw.trim().replace(/;/g, ',').split(',').map(v => Number(v.trim()));
@@ -657,6 +700,14 @@
             alert(`Uneto: ΔX=${dx.toFixed(3)} m, ΔY=${dy.toFixed(3)} m, dijagonala=${length.toFixed(3)} m`);
         }
 
+        // Tačan presek horizontalne i vertikalne linije male mreže (krstić).
+        function wallWorldPoint(mouse) {
+            const raw = rawLineWorldPoint(mouse);
+            if (wallPlacement !== 'intersection') return raw;
+            const step = Math.max(0.001, Number(gridMinorSpacing) || 1);
+            return {x:Math.round(raw.x / step) * step,
+                    y:Math.round(raw.y / step) * step};
+        }
         function screenToWorld(screenX, screenY) {
             const worldX = (screenX - panX) / (PIXELS_PER_METER * zoom);
             const worldY = (screenY - panY) / (PIXELS_PER_METER * zoom);
@@ -734,7 +785,41 @@
             };
         }
 
+        // Stub se postavlja klikom na platno, ne automatski u centar ekrana.
+        let columnPlacement = 'free';
+        function setColumnPlacement(value) {
+            columnPlacement = value === 'grid' ? 'grid' : 'free';
+            wallPlacement = columnPlacement === 'grid' ? 'intersection' : 'free';
+            const wallSelect=document.getElementById('wall-placement');
+            if(wallSelect) wallSelect.value=wallPlacement;
+            columnPreview=null; draw();
+        }
+        let columnPreview = null;
+        function startColumnPlacement() {
+            if (!layerEditable({layerId:activeLayerId})) { alert('Aktivni sloj je zaključan ili skriven.'); return; }
+            setMode('draw_column');
+            columnPreview = null;
+            CANVAS.style.cursor = 'crosshair';
+            draw();
+        }
+        function columnPoint(mouse) {
+            const raw = rawLineWorldPoint(mouse);
+            if (columnPlacement !== 'grid') return raw;
+            const step = Math.max(0.001, Number(gridMinorSpacing) || 1);
+            return {x:Math.round(raw.x/step)*step,y:Math.round(raw.y/step)*step};
+        }
+        function placeColumn(point) {
+            snapshotCAD();
+            const size=0.45;
+            const obj={id:generateId(),type:'column_cross',x_m:point.x-size/2,y_m:point.y-size/2,
+                w_m:size,h_m:size,angle:0,color:'#14b8a6',strokeColor:'#2dd4bf',strokeWidth:2,
+                label:'Stub',zIndex:objects.length,layerId:activeLayerId};
+            objects.push(obj);selectedObjectIds=[obj.id];
+            updateInspector();updateStats();draw();
+        }
         function addPreset(type) {
+            if(type === 'column_cross') { startColumnPlacement(); return; }
+            snapshotCAD();
             const centerWorld = screenToWorld(CANVAS.width / 2, CANVAS.height / 2);
             let newObj = {
                 id: generateId(),
@@ -883,6 +968,7 @@
         }
 
         function promptCustomObject() {
+            snapshotCAD();
             const w = parseFloat(prompt("Unesite ŠIRINU objekta u metrima (m):", "5.0"));
             if (isNaN(w) || w <= 0) return;
             const h = parseFloat(prompt("Unesite DUŽINU objekta u metrima (m):", "4.0"));
@@ -940,6 +1026,14 @@
                 if (!layerVisible(obj)) return;
                 drawObject(obj, false, forExport);
             });
+            if (!forExport && mode === 'draw_column' && columnPreview) {
+                const q=worldToScreen(columnPreview.x,columnPreview.y);
+                CTX.save();CTX.strokeStyle='#2dd4bf';CTX.lineWidth=2;
+                CTX.beginPath();CTX.moveTo(q.x-13,q.y);CTX.lineTo(q.x+13,q.y);
+                CTX.moveTo(q.x,q.y-13);CTX.lineTo(q.x,q.y+13);CTX.stroke();
+                CTX.beginPath();CTX.arc(q.x,q.y,4,0,Math.PI*2);CTX.stroke();CTX.restore();
+            }
+
 
             if (forExport) return;
 
@@ -1613,8 +1707,9 @@
             document.getElementById(id)?.addEventListener('contextmenu', exitMeasureOnRightClick);
         });
         CANVAS.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && (mode === 'select' || mode.startsWith('draw'))) snapshotCAD();
             const mouse = getCanvasMousePos(e);
-            const world = (mode === 'draw_line' || mode === 'draw_free_line') ? lineWorldPoint(mouse) : screenToWorld(mouse.x, mouse.y);
+            const world = mode === 'draw_wall' ? wallWorldPoint(mouse) : (mode === 'draw_line' || mode === 'draw_free_line') ? lineWorldPoint(mouse) : screenToWorld(mouse.x, mouse.y);
 
             document.getElementById('hud-coords').innerText = `X: ${world.x.toFixed(3)}m | Y: ${world.y.toFixed(3)}m`;
 
@@ -1627,6 +1722,7 @@
             }
 
             if (e.button === 0) {
+                if (mode === 'draw_column') { placeColumn(columnPoint(mouse)); return; }
                 if (mode === 'draw_line' && !gridLineAwaitingEnd) { gridLineMouseDown = true; gridLineDragStarted = false; gridLinePressPos = mouse; }
                 if (mode === 'draw_free_line' && !freeLineAwaitingEnd) { freeLineMouseDown = true; freeLineDragStarted = false; freeLinePressPos = mouse; }
                 if(mode.startsWith('measure_')){
@@ -1764,6 +1860,7 @@
         });
 
         function finishPolyline() {
+            snapshotCAD();
             polylineHoverPoint = null;
             if (activePolylinePoints.length < (mode === 'draw_polygon' ? 3 : 2)) {
                 activePolylinePoints = [];
@@ -1808,9 +1905,10 @@
 
         CANVAS.addEventListener('mousemove', (e) => {
             const mouse = getCanvasMousePos(e);
-            const world = (mode === 'draw_line' || mode === 'draw_free_line') ? lineWorldPoint(mouse) : screenToWorld(mouse.x, mouse.y);
+            const world = mode === 'draw_wall' ? wallWorldPoint(mouse) : (mode === 'draw_line' || mode === 'draw_free_line') ? lineWorldPoint(mouse) : screenToWorld(mouse.x, mouse.y);
 
             document.getElementById('hud-coords').innerText = `X: ${world.x.toFixed(3)}m | Y: ${world.y.toFixed(3)}m`;
+            if (mode === 'draw_column') { columnPreview=columnPoint(mouse); draw(); return; }
             if(mode.startsWith('measure_') && measureStart && !measureEnd){measureHover={...world};draw();return;}
 
             if (isPanning) {
@@ -2016,6 +2114,7 @@
         }
 
         function groupSelected() {
+            snapshotCAD();
             if (selectedObjectIds.length < 2) return;
 
             const selectedObjs = objects.filter(o => selectedObjectIds.includes(o.id));
@@ -2054,6 +2153,7 @@
         }
 
         function ungroupSelected() {
+            snapshotCAD();
             if (selectedObjectIds.length !== 1) return;
             const groupObj = objects.find(o => o.id === selectedObjectIds[0] && o.type === 'group');
             if (!groupObj || !groupObj.children) return;
@@ -2161,6 +2261,7 @@
         }
 
         function updateCircleDimension(kind, val) {
+            snapshotCAD();
             if (selectedObjectIds.length !== 1) return;
             const selected = objects.find(o => o.id === selectedObjectIds[0]);
             if (!selected || selected.type !== 'circle') return;
@@ -2175,6 +2276,7 @@
         }
 
         function updateSelectedProp(prop, value) {
+            snapshotCAD();
             selectedObjectIds.forEach(id => {
                 const selected = objects.find(o => o.id === id);
                 if (!selected || !layerEditable(selected)) return;
@@ -2210,6 +2312,7 @@
             cadClipboard = objects.filter(o=>selectedObjectIds.includes(o.id)).map(o=>structuredClone(o));
         }
         function pasteCopied() {
+            snapshotCAD();
             if (!cadClipboard.length) { alert('Prvo selektujte objekte i pritisnite Ctrl+C.'); return; }
             const direction=prompt('Smer kopiranja: L = Levo, D = Desno, G = Gore, Do = Dole','D');
             if (direction===null) return;
@@ -2238,6 +2341,7 @@
         function duplicateSelected() { copySelected(); if(cadClipboard.length)pasteCopied(); }
 
         function deleteSelected() {
+            snapshotCAD();
             if (selectedObjectIds.length === 0) return;
             objects = objects.filter(o => !selectedObjectIds.includes(o.id) || !layerEditable(o));
             selectedObjectIds = [];
@@ -2271,6 +2375,7 @@
 
         window.addEventListener('keydown', (e) => {
             if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase()==='z') { e.preventDefault();undoCAD();return; }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='a') { e.preventDefault();selectAllCAD();return; }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='c') { e.preventDefault();copySelected();return; }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='v') { e.preventDefault();pasteCopied();return; }
@@ -2321,13 +2426,16 @@
                 row.append(radio,color,name,eye,lock);host.append(row);
             });
         }
-        function addCADLayer(){const name=prompt('Naziv novog layer-a:','Novi layer');if(!name?.trim())return;
+        function addCADLayer(){
+            snapshotCAD();const name=prompt('Naziv novog layer-a:','Novi layer');if(!name?.trim())return;
             const layer={id:generateId(),name:name.trim(),visible:true,locked:false,color:'#60a5fa'};
             cadLayers.push(layer);activeLayerId=layer.id;renderCADLayers();}
-        function moveSelectionToActiveLayer(){const l=cadLayers.find(x=>x.id===activeLayerId);if(!l||l.locked){alert('Aktivni layer je zaključan.');return;}
+        function moveSelectionToActiveLayer(){
+            snapshotCAD();const l=cadLayers.find(x=>x.id===activeLayerId);if(!l||l.locked){alert('Aktivni layer je zaključan.');return;}
             objects.filter(o=>selectedObjectIds.includes(o.id)&&layerEditable(o)).forEach(o=>o.layerId=activeLayerId);
             renderCADLayers();draw();}
-        function mergeCADLayers(){if(cadLayers.length<2){alert('Potrebna su dva layer-a.');return;}
+        function mergeCADLayers(){
+            snapshotCAD();if(cadLayers.length<2){alert('Potrebna su dva layer-a.');return;}
             const choices=cadLayers.filter(l=>l.id!==activeLayerId).map((l,i)=>`${i+1}: ${l.name}`).join('\n');
             const sourceName=prompt('Unesi TAČAN naziv sloja koji spajaš u aktivni sloj:\n'+choices);
             if(!sourceName)return;const source=cadLayers.find(l=>l.name===sourceName&&l.id!==activeLayerId);
@@ -2336,13 +2444,15 @@
             objects.forEach(o=>{if((o.layerId||'base')===source.id)o.layerId=activeLayerId;});
             cadLayers=cadLayers.filter(l=>l.id!==source.id);renderCADLayers();draw();}
         function readBoxNumber(id,allowZero=false){const v=Number(document.getElementById(id).value);if(!Number.isFinite(v)||(allowZero?v<0:v<=0))throw Error('Neispravna vrednost: '+id);return v;}
-        function createCADBox(){try{
+        function createCADBox(){
+            snapshotCAD();try{
             const l=cadLayers.find(x=>x.id===activeLayerId);if(!l||l.locked||!l.visible)throw Error('Aktivni sloj mora biti vidljiv i otključan.');
             const w=readBoxNumber('box-w'),h=readBoxNumber('box-h');const pt=screenToWorld(CANVAS.width/2,CANVAS.height/2);
             const o={id:generateId(),type:'rect',x_m:pt.x-w/2,y_m:pt.y-h/2,w_m:w,h_m:h,angle:0,label:'Kutija',color:l.color,strokeColor:'#f8fafc',strokeWidth:1,fillOpacity:65,layerId:activeLayerId,zIndex:objects.length,boxHeight:readBoxNumber('box-z')};
             objects.push(o);selectedObjectIds=[o.id];updateInspector();updateStats();draw();
         }catch(e){alert(e.message)}}
-        function calculateBoxCapacity(){try{
+        function calculateBoxCapacity(){
+            snapshotCAD();try{
             if(selectedObjectIds.length!==1)throw Error('Selektuj jedan pravougaoni objekat kao skladišnu zonu.');
             const zone=objects.find(o=>o.id===selectedObjectIds[0]);
             if(!zone||!['rect','wall','office','ground_storage','zone_inbound','zone_outbound'].includes(zone.type))throw Error('Zona mora biti pravougaoni objekat.');
@@ -2368,7 +2478,7 @@
 
         // CAD projekat je izvor istine; PDF je vektorski izlaz za pregled i štampu.
         function saveProject() {
-            const data = {format:'MagacinCAD',version:6,unit:'m',objects,layers:cadLayers,activeLayerId,gridMinorSpacing,gridMajorSpacing};
+            const data = {format:'MagacinCAD',version:6,unit:'m',objects,layers:cadLayers,activeLayerId,gridMinorSpacing,gridMajorSpacing,wallPlacement,columnPlacement};
             const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
             const url = URL.createObjectURL(blob);
             const a=document.createElement('a'); a.href=url; a.download='MagacinCAD_projekat.json';a.click();
@@ -2377,11 +2487,27 @@
         async function openProject(event) {
             const file=event.target.files?.[0]; if(!file)return;
             try {
-                const data=JSON.parse(await file.text());
+                let data;
+                if (file.name.toLowerCase().endsWith('.pdf')) {
+                    const bytes = new Uint8Array(await file.arrayBuffer());
+                    const tail = new TextDecoder('ascii').decode(bytes.slice(Math.max(0, bytes.length - 12000000)));
+                    const match = tail.match(/%MAGACINCAD_PROJECT_BEGIN\r?\n([A-Za-z0-9+/=]+)\r?\n%MAGACINCAD_PROJECT_END/);
+                    if (!match) throw Error('PDF nema ugrađen MagacinCad projekat. Učitajte PDF izvezen novom verzijom MagacinCad-a.');
+                    const binary = atob(match[1]);
+                    const jsonBytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+                    data = JSON.parse(new TextDecoder().decode(jsonBytes));
+                } else {
+                    data = JSON.parse(await file.text());
+                }
                 const list=Array.isArray(data)?data:data.objects;
                 if(!Array.isArray(list)||list.length>100000||!list.every(o=>o&&typeof o.type==='string'&&Number.isFinite(o.x_m)&&Number.isFinite(o.y_m)&&Number.isFinite(o.w_m)&&Number.isFinite(o.h_m)))throw Error('Neispravan format');
                 if(objects.length&&!confirm('Zameniti trenutni nacrt?'))return;
                 objects=list;
+                setWallPlacement(data.wallPlacement);
+                document.getElementById('wall-placement').value = wallPlacement;
+                columnPlacement = data.columnPlacement === 'free' ? 'free' : 'grid';
+                document.getElementById('column-placement').value=columnPlacement;
+                document.getElementById('wall-placement').value=wallPlacement;
                 gridMinorSpacing = Number.isFinite(Number(data.gridMinorSpacing)) && Number(data.gridMinorSpacing) >= .001 ? Number(data.gridMinorSpacing) : 1;
                 gridMajorSpacing = Number.isFinite(Number(data.gridMajorSpacing)) && Number(data.gridMajorSpacing) >= gridMinorSpacing ? Number(data.gridMajorSpacing) : 5;
                 document.getElementById('grid-minor').value = gridMinorSpacing;
@@ -2514,10 +2640,26 @@
             }
             objects.slice().sort((a,b)=>(a.zIndex||0)-(b.zIndex||0)).forEach(o=>render(o));
             doc.setProperties({title:'MagacinCAD - Tlocrt',creator:'MagacinCAD v5'});
-            doc.save('MagacinCAD_tlocrt_'+new Date().toISOString().slice(0,10)+'.pdf');
+            // PDF ostaje čitljiv u standardnim preglednicima, a dodatak čuva CAD projekat.
+            // Napomena: PDF editori koji prepisuju fajl mogu ukloniti ove podatke.
+            const project = {format:'MagacinCAD',version:7,unit:'m',objects,layers:cadLayers,activeLayerId,gridMinorSpacing,gridMajorSpacing,wallPlacement,columnPlacement};
+            const jsonBytes = new TextEncoder().encode(JSON.stringify(project));
+            let binary = '';
+            for (let i=0;i<jsonBytes.length;i+=32768) binary += String.fromCharCode(...jsonBytes.subarray(i,i+32768));
+            const payload = '\n%MAGACINCAD_PROJECT_BEGIN\n' + btoa(binary) + '\n%MAGACINCAD_PROJECT_END\n';
+            const pdfBytes = new Uint8Array(doc.output('arraybuffer'));
+            const extra = new TextEncoder().encode(payload);
+            const result = new Uint8Array(pdfBytes.length + extra.length);
+            result.set(pdfBytes); result.set(extra,pdfBytes.length);
+            const url = URL.createObjectURL(new Blob([result],{type:'application/pdf'}));
+            const link = document.createElement('a');
+            link.href=url;link.download='MagacinCAD_projekat_'+new Date().toISOString().slice(0,10)+'.pdf';
+            document.body.appendChild(link);link.click();link.remove();
+            setTimeout(()=>URL.revokeObjectURL(url),30000);
         }
 
         function loadTemplate(templateType) {
+            snapshotCAD();
             if (!templateType) return;
             
             if (objects.length > 0 && !confirm('Učitavanje šablona će zameniti trenutni nacrt. Nastaviti?')) {
