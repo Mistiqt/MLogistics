@@ -516,7 +516,7 @@
             const prozor = window.open('', '_blank');
             if (!prozor) { alert('Dozvolite iskačuće prozore za ovaj sajt.'); return false; }
             try {
-                const url = GOOGLE_SCRIPT_URL + '?akcija=proveriMagacinCad&sifra=' + encodeURIComponent(loggedUser);
+                const url = GOOGLE_SCRIPT_URL + '?akcija=proveriLayoutCad&sifra=' + encodeURIComponent(loggedUser);
                 const odgovor = await fetch(url, {cache: 'no-store'});
                 if (!odgovor.ok) throw new Error('Provera nije uspela');
                 const data = await odgovor.json();
