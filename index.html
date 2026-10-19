@@ -248,7 +248,7 @@
                 <!-- PLANIRANJE KAO KARTICA -->
                 <a href="material-planner.html" target="_blank" class="nav-tab-item" id="navPlaniranje">Planiranje</a>
                 <!-- LayoutCAD: vidljiv isključivo MASTER korisniku nakon prijave -->
-                <a href="layoutcad.html" target="_blank" rel="noopener noreferrer" class="nav-tab-item" id="navLayoutCad" style="display:none;" onclick="return otvoriLayoutCad(event)">LayoutCAD</a>
+                <a href="magacincad.html" target="_blank" rel="noopener noreferrer" class="nav-tab-item" id="navLayoutCad" style="display:none;" onclick="return otvoriLayoutCad(event)">LayoutCAD</a>
 
                 <div class="dropdown" id="navTransport">
                     <a class="nav-tab-item">Transport ▾</a>
@@ -505,7 +505,7 @@
         }
 
         // Provera prava na serveru pre otvaranja LayoutCAD kartice.
-        // Napomena: sam statički layoutcad.html mora biti dodatno zaštićen na hostingu
+        // Napomena: sam statički magacincad.html mora biti dodatno zaštićen na hostingu
         // ako se zahteva zabrana direktnog otvaranja putem URL-a.
         async function otvoriLayoutCad(event) {
             event.preventDefault();
@@ -521,7 +521,7 @@
                 if (!odgovor.ok) throw new Error('Provera nije uspela');
                 const data = await odgovor.json();
                 if (data.status === 'OK' && data.dozvoljeno === true) {
-                    prozor.location.replace('layoutcad.html');
+                    prozor.location.replace('magacincad.html');
                 } else {
                     prozor.close();
                     alert('Pristup LayoutCAD-u dozvoljen je samo aktivnim MASTER korisnicima.');
