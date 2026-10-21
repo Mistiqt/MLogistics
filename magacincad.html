@@ -182,14 +182,14 @@
             </select>
 
             <!-- EXPORT / IMPORT -->
-            <button onclick="saveProject()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg">Sačuvaj projekat</button>
-            <label class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-1.5 rounded-lg cursor-pointer">Otvori projekat<input type="file" accept=".json" class="hidden" onchange="openProject(event)"></label>
-            <button onclick="exportPDF()" title="Sačuvaj PDF (Bela pozadina i čist tlocrt)" class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 transition shadow-lg shadow-red-900/40">
-                <i class="fa-solid fa-file-pdf"></i> Sačuvaj PDF
-            </button>
+            <button onclick="saveProjectAs()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg" title="Izaberi lokaciju i naziv fajla; možeš zameniti postojeći">Sačuvaj PDF kao…</button>
+            <button onclick="saveProject()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg" title="Sačuvaj preko poslednjeg fajla bez novog preuzimanja">Brzo sačuvaj PDF (Ctrl+S)</button>
+            <span id="cad-save-status" class="text-[10px] text-slate-400" title="Trenutna lokacija čuvanja">Nije izabran fajl</span>
+            <label class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-1.5 rounded-lg cursor-pointer">Otvori projekat<input type="file" accept=".pdf" class="hidden" onchange="openProject(event)"></label>
+
             <label title="Učitaj CAD projekat (JSON)" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition shadow-lg shadow-emerald-900/40">
                 <i class="fa-solid fa-folder-open"></i> Učitaj PDF
-                <input type="file" id="file-input" accept=".pdf,.json" onchange="openProject(event)" class="hidden">
+                <input type="file" id="file-input" accept=".pdf" onchange="openProject(event)" class="hidden">
             </label>
         </div>
     </header>
@@ -222,6 +222,7 @@
                         </div>
                         <div onclick="addPreset('wc_fixture')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-cyan-500 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-toilet text-cyan-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">WC šolja (posebno)</span></div>
                         <div onclick="addPreset('door')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-sky-500 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-door-open text-sky-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Vrata (CAD luk)</span></div>
+                        <div onclick="addPreset('roller_door')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-amber-500 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-warehouse text-amber-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Rolo vrata (kamion / viljuškar)</span></div>
                         <div onclick="startColumnPlacement()" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-teal-500 cursor-pointer flex flex-col items-center text-center group transition">
                             <i class="fa-solid fa-plus text-teal-400 text-lg group-hover:scale-110 transition"></i>
                             <span class="text-[11px] font-medium text-slate-300 mt-1">Stub (krst) – klik na platno</span>
@@ -360,7 +361,7 @@
         <main class="cad-workspace flex-1 relative bg-slate-950 overflow-hidden flex items-center justify-center">
             <canvas id="cadCanvas" class="w-full h-full cursor-crosshair"></canvas>
              <div id="cad3d" class="hidden absolute inset-0 bg-slate-950" style="z-index:2"></div>
-            <div id="cad3d-help" class="hidden absolute bottom-14 right-3 bg-slate-800/90 border border-slate-600 rounded p-2 text-[11px] text-slate-200 pointer-events-none" style="z-index:5">3D: levi drag = rotacija oko objekta · desni drag = pomeranje pogleda · klik na kutiju = slaganje · Shift + levi drag na objektu = pomeranje objekta · točkić = zoom · WASD = kretanje</div>
+            <div id="cad3d-help" class="hidden absolute bottom-14 right-3 bg-slate-800/90 border border-slate-600 rounded p-2 text-[11px] text-slate-200 pointer-events-none" style="z-index:5">3D: levi drag = standardna orbit rotacija · desni drag = pomeranje pogleda (nazad → napred) · klik na kutiju = slaganje · Shift + levi drag na objektu = pomeranje objekta · točkić = zoom · WASD = kretanje</div>
              <div class="absolute top-3 left-3 flex gap-1" style="z-index:5"><button onclick="switchCADView(false)" class="bg-blue-700 px-3 py-1.5 rounded text-xs">2D</button><button onclick="switchCADView(true)" class="bg-violet-700 px-3 py-1.5 rounded text-xs">3D prikaz</button></div>
 
             <!-- CANVAS OVERLAY TOOLBAR (ZOOM CONTROLS & HUD) -->
@@ -500,7 +501,12 @@
                 </div>
 
                 <!-- RACK SPECIFIC PROPERTIES -->
-                <div id="rack-properties" class="border-t border-slate-700 pt-3 space-y-3 hidden">
+                <div id="cad-3d-height-controls" class="hidden border-t border-slate-700 pt-3 space-y-2">
+                <label class="block text-sky-300 font-semibold">Visina u 3D (m)</label>
+                <input id="cad-3d-height" type="number" min="0.1" max="30" step="0.1" onchange="updateCAD3DHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2" />
+                <p class="text-slate-400 text-[10px]">Podesi istu visinu zida i rolo vrata, npr. 4.2 m. Visina je nezavisna od dimenzija u 2D.</p>
+            </div>
+            <div id="rack-properties" class="border-t border-slate-700 pt-3 space-y-3 hidden">
                     <h5 class="font-bold text-blue-400 uppercase tracking-wider text-[10px]">Specifično za Regal</h5>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
@@ -521,7 +527,8 @@
                     </div>
                 </div>
 
-                <!-- ACTIONS -->
+                <div class="border-t border-slate-700 pt-3"><label class="flex items-center gap-2 cursor-pointer font-semibold text-amber-300"><input id="prop-object-locked" type="checkbox" onchange="toggleSelectedObjectLock(this.checked)"> <i class="fa-solid fa-lock"></i> Zaključaj izabrani objekat</label><p class="text-[10px] text-slate-400 mt-1">Zaključani objekat može da se izabere, ali ne i slučajno pomeri ili izmeni. Alt + klik menja izbor preklopljenih objekata.</p></div>
+                                <!-- ACTIONS -->
                 <div class="border-t border-slate-700 pt-3 space-y-2">
                     <button onclick="duplicateSelected()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-100 py-1.5 rounded font-medium flex items-center justify-center gap-1.5">
                         <i class="fa-solid fa-clone"></i> Dupliraj Objekat
@@ -604,7 +611,7 @@
         let activeLayerId = 'base';
         function layerOf(o){return cadLayers.find(l=>l.id===(o.layerId||'base'))||cadLayers[0];}
         function layerVisible(o){return layerOf(o).visible;}
-        function layerEditable(o){const l=layerOf(o);return l.visible&&!l.locked;}
+        function layerEditable(o){const l=layerOf(o);return l.visible&&!l.locked&&!o.locked;}
         // Istorija promena: Ctrl+Z vraca prethodno stanje nacrta.
         const undoStack = [];
         let lastUndoSnapshot = '';
@@ -855,6 +862,8 @@
                     newObj.strokeColor = '#2dd4bf';
                     newObj.label = 'Krug / Stub';
                     break;
+                case 'roller_door':
+                    Object.assign(newObj,{w_m:4,h_m:.35,doorHeight:2.8,color:'#94a3b8',strokeColor:'#fbbf24',label:'Rolo vrata'});break;
                 case 'door':
                     newObj.w_m = 1.0; newObj.h_m = 1.0; newObj.color = '#64748b'; newObj.strokeColor = '#e2e8f0'; newObj.label = ''; break;
                 case 'office':
@@ -1265,6 +1274,12 @@
                     CTX.stroke();
                     break;
 
+                case 'roller_door': {
+                    CTX.fillStyle=obj.color||'#94a3b8';CTX.fillRect(-w/2,-h/2,w,h);
+                    CTX.strokeStyle=obj.strokeColor||'#fbbf24';CTX.lineWidth=2;CTX.strokeRect(-w/2,-h/2,w,h);
+                    for(let i=1;i<8;i++){const xx=-w/2+w*i/8;CTX.beginPath();CTX.moveTo(xx,-h/2);CTX.lineTo(xx,h/2);CTX.stroke();}
+                    break;
+                }
                 case 'door': {
                     // CAD vrata: šarka u donjem levom uglu, krilo otvoreno 90°, luk otvaranja.
                     const radius=Math.max(1,Math.min(w,h));
@@ -1718,6 +1733,17 @@
             return Math.abs(localX) <= obj.w_m / 2 && Math.abs(localY) <= obj.h_m / 2;
         }
 
+        function pickPreciseCADObject(x,y,cycle){
+            const candidates=objects.filter(o=>layerVisible(o)&&isPointInObject(x,y,o));
+            if(!candidates.length)return null;
+            // A line must not mask a wall or a small object when both are within the hit tolerance.
+            const rank=o=>{const area=Math.max(.0001,(o.w_m||.01)*(o.h_m||.01));
+                const line=['line','polyline'].includes(o.type);
+                return (line?100000:0)+Math.log1p(area)*100-(o.zIndex||0)*.0001;};
+            candidates.sort((a,b)=>rank(a)-rank(b));
+            if(cycle){const index=candidates.findIndex(o=>selectedObjectIds.includes(o.id));return candidates[(index+1)%candidates.length];}
+            return candidates[0];
+        }
         // Desni klik na platno ili na dugme za merenje prekida alat bez dodatnih klikova.
         function exitMeasureOnRightClick(e) {
             if (mode === 'measure_distance' || mode === 'measure_area') {
@@ -1790,7 +1816,7 @@
                         }
                     }
 
-                    const clicked = [...objects].reverse().find(o => layerEditable(o) && isPointInObject(world.x, world.y, o));
+                    const clicked = pickPreciseCADObject(world.x,world.y,e.altKey);
 
                     if (clicked) {
                         if (e.shiftKey || e.ctrlKey) {
@@ -1804,7 +1830,7 @@
                                 selectedObjectIds = [clicked.id];
                             }
                         }
-                        isDragging = true;
+                        isDragging = selectedObjectIds.some(id=>{const o=objects.find(q=>q.id===id);return o&&layerEditable(o);});
                         dragOffsetX = world.x;
                         dragOffsetY = world.y;
                     } else {
@@ -2206,6 +2232,10 @@
             requestAnimationFrame(() => draw());
         }
 
+        function toggleSelectedObjectLock(locked){
+            snapshotCAD();selectedObjectIds.forEach(id=>{const o=objects.find(q=>q.id===id);if(o&&!layerOf(o).locked)o.locked=locked;});
+            updateInspector();draw();
+        }
         function updateInspector() {
             const emptyPanel = document.getElementById('inspector-empty');
             const contentPanel = document.getElementById('inspector-content');
@@ -2236,6 +2266,10 @@
             if (selectedObjectIds.length === 1) {
                 const selected = objects.find(o => o.id === selectedObjectIds[0]);
                 if (!selected) return;
+                document.getElementById('prop-object-locked').checked=!!selected.locked;
+                const heightControls=document.getElementById('cad-3d-height-controls');
+                heightControls.classList.toggle('hidden', !['wall','roller_door'].includes(selected.type));
+                if(['wall','roller_door'].includes(selected.type)) document.getElementById('cad-3d-height').value=selected.type==='wall'?(selected.wallHeight??2.8):(selected.doorHeight??2.8);
 
                 document.getElementById('prop-label').value = selected.label || '';
                 document.getElementById('prop-x').value = selected.x_m.toFixed(1);
@@ -2305,6 +2339,20 @@
             selected.h_m = selected.w_m;
 
             updateStats();
+        }
+
+        function updateCAD3DHeight(value) {
+            const height=Number(value);
+            if(!Number.isFinite(height)||height<0.1||height>30){alert('Visina mora biti između 0.1 i 30 m.');updateInspector();return;}
+            snapshotCAD();
+            selectedObjectIds.forEach(id=>{
+                const o=objects.find(item=>item.id===id);
+                if(o&&!o.locked&&layerEditable(o)){
+                    if(o.type==='wall')o.wallHeight=height;
+                    if(o.type==='roller_door')o.doorHeight=height;
+                }
+            });
+            draw();updateInspector();
         }
 
         function updateSelectedProp(prop, value) {
@@ -2637,11 +2685,58 @@
                     for(const xx of [cx-r*1.75,cx+r*1.75])detailCylinder(o,xx,cz,r*.47,.12,'#d1d5db',h*.45);
                     return true;
                 }
-                if(o.type==='crosswalk'){
-                    // Painted stripes lie just above the ground, without a raised block.
-                    const count=Math.max(3,Math.ceil(d/.40)),step=d/count;
+                if(o.type==='pedestrian_path'){
+                    // Ravna staza na nivou poda, ali pešak je uspravna 3D figura.
+                    const angle=(o.angle||0)*Math.PI/180;
+                    const surface=new T.Mesh(new T.PlaneGeometry(Math.max(.01,w),Math.max(.01,d)),new T.MeshStandardMaterial({color:o.color||'#ffffff',transparent:true,opacity:.48,roughness:1,side:T.DoubleSide,depthWrite:false}));
+                    surface.rotation.set(-Math.PI/2,0,-angle,'YXZ');
+                    surface.position.set(cx,.011,cz);surface.renderOrder=4;surface.userData.objectId=o.id;editableMeshes.push(surface);cad3dScene.add(surface);
+                    // Čovek je modelovan zapreminski: glava, telo, ruke i noge.
+                    const count=Math.max(1,Math.ceil(d/50));
+                    const personHeight=Math.max(.55,Math.min(1.8,w*.65,d/count*.72));
+                    const skin=new T.MeshStandardMaterial({color:'#e5b48d',roughness:.9});
+                    const shirt=new T.MeshStandardMaterial({color:'#2563eb',roughness:.9});
+                    const pants=new T.MeshStandardMaterial({color:'#1e293b',roughness:.9});
+                    function bodyPart(group,geometry,material,px,py,pz){
+                        const mesh=new T.Mesh(geometry,material);mesh.position.set(px,py,pz);mesh.userData.objectId=o.id;editableMeshes.push(mesh);group.add(mesh);return mesh;
+                    }
+                    function limb(group,material,from,to,radius){
+                        const A=new T.Vector3(...from),B=new T.Vector3(...to),delta=B.clone().sub(A);
+                        const mesh=bodyPart(group,new T.CylinderGeometry(radius*.82,radius,delta.length(),10),material,...A.clone().add(B).multiplyScalar(.5).toArray());
+                        mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());
+                    }
                     for(let i=0;i<count;i++){
-                        if(i%2===0)detailBox(o,x,z+i*step,w,step*.65,.006,'#f8fafc',.006);
+                        const person=new T.Group();
+                        const offset=-d/2+d*(i+.5)/count;
+                        person.position.set(cx-Math.sin(angle)*offset,.025,cz+Math.cos(angle)*offset);
+                        person.rotation.y=-angle;
+                        const h=personHeight;
+                        bodyPart(person,new T.SphereGeometry(h*.105,16,12),skin,0,h*.91,0);
+                        bodyPart(person,new T.CylinderGeometry(h*.14,h*.115,h*.38,12),shirt,0,h*.59,0);
+                        limb(person,shirt,[-h*.12,h*.73,0],[-h*.25,h*.42,h*.09],h*.045);
+                        limb(person,shirt,[h*.12,h*.73,0],[h*.23,h*.44,-h*.10],h*.045);
+                        limb(person,pants,[-h*.065,h*.41,0],[-h*.13,h*.065,h*.12],h*.057);
+                        limb(person,pants,[h*.065,h*.41,0],[h*.15,h*.065,-h*.12],h*.057);
+                        bodyPart(person,new T.BoxGeometry(h*.14,h*.055,h*.23),pants,-h*.13,h*.045,h*.16);
+                        bodyPart(person,new T.BoxGeometry(h*.14,h*.055,h*.23),pants,h*.15,h*.045,-h*.09);
+                        cad3dScene.add(person);
+                    }
+                    return true;
+                }
+                if(o.type==='crosswalk'){
+                    // Ista zebra kao u 2D: pet ravnih belih traka, bez visine i bez postolja.
+                    // Položaj na nivou puta/staze (y=0.012) sprečava treperenje površina.
+                    for(let i=0;i<5;i++){
+                        const stripe=new T.Mesh(
+                            new T.PlaneGeometry(Math.max(.01,w*.84),Math.max(.01,d*.10)),
+                            new T.MeshStandardMaterial({color:o.color||'#f8fafc',roughness:1,metalness:0,side:T.DoubleSide,depthWrite:false})
+                        );
+                        stripe.rotation.set(-Math.PI/2,0,-(o.angle||0)*Math.PI/180,'YXZ');
+                        // Rotacija celog prelaza oko centra, identična ostalim CAD objektima.
+                        const offset=-d*.43+i*d*.18+d*.05;
+                        const angle=(o.angle||0)*Math.PI/180;
+                        stripe.position.set(x+w/2+Math.sin(angle)*offset,.012,z+d/2+Math.cos(angle)*offset);
+                        stripe.renderOrder=3;stripe.userData.objectId=o.id;editableMeshes.push(stripe);cad3dScene.add(stripe);
                     }
                     return true;
                 }
@@ -2716,6 +2811,19 @@
                     detailBox(o,cx-r*.85,z+d*.22,r*1.7,d*.25,.28,'#e2e8f0',.12);
                     return true;
                 }
+                if(o.type==='roller_door'){
+                    // Jedinstven segmentirani panel bez odvojenih stubova ispred ili iza.
+                    const H=Math.max(.1,Number(o.doorHeight)||2.8);
+                    const depth=Math.max(.07,Math.min(.14,d*.45));
+                    const slats=Math.max(5,Math.ceil(H/.30));
+                    const pitch=H/slats;
+                    for(let i=0;i<slats;i++){
+                        detailBox(o,x,z+d/2-depth/2,w,depth,pitch*.97,i%2?'#94a3b8':'#cbd5e1',i*pitch);
+                    }
+                    // Gornji sanduk je sastavni deo vrata, iste širine, bez dodatnih nosača.
+                    detailBox(o,x,z+d/2-depth/2,w,depth,.12,'#334155',H-.12);
+                    return true;
+                }
                 if(o.type==='door'){
                     const width=Math.max(.5,w),depth=Math.max(.08,d*.09);
                     detailBox(o,x,z,depth,depth,2.15,'#64748b');
@@ -2770,7 +2878,7 @@
                         mesh.add(edges);
                     }
                 }else{
-                    const height=o.type==='wall'?2.8:o.type==='rack'?3.5:o.type==='office'?2.7:o.type==='ground_storage'?.06:o.type==='road'?.05:o.type==='dock'?.6:.5;
+                    const height=o.type==='wall'?Math.max(.1,Number(o.wallHeight)||2.8):o.type==='rack'?3.5:o.type==='office'?2.7:o.type==='ground_storage'?.06:o.type==='road'?.05:o.type==='dock'?.6:.5;
                     block(x,z,w,d,height,o.color||'#64748b',angle,0,o);
                 }
             }
@@ -2797,13 +2905,15 @@
                 const dx=e.clientX-state.lastX,dy=e.clientY-state.lastY;
                 if(Math.hypot(e.clientX-state.startX,e.clientY-state.startY)>4)state.moved=true;
                 if(state.kind==='orbit'){
-                    cad3dOrbit.yaw-=dx*.008;
-                    cad3dOrbit.pitch=Math.max(.08,Math.min(1.5,cad3dOrbit.pitch-dy*.008));
+                    // Standardna orbit rotacija: povlačenje miša okreće pogled u istom smeru kao 3D CAD alati.
+                    cad3dOrbit.yaw-=dx*.006;
+                    cad3dOrbit.pitch=Math.max(.08,Math.min(1.5,cad3dOrbit.pitch+dy*.006));
                 }else if(state.kind==='pan'){
                     // Grab the floor and move it with the cursor (not in the opposite direction).
                     const a=cad3dOrbit,scale=a.dist*.002;
-                    a.cx+=(dx*Math.cos(a.yaw)-dy*Math.sin(a.yaw))*scale;
-                    a.cz+=(-dx*Math.sin(a.yaw)-dy*Math.cos(a.yaw))*scale;
+                    // Desni drag: pomeranje pogleda po ravni, u smeru povlačenja miša.
+                    a.cx+=(-dx*Math.cos(a.yaw)-dy*Math.sin(a.yaw))*scale;
+                    a.cz+=(dx*Math.sin(a.yaw)-dy*Math.cos(a.yaw))*scale;
                 }else if(state.kind==='object'&&state.moved&&state.obj){
                     const at=groundAt(e);
                     if(at&&state.point){
@@ -2856,14 +2966,57 @@
             };animate();
         }
 
-        // CAD projekat je izvor istine; PDF je vektorski izlaz za pregled i štampu.
-        function saveProject() {
-            const data = {format:'MagacinCAD',version:6,unit:'m',objects,layers:cadLayers,activeLayerId,gridMinorSpacing,gridMajorSpacing,wallPlacement,columnPlacement};
-            const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a=document.createElement('a'); a.href=url; a.download='MagacinCAD_projekat.json';a.click();
-            setTimeout(()=>URL.revokeObjectURL(url),1000);
+        // PDF sadrži vektorski nacrt i ugrađene CAD podatke za ponovno otvaranje.
+        // Direktan overwrite podržavaju Chrome/Edge kada je File System Access API dostupan.
+        let cadProjectFileHandle = null;
+        let cadProjectFileName = '';
+        function updateCADSaveStatus(message) {
+            const el=document.getElementById('cad-save-status');
+            if(el) {el.textContent=message || (cadProjectFileHandle ? 'PDF: '+cadProjectFileName : 'Nije izabran PDF');el.title=el.textContent;}
         }
+        async function writeCADPDF(handle) {
+            const bytes=exportPDF(true);
+            if(!bytes)return;
+            const writable=await handle.createWritable();
+            try {await writable.write(new Blob([bytes],{type:'application/pdf'}));await writable.close();}
+            catch(e){try{await writable.abort()}catch(_){}throw e;}
+            cadProjectFileHandle=handle;
+            cadProjectFileName=handle.name;
+            updateCADSaveStatus('Sačuvan PDF: '+handle.name);
+        }
+        function downloadCADPDFFallback() {
+            const bytes=exportPDF(true);
+            if(!bytes)return;
+            const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+            const a=document.createElement('a');a.href=url;a.download=cadProjectFileName||'MagacinCAD_projekat.pdf';a.click();
+            setTimeout(()=>URL.revokeObjectURL(url),30000);
+            updateCADSaveStatus('Preuzeta PDF kopija – direktno prepisivanje nije podržano');
+            alert('Browser ne podržava direktno prepisivanje PDF fajla na ovoj stranici. Preuzeta je PDF kopija. Za overwrite koristi noviji Chrome/Edge u podržanom okruženju.');
+        }
+        async function saveProjectAs() {
+            if(typeof window.showSaveFilePicker!=='function') {downloadCADPDFFallback();return;}
+            try {
+                const handle=await window.showSaveFilePicker({suggestedName:cadProjectFileName||'MagacinCAD_projekat.pdf',types:[{description:'MagacinCAD PDF projekat',accept:{'application/pdf':['.pdf']}}]});
+                await writeCADPDF(handle);
+            }catch(e){if(e.name!=='AbortError'){console.error(e);alert('PDF čuvanje nije uspelo: '+e.message);}}
+        }
+        async function saveProject() {
+            if(!cadProjectFileHandle){await saveProjectAs();return;}
+            try {
+                if(typeof cadProjectFileHandle.queryPermission==='function') {
+                    let permission=await cadProjectFileHandle.queryPermission({mode:'readwrite'});
+                    if(permission!=='granted')permission=await cadProjectFileHandle.requestPermission({mode:'readwrite'});
+                    if(permission!=='granted')return;
+                }
+                await writeCADPDF(cadProjectFileHandle);
+            }catch(e){console.error(e);alert('Brzo PDF čuvanje nije uspelo: '+e.message+'\nProbaj „Sačuvaj PDF kao…“.');}
+        }
+        document.addEventListener('keydown', e=>{
+            if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){
+                e.preventDefault();e.stopImmediatePropagation();
+                if(e.shiftKey)saveProjectAs();else saveProject();
+            }
+        },true);
         async function openProject(event) {
             const file=event.target.files?.[0]; if(!file)return;
             try {
@@ -2882,6 +3035,7 @@
                 const list=Array.isArray(data)?data:data.objects;
                 if(!Array.isArray(list)||list.length>100000||!list.every(o=>o&&typeof o.type==='string'&&Number.isFinite(o.x_m)&&Number.isFinite(o.y_m)&&Number.isFinite(o.w_m)&&Number.isFinite(o.h_m)))throw Error('Neispravan format');
                 if(objects.length&&!confirm('Zameniti trenutni nacrt?'))return;
+                cadProjectFileHandle=null;cadProjectFileName=file.name;updateCADSaveStatus('Otvoren: '+file.name+' – izaberi Sačuvaj kao…');
                 objects=list;
                 setWallPlacement(data.wallPlacement);
                 document.getElementById('wall-placement').value = wallPlacement;
@@ -2910,7 +3064,7 @@
             panY=CANVAS.height/2-(minY+maxY)/2*PIXELS_PER_METER*zoom;
             document.getElementById('hud-scale').innerText=`1m = ${(PIXELS_PER_METER*zoom).toFixed(0)}px`;draw();
         }
-        function exportPDF(){
+        function exportPDF(returnBytes=false){
             if(!objects.length){alert('Nema objekata za izvoz.');return}
             if(!window.jspdf){alert('Biblioteka jsPDF nije učitana. Proverite internet vezu.');return}
             const {jsPDF}=window.jspdf;
@@ -3031,9 +3185,10 @@
             const extra = new TextEncoder().encode(payload);
             const result = new Uint8Array(pdfBytes.length + extra.length);
             result.set(pdfBytes); result.set(extra,pdfBytes.length);
+            if(returnBytes)return result;
             const url = URL.createObjectURL(new Blob([result],{type:'application/pdf'}));
             const link = document.createElement('a');
-            link.href=url;link.download='MagacinCAD_projekat_'+new Date().toISOString().slice(0,10)+'.pdf';
+            link.href=url;link.download='MagacinCAD_projekat.pdf';
             document.body.appendChild(link);link.click();link.remove();
             setTimeout(()=>URL.revokeObjectURL(url),30000);
         }
