@@ -321,7 +321,8 @@
                             <i class="fa-solid fa-truck-pickup text-amber-500 text-lg group-hover:scale-110 transition"></i>
                             <span class="text-[11px] font-medium text-slate-300 mt-1">Viljuškar</span>
                         </div>
-                        <div onclick="addPreset('extinguisher')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-red-400 cursor-pointer flex flex-col items-center text-center group transition">
+                        <div onclick="addPreset('safety_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-road-barrier text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Safety ograda</span></div><div onclick="addPreset('worker')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-person text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Radnik (3D)</span></div><div onclick="addPreset('elevated_sign')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-sign-hanging text-amber-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Tabla / Broj crteža (3D visina)</span></div>
+                         <div onclick="addPreset('extinguisher')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-red-400 cursor-pointer flex flex-col items-center text-center group transition">
                             <span class="inline-flex bg-red-600 text-white font-black text-lg items-center justify-center w-6 h-6">H</span>
                             <span class="text-[11px] font-medium text-slate-300 mt-1">PP Aparat</span>
                         </div>
@@ -476,7 +477,13 @@
                     </div>
                 </div>
 
-                <!-- CIRCLE SPECIFIC CONTROLS -->
+                <div id="cad-custom-geometry" class="hidden border-t border-slate-700 pt-3 space-y-2">
+                    <h5 class="text-amber-300 font-bold">3D geometrija / tabla</h5>
+                    <label class="block">Visina objekta (m)<input id="cad-geom-height" type="number" min="0.01" max="100" step="0.1" onchange="updateSelectedProp('solidHeight',Number(this.value))" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label>
+                    <label class="block">Visina od poda (m)<input id="cad-floor-height" type="number" min="0" max="100" step="0.1" onchange="updateSelectedProp('floorHeight',Number(this.value))" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label>
+                    <p class="text-slate-400 text-[10px]">Za krug/poligon: visina tela i udaljenost od poda. Za tablu: visina od poda do donje ivice i visina same table. Boja i dimenzije su u standardnim poljima iznad.</p>
+                  </div>
+                  <!-- CIRCLE SPECIFIC CONTROLS -->
                 <div id="circle-properties" class="space-y-2 hidden border-t border-slate-700 pt-3">
                     <h5 class="font-bold text-teal-400 uppercase tracking-wider text-[10px]">Dimenzije Kruga</h5>
                     <div class="grid grid-cols-2 gap-2">
@@ -502,9 +509,9 @@
 
                 <!-- RACK SPECIFIC PROPERTIES -->
                 <div id="cad-3d-height-controls" class="hidden border-t border-slate-700 pt-3 space-y-2">
-                <label class="block text-sky-300 font-semibold">Visina u 3D (m)</label>
-                <input id="cad-3d-height" type="number" min="0.1" max="30" step="0.1" onchange="updateCAD3DHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2" />
-                <p class="text-slate-400 text-[10px]">Podesi istu visinu zida i rolo vrata, npr. 4.2 m. Visina je nezavisna od dimenzija u 2D.</p>
+                <label id="cad-3d-height-label" class="block text-sky-300 font-semibold">Visina u 3D (m)</label>
+                <input id="cad-3d-height" type="number" min="0.1" max="30" step="0.05" onchange="updateCAD3DHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2" />
+                <p class="text-slate-400 text-[10px]">Za zid, rolo vrata i safety ogradu: unesi željenu visinu u metrima. Visina u 3D je nezavisna od dimenzija u 2D.</p>
             </div>
             <div id="rack-properties" class="border-t border-slate-700 pt-3 space-y-3 hidden">
                     <h5 class="font-bold text-blue-400 uppercase tracking-wider text-[10px]">Specifično za Regal</h5>
@@ -856,12 +863,19 @@
                     Object.assign(newObj,{w_m:0.45,h_m:0.45,color:'#14b8a6',strokeColor:'#2dd4bf',label:'Stub'});
                     break;
                 case 'circle':
+                    newObj.solidHeight=1;newObj.floorHeight=0;
                     newObj.w_m = 3.0;
                     newObj.h_m = 3.0;
                     newObj.color = '#14b8a6';
                     newObj.strokeColor = '#2dd4bf';
                     newObj.label = 'Krug / Stub';
                     break;
+                case 'elevated_sign':
+                    Object.assign(newObj,{w_m:2.4,h_m:.12,solidHeight:.7,floorHeight:5,color:'#facc15',strokeColor:'#111827',label:'PN-123456'});break;
+                case 'safety_fence':
+                    Object.assign(newObj,{w_m:5,h_m:.18,fenceHeight:1.15,color:'#facc15',strokeColor:'#111827',label:'Safety ograda'});break;
+                case 'worker':
+                    Object.assign(newObj,{w_m:.65,h_m:.65,workerHeight:1.8,color:'#f59e0b',strokeColor:'#1e293b',label:'Radnik'});break;
                 case 'roller_door':
                     Object.assign(newObj,{w_m:4,h_m:.35,doorHeight:2.8,color:'#94a3b8',strokeColor:'#fbbf24',label:'Rolo vrata'});break;
                 case 'door':
@@ -1175,6 +1189,21 @@
                 case 'text':
                     // Samo natpis, bez pravougaonika i ispune.
                     break;
+                case 'elevated_sign': {
+                    CTX.fillStyle=obj.color||'#facc15';CTX.fillRect(-w/2,-h/2,w,h);CTX.strokeStyle=obj.strokeColor||'#111827';CTX.lineWidth=2;CTX.strokeRect(-w/2,-h/2,w,h);CTX.fillStyle='#111827';CTX.textAlign='center';CTX.textBaseline='bottom';CTX.font=`bold ${Math.max(10,Math.min(15,w*.12))}px sans-serif`;CTX.fillText((obj.label||'PN').slice(0,32),0,-h/2-4);break;
+                }
+                case 'safety_fence': {
+                    CTX.fillStyle='#facc15';CTX.fillRect(-w/2,-h/2,w,h);
+                    CTX.save();CTX.beginPath();CTX.rect(-w/2,-h/2,w,h);CTX.clip();
+                    CTX.strokeStyle='#111827';CTX.lineWidth=Math.max(3,Math.min(12,h*.8));
+                    for(let xx=-w-h;xx<w+h;xx+=Math.max(12,h*1.7)){CTX.beginPath();CTX.moveTo(xx,-h/2);CTX.lineTo(xx+h,h/2);CTX.stroke();}
+                    CTX.restore();CTX.strokeStyle='#111827';CTX.lineWidth=2;CTX.strokeRect(-w/2,-h/2,w,h);break;
+                }
+                case 'worker': {
+                    const r=Math.min(w,h)*.34;CTX.fillStyle='#facc15';CTX.beginPath();CTX.arc(0,0,r,0,Math.PI*2);CTX.fill();
+                    CTX.strokeStyle='#111827';CTX.lineWidth=Math.max(2,r*.18);CTX.stroke();
+                    CTX.fillStyle='#111827';CTX.font=`bold ${Math.max(9,r*.95)}px sans-serif`;CTX.textAlign='center';CTX.textBaseline='middle';CTX.fillText('R',0,1);break;
+                }
                 case 'pedestrian_path': {
                     CTX.fillStyle='rgba(255,255,255,0.50)';CTX.fillRect(-w/2,-h/2,w,h);
                     CTX.strokeStyle=forExport?'#64748b':'rgba(255,255,255,.85)';CTX.lineWidth=1.5;CTX.setLineDash([8,5]);CTX.strokeRect(-w/2,-h/2,w,h);CTX.setLineDash([]);
@@ -1904,6 +1933,7 @@
                         strokeColor: '#60a5fa',
                         strokeWidth: 2,
                         label: mode === 'draw_circle' ? 'Krug' : (mode === 'draw_wall' ? 'Zid' : 'Linija'),
+                        solidHeight:1,floorHeight:0,
                         zIndex: objects.length
                     };
                 }
@@ -1947,6 +1977,7 @@
                 strokeColor: '#818cf8',
                 strokeWidth: 3,
                 label: mode === 'draw_polygon' ? 'Poligon' : 'Polilinija',
+                solidHeight:1,floorHeight:0,
                 points: activePolylinePoints.map(pt => ({ x: pt.x - minX, y: pt.y - minY })),
                 zIndex: objects.length
             };
@@ -2268,13 +2299,22 @@
                 if (!selected) return;
                 document.getElementById('prop-object-locked').checked=!!selected.locked;
                 const heightControls=document.getElementById('cad-3d-height-controls');
-                heightControls.classList.toggle('hidden', !['wall','roller_door'].includes(selected.type));
-                if(['wall','roller_door'].includes(selected.type)) document.getElementById('cad-3d-height').value=selected.type==='wall'?(selected.wallHeight??2.8):(selected.doorHeight??2.8);
+                heightControls.classList.toggle('hidden', !['wall','roller_door','safety_fence'].includes(selected.type));
+                if(['wall','roller_door','safety_fence'].includes(selected.type)) {
+                    document.getElementById('cad-3d-height').value=selected.type==='wall'?(selected.wallHeight??2.8):selected.type==='roller_door'?(selected.doorHeight??2.8):(selected.fenceHeight??1.15);
+                    document.getElementById('cad-3d-height-label').textContent=selected.type==='safety_fence'?'Visina safety ograde (m)':'Visina u 3D (m)';
+                }
 
                 document.getElementById('prop-label').value = selected.label || '';
                 document.getElementById('prop-x').value = selected.x_m.toFixed(1);
                 document.getElementById('prop-y').value = selected.y_m.toFixed(1);
 
+                const geomPanel=document.getElementById('cad-custom-geometry');
+                geomPanel.classList.toggle('hidden',!['circle','polygon','elevated_sign'].includes(selected.type));
+                if(['circle','polygon','elevated_sign'].includes(selected.type)){
+                    document.getElementById('cad-geom-height').value=selected.solidHeight??(selected.type==='elevated_sign'?.7:1);
+                    document.getElementById('cad-floor-height').value=selected.floorHeight??0;
+                }
                 const dimControls = document.getElementById('dim-controls');
                 const circleControls = document.getElementById('circle-properties');
 
@@ -2350,9 +2390,11 @@
                 if(o&&!o.locked&&layerEditable(o)){
                     if(o.type==='wall')o.wallHeight=height;
                     if(o.type==='roller_door')o.doorHeight=height;
+                    if(o.type==='safety_fence')o.fenceHeight=height;
                 }
             });
             draw();updateInspector();
+            if(cad3dActive) scheduleCAD3DRefresh();
         }
 
         function updateSelectedProp(prop, value) {
@@ -2685,6 +2727,39 @@
                     for(const xx of [cx-r*1.75,cx+r*1.75])detailCylinder(o,xx,cz,r*.47,.12,'#d1d5db',h*.45);
                     return true;
                 }
+                if(o.type==='safety_fence'){
+                    const angle=(o.angle||0)*Math.PI/180,group=new T.Group();
+                    group.position.set(cx,0,cz);group.rotation.y=-angle;
+                    const length=Math.max(.2,w),height=Math.max(.1,Math.min(30,Number(o.fenceHeight)||1.15));
+                    const yellow=new T.MeshStandardMaterial({color:'#facc15',roughness:.55});
+                    const black=new T.MeshStandardMaterial({color:'#111827',roughness:.65});
+                    function bar(px,py,pz,bw,bh,bd,mat){const mesh=new T.Mesh(new T.BoxGeometry(bw,bh,bd),mat);mesh.position.set(px,py,pz);mesh.userData.objectId=o.id;editableMeshes.push(mesh);group.add(mesh);}
+                    const count=Math.max(2,Math.ceil(length/2)+1);
+                    for(let i=0;i<count;i++){const px=-length/2+i*length/(count-1);bar(px,height/2,0,.085,height,.085,yellow);for(let j=0;j<Math.ceil(height/.24);j+=2)bar(px,Math.min(height-.08,(j+.5)*.24),.047,.09,.12,.012,black);}
+                    for(const yy of [height*.52,height*.94]){
+                        const sections=Math.max(2,Math.ceil(length/.32));
+                        for(let i=0;i<sections;i++)bar(-length/2+(i+.5)*length/sections,yy,0,length/sections+.004,.075,.08,i%2?black:yellow);
+                    }
+                    cad3dScene.add(group);return true;
+                }
+                if(o.type==='worker'){
+                    const angle=(o.angle||0)*Math.PI/180,group=new T.Group(),h=Math.max(1,Math.min(2.3,Number(o.workerHeight)||1.8));
+                    group.position.set(cx,.02,cz);group.rotation.y=-angle;
+                    const mat=(c)=>new T.MeshStandardMaterial({color:c,roughness:.8});
+                    const skin=mat('#ddb18d'),vest=mat('#f59e0b'),pants=mat('#334155'),boots=mat('#111827');
+                    function part(geo,m,x,y,z){const a=new T.Mesh(geo,m);a.position.set(x,y,z);a.userData.objectId=o.id;editableMeshes.push(a);group.add(a);return a;}
+                    function limb(a,b,r,m){const A=new T.Vector3(...a),B=new T.Vector3(...b),v=B.clone().sub(A);const mesh=part(new T.CylinderGeometry(r*.8,r,v.length(),12),m,...A.clone().add(B).multiplyScalar(.5).toArray());mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),v.normalize());}
+                    part(new T.CylinderGeometry(h*.135,h*.12,h*.34,16),vest,0,h*.61,0);
+                    part(new T.SphereGeometry(h*.095,16,12),skin,0,h*.89,0);
+                    limb([-h*.12,h*.73,0],[-h*.24,h*.43,.015],h*.047,vest);
+                    limb([h*.12,h*.73,0],[h*.24,h*.43,.015],h*.047,vest);
+                    limb([-h*.07,h*.45,0],[-h*.09,h*.07,0],h*.063,pants);
+                    limb([h*.07,h*.45,0],[h*.09,h*.07,0],h*.063,pants);
+                    part(new T.BoxGeometry(h*.14,h*.07,h*.24),boots,-h*.09,h*.035,-h*.045);
+                    part(new T.BoxGeometry(h*.14,h*.07,h*.24),boots,h*.09,h*.035,-h*.045);
+                    group.scale.setScalar(1/.985);
+                    cad3dScene.add(group);return true;
+                }
                 if(o.type==='pedestrian_path'){
                     // Ravna staza na nivou poda, ali pešak je uspravna 3D figura.
                     const angle=(o.angle||0)*Math.PI/180;
@@ -2693,7 +2768,7 @@
                     surface.position.set(cx,.011,cz);surface.renderOrder=4;surface.userData.objectId=o.id;editableMeshes.push(surface);cad3dScene.add(surface);
                     // Čovek je modelovan zapreminski: glava, telo, ruke i noge.
                     const count=Math.max(1,Math.ceil(d/50));
-                    const personHeight=Math.max(.55,Math.min(1.8,w*.65,d/count*.72));
+                    const personHeight=1.8; // Fiksna visina pešaka, nezavisno od širine i dužine staze
                     const skin=new T.MeshStandardMaterial({color:'#e5b48d',roughness:.9});
                     const shirt=new T.MeshStandardMaterial({color:'#2563eb',roughness:.9});
                     const pants=new T.MeshStandardMaterial({color:'#1e293b',roughness:.9});
@@ -2719,6 +2794,7 @@
                         limb(person,pants,[h*.065,h*.41,0],[h*.15,h*.065,-h*.12],h*.057);
                         bodyPart(person,new T.BoxGeometry(h*.14,h*.055,h*.23),pants,-h*.13,h*.045,h*.16);
                         bodyPart(person,new T.BoxGeometry(h*.14,h*.055,h*.23),pants,h*.15,h*.045,-h*.09);
+                        person.scale.setScalar(1/1.015); // Vrh glave na 1.80 m, kao kod zasebnog radnika
                         cad3dScene.add(person);
                     }
                     return true;
@@ -2864,7 +2940,50 @@
             function addObject(o,ox=0,oz=0){
                 if(o.type==='group'){(o.children||[]).forEach(c=>addObject(c,ox+o.x_m,oz+o.y_m));return;}
                 const x=o.x_m+ox,z=o.y_m+oz,w=o.w_m,d=o.h_m,angle=o.angle||0;
-                if(o.type==='line'||o.type==='polyline'||o.type==='polygon'||o.type==='text')return;
+                if(o.type==='line'||o.type==='polyline'||o.type==='text')return;
+                if(o.type==='circle'){
+                    const height=Math.max(.01,Number(o.solidHeight)||1),floor=Math.max(0,Number(o.floorHeight)||0);
+                    const mesh=new T.Mesh(new T.CylinderGeometry(Math.max(.01,w/2),Math.max(.01,w/2),height,48),new T.MeshStandardMaterial({color:o.color||'#14b8a6',roughness:.65}));
+                    mesh.position.set(x+w/2,floor+height/2,z+d/2);mesh.userData.objectId=o.id;editableMeshes.push(mesh);cad3dScene.add(mesh);return;
+                }
+                if(o.type==='polygon'){
+                    const pts=o.points||[];if(pts.length<3)return;
+                    const shape=new T.Shape();shape.moveTo(pts[0].x,-pts[0].y);pts.slice(1).forEach(pt=>shape.lineTo(pt.x,-pt.y));shape.closePath();
+                    const height=Math.max(.01,Number(o.solidHeight)||1),floor=Math.max(0,Number(o.floorHeight)||0);
+                    const geo=new T.ExtrudeGeometry(shape,{depth:height,bevelEnabled:false});
+                    geo.rotateX(-Math.PI/2);
+                    const mesh=new T.Mesh(geo,new T.MeshStandardMaterial({color:o.color||'#6366f1',roughness:.7,side:T.DoubleSide}));
+                    mesh.position.set(x,floor,z);mesh.rotation.y=-(o.angle||0)*Math.PI/180;
+                    mesh.userData.objectId=o.id;editableMeshes.push(mesh);cad3dScene.add(mesh);return;
+                }
+                if(o.type==='elevated_sign'){
+                    const height=Math.max(.1,Number(o.solidHeight)||.7),floor=Math.max(0,Number(o.floorHeight)||0);
+                    const board=block(x,z,Math.max(.1,w),Math.max(.04,d),height,o.color||'#facc15',angle,floor,o);
+                    const c=document.createElement('canvas');c.width=1024;c.height=256;const g=c.getContext('2d');
+                    g.fillStyle=o.color||'#facc15';g.fillRect(0,0,1024,256);g.strokeStyle=o.strokeColor||'#111827';g.lineWidth=16;g.strokeRect(8,8,1008,240);
+                    g.fillStyle='#111827';g.font='bold 94px Arial';g.textAlign='center';g.textBaseline='middle';
+                    let label=String(o.label||'PN-123456');while(g.measureText(label).width>950&&label.length>1)label=label.slice(0,-1);g.fillText(label,512,130);
+                    const texture=new T.CanvasTexture(c);texture.colorSpace=T.SRGBColorSpace;
+                    // Natpis sa OBE strane table. Zasebna ravna ploha na svakoj strani
+                    // sprečava da tekst na poleđini bude ogledalski obrnut.
+                    // Grupa se rotira zajedno sa tablom oko njenog centra.
+                    const signFaces=new T.Group();
+                    signFaces.position.set(x+w/2,floor+height/2,z+d/2);
+                    signFaces.rotation.y=-angle*Math.PI/180;
+                    const faceOffset=Math.max(.04,d)/2+.013;
+                    for(const side of [1,-1]){
+                        const face=new T.Mesh(
+                            new T.PlaneGeometry(Math.max(.1,w)*.96,height*.92),
+                            new T.MeshBasicMaterial({map:texture,side:T.FrontSide})
+                        );
+                        face.position.z=side*faceOffset;
+                        if(side<0)face.rotation.y=Math.PI;
+                        face.userData.objectId=o.id;
+                        editableMeshes.push(face);
+                        signFaces.add(face);
+                    }
+                    cad3dScene.add(signFaces);return;
+                }
                 if(detailedObject(o,x,z,w,d)){
                     // Rendered as a composed recognizable model.
                 }else if(o.material==='metal'||o.material==='cardboard'){
@@ -3084,6 +3203,15 @@
                 const a=(o.angle||0)*Math.PI/180,cx=X(x)+w/2,cy=Y(y)+h/2;
                 const rotate=(px,py)=>[cx+px*Math.cos(a)-py*Math.sin(a),cy+px*Math.sin(a)+py*Math.cos(a)];
                 if(o.type==='text') { /* samo tekst */ }
+                else if(o.type==='safety_fence'){
+                    const sections=Math.max(2,Math.ceil(o.w_m/.4));
+                    for(let i=0;i<sections;i++){const p=rotate(-w/2+(i+.5)*w/sections,0);doc.setDrawColor(i%2?20:245,i%2?24:195,i%2?28:20);doc.setLineWidth(Math.max(.7,h*.75));const a=rotate(-w/2+i*w/sections,0),b=rotate(-w/2+(i+1)*w/sections,0);doc.line(...a,...b);}
+                    doc.setDrawColor(15,23,42);doc.setLineWidth(.3);const a=rotate(-w/2,-h/2),b=rotate(w/2,-h/2);doc.line(...a,...b);
+                }
+                else if(o.type==='worker'){
+                    doc.setDrawColor(15,23,42);doc.setFillColor(250,204,21);doc.circle(cx,cy,Math.max(.6,Math.min(w,h)*.3),'FD');
+                    doc.setFontSize(7);doc.text('R',cx,cy+1.5,{align:'center'});
+                }
                 else if(o.type==='pedestrian_path'){
                     const q=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([u,v])=>rotate(u,v));
                     doc.setDrawColor(130,140,155);for(let i=0;i<4;i++)doc.line(...q[i],...q[(i+1)%4]);
