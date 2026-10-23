@@ -864,14 +864,14 @@
             objects.push(obj);selectedObjectIds=[obj.id];
             updateInspector();updateStats();draw();
         }
-        let roadDrawingPoints=[],roadDrawingHover=null,roadDrawingWidth=4;
+        let roadDrawingPoints=[],roadDrawingHover=null,roadDrawingWidth=4,roadDrawingGroup=null;
         function startRoadDrawing(){
             if(!layerEditable({layerId:activeLayerId})){alert('Aktivni sloj je zaključan ili skriven.');return;}
             const input=prompt('Širina saobraćajnice (m):',String(roadDrawingWidth));
             if(input===null)return;
             const width=Number(String(input).replace(',','.'));
             if(!Number.isFinite(width)||width<=0||width>100){alert('Unesi širinu između 0 i 100 m.');return;}
-            roadDrawingWidth=width;roadDrawingPoints=[];roadDrawingHover=null;setMode('draw_road_path');draw();
+            roadDrawingWidth=width;roadDrawingPoints=[];roadDrawingHover=null;roadDrawingGroup=generateId();setMode('draw_road_path');draw();
         }
         function appendRoadPoint(point){
             const last=roadDrawingPoints[roadDrawingPoints.length-1];
@@ -880,7 +880,7 @@
                 if(len<.02)return;
                 snapshotCAD();
                 const midX=(last.x+point.x)/2,midY=(last.y+point.y)/2;
-                const obj={id:generateId(),type:'road',x_m:midX-roadDrawingWidth/2,y_m:midY-len/2,w_m:roadDrawingWidth,h_m:len,angle:Math.atan2(-dx,dy)*180/Math.PI,color:'#334155',strokeColor:'#eab308',strokeWidth:2,label:'',zIndex:objects.length,layerId:activeLayerId};
+                const obj={id:generateId(),type:'road',x_m:midX-roadDrawingWidth/2,y_m:midY-len/2,w_m:roadDrawingWidth,h_m:len,angle:Math.atan2(-dx,dy)*180/Math.PI,color:'#334155',strokeColor:'#eab308',strokeWidth:2,label:'',roadGroupId:roadDrawingGroup,roadStart:{x:last.x,y:last.y},roadEnd:{x:point.x,y:point.y},zIndex:objects.length,layerId:activeLayerId};
                 objects.push(obj);selectedObjectIds=[obj.id];updateInspector();updateStats();
             }
             roadDrawingPoints.push({x:point.x,y:point.y});draw();
@@ -1136,6 +1136,38 @@
                 if (!layerVisible(obj)) return;
                 drawObject(obj, false, forExport);
             });
+            // Jedinstvena geometrija spojeva: miter spoj zatvara spoljašnji i unutrašnji ugao.
+            // Segmenti ostaju pojedinačno selektabilni, ali se asfalt crta kao jedna celina.
+            const roadGroups=new Map();
+            sortedObjects.forEach(o=>{
+                if(o.type!=='road'||!o.roadGroupId||!o.roadStart||!o.roadEnd||!layerVisible(o))return;
+                if(!roadGroups.has(o.roadGroupId))roadGroups.set(o.roadGroupId,[]);
+                roadGroups.get(o.roadGroupId).push(o);
+            });
+            for(const segments of roadGroups.values()){
+                if(segments.length<2)continue;
+                // Spoj se izračunava iz zajedničke tačke; nema praznog trougla u krivini.
+                for(let i=0;i<segments.length-1;i++){
+                    const a=segments[i],b=segments[i+1];
+                    const p=a.roadStart,j=a.roadEnd,n=b.roadEnd;
+                    if(Math.hypot(j.x-b.roadStart.x,j.y-b.roadStart.y)>.02)continue;
+                    const u={x:j.x-p.x,y:j.y-p.y},v={x:n.x-j.x,y:n.y-j.y};
+                    const lu=Math.hypot(u.x,u.y),lv=Math.hypot(v.x,v.y);
+                    if(lu<.001||lv<.001)continue;
+                    const dist=Math.min(.35,lu*.45,lv*.45,Math.max(.06,a.w_m*.12));
+                    const q1=worldToScreen(j.x-u.x/lu*dist,j.y-u.y/lu*dist);
+                    const q2=worldToScreen(j.x,j.y);
+                    const q3=worldToScreen(j.x+v.x/lv*dist,j.y+v.y/lv*dist);
+                    CTX.save();CTX.beginPath();CTX.moveTo(q1.x,q1.y);CTX.lineTo(q2.x,q2.y);CTX.lineTo(q3.x,q3.y);
+                    CTX.lineWidth=a.w_m*PIXELS_PER_METER*zoom;CTX.lineJoin='miter';CTX.miterLimit=12;CTX.lineCap='butt';
+                    CTX.strokeStyle=a.color||'#334155';CTX.stroke();CTX.restore();
+                    // Iscrtavanje središnje isprekidane linije preko spojenog asfalta.
+                    CTX.save();CTX.beginPath();CTX.moveTo(q1.x,q1.y);CTX.lineTo(q2.x,q2.y);CTX.lineTo(q3.x,q3.y);
+                    CTX.strokeStyle=a.strokeColor||'#eab308';CTX.lineWidth=Math.max(1,(a.strokeWidth||2));
+                    CTX.setLineDash([10,8]);CTX.stroke();CTX.restore();
+                }
+            }
+
             if(!forExport&&mode==='draw_road_path'&&roadDrawingPoints.length){
                 CTX.save();CTX.strokeStyle='#facc15';CTX.lineWidth=Math.max(2,roadDrawingWidth*PIXELS_PER_METER*zoom);CTX.globalAlpha=.28;CTX.lineJoin='round';CTX.lineCap='butt';CTX.beginPath();
                 const first=worldToScreen(roadDrawingPoints[0].x,roadDrawingPoints[0].y);CTX.moveTo(first.x,first.y);
