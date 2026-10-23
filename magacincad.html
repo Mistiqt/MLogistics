@@ -212,6 +212,11 @@
                         <i class="fa-solid fa-shapes"></i> Geometrija & Prostorije
                     </h4>
                     <div class="grid grid-cols-2 gap-2">
+                        <div onclick="addPreset('relax_house')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-house text-emerald-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Relax kućica</span></div>
+                        <div onclick="addPreset('driver_zone')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-mug-hot text-orange-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Zona za vozače</span></div>
+                        <div onclick="addPreset('paper_reception')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-file-signature text-sky-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Prijem dokumentacije</span></div>
+                        <div onclick="addPreset('standalone_table')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-table text-amber-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Sto (zasebno)</span></div>
+                        <div onclick="addPreset('standalone_chair')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-chair text-cyan-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Stolica (zasebno)</span></div>
                         <div onclick="addPreset('office')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-sky-500 cursor-pointer flex flex-col items-center text-center group transition">
                             <i class="fa-solid fa-briefcase text-sky-400 text-lg group-hover:scale-110 transition"></i>
                             <span class="text-[11px] font-medium text-slate-300 mt-1">Kancelarija</span>
@@ -507,6 +512,11 @@
                     <input type="range" min="0" max="360" step="5" id="prop-angle" oninput="updateSelectedProp('angle', parseInt(this.value))" class="w-full accent-blue-500 bg-slate-900 cursor-pointer">
                 </div>
 
+                <div id="hydrant-wall-controls" class="hidden border-t border-slate-700 pt-3 space-y-2">
+                    <label class="block text-sky-300 font-semibold">Visina kačenja hidranta od poda (m)</label>
+                    <input id="hydrant-wall-height" type="number" min="0" max="30" step="0.05" onchange="updateHydrantWallHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2" />
+                    <p class="text-slate-400 text-[10px]">Donja ivica zidnog hidrantskog ormarića iznad poda. U 3D prikazu je pravougaoni crveni ormarić, a ne podni hidrant.</p>
+                </div>
                 <!-- RACK SPECIFIC PROPERTIES -->
                 <div id="cad-3d-height-controls" class="hidden border-t border-slate-700 pt-3 space-y-2">
                 <label id="cad-3d-height-label" class="block text-sky-300 font-semibold">Visina u 3D (m)</label>
@@ -526,8 +536,22 @@
                         </div>
                     </div>
                     <div><label class="font-semibold text-slate-400 text-[10px]">Broj spojenih regala (jedan pored drugog)</label><input type="number" min="1" max="20" id="prop-rack-doubles" onchange="updateSelectedProp('rackDoubles', Math.max(1,Math.min(20,parseInt(this.value)||1)))" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none"></div>
+                    <div><label class="font-semibold text-slate-400 text-[10px]">Razmak između regala leđa o leđa (m)</label><input type="number" min="0" max="10" step="0.01" id="prop-rack-back-gap" onchange="updateRackBackGap(this.value)" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none"></div>
                     <p class="text-[10px] text-slate-400">Broj spojenih regala povećava širinu celog regalskog bloka. Nivoi i polja vide se u 3D.</p>
-                    <div><label class="font-semibold text-slate-400 text-[10px]">Broj vertikala / polja regala</label><input type="number" min="1" max="200" id="prop-verticals" onchange="updateSelectedProp('verticals', parseInt(this.value))" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 outline-none"></div>
+                    <p class="text-[10px] text-slate-400">Razmak se unosi u metrima: 0.30 = 30 cm; 0.10 = 10 cm. Prikazuje se i u 3D.</p>
+                    <div class="border border-sky-800/60 rounded p-2 space-y-2 bg-slate-900/40">
+                        <div class="font-bold text-sky-300">Dimenzije jednog polja regala (m)</div>
+                        <div class="grid grid-cols-3 gap-1">
+                            <label>Širina polja<input id="rack-bay-width" type="number" min="0.1" step="0.1" onchange="updateRackBayDimension('width',this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-1"></label>
+                            <label>Dužina polja<input id="rack-bay-length" type="number" min="0.1" step="0.1" onchange="updateRackBayDimension('length',this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-1"></label>
+                            <label>Visina<input id="rack-dim-height" type="number" min="0.1" step="0.01" onchange="updateRackLevelHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-1"></label>
+                        </div>
+                        <label class="block text-slate-300">Broj polja / vertikala<input type="number" min="1" max="200" id="prop-verticals" onchange="updateRackBayCount(this.value)" class="w-full mt-1 bg-slate-900 border border-slate-600 rounded p-1"></label>
+                        <div id="rack-calculated-size" class="text-emerald-300 text-[11px] font-semibold"></div>
+                        <label class="block text-sky-300">Različite dužine polja po delovima (opciono)</label>
+                        <input id="rack-segments" type="text" placeholder="npr. 2:1;4:4" onchange="updateRackSegments(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-1.5">
+                        <p class="text-slate-400 text-[10px]">Standardno: ukupna dužina = dužina jednog polja × broj polja; ukupna visina = visina jednog nivoa × broj nivoa. Za mešovite delove format je dužina dela (m):broj polja, npr. 2:1;4:4. Tada se ukupna dužina računa kao zbir unetih delova.</p>
+                    </div>
                     <div class="bg-blue-950/40 p-2 rounded border border-blue-800/50 text-blue-300 text-[11px] flex justify-between">
                         <span>Ukupan Kapacitet:</span>
                         <strong id="prop-total-pallets">0 paletnih mesta</strong>
@@ -880,6 +904,16 @@
                     Object.assign(newObj,{w_m:4,h_m:.35,doorHeight:2.8,color:'#94a3b8',strokeColor:'#fbbf24',label:'Rolo vrata'});break;
                 case 'door':
                     newObj.w_m = 1.0; newObj.h_m = 1.0; newObj.color = '#64748b'; newObj.strokeColor = '#e2e8f0'; newObj.label = ''; break;
+                case 'standalone_table':
+                    Object.assign(newObj,{w_m:1.6,h_m:.8,color:'#a16207',strokeColor:'#fbbf24',label:'Sto'});break;
+                case 'standalone_chair':
+                    Object.assign(newObj,{w_m:.55,h_m:.55,color:'#2563eb',strokeColor:'#93c5fd',label:'Stolica'});break;
+                case 'relax_house':
+                    Object.assign(newObj,{w_m:5,h_m:4,roomHeight:2.8,color:'#059669',strokeColor:'#6ee7b7',label:'RELAX ZONA'});break;
+                case 'driver_zone':
+                    Object.assign(newObj,{w_m:6,h_m:4,roomHeight:2.8,color:'#c2410c',strokeColor:'#fdba74',label:'ZONA ZA VOZAČE'});break;
+                case 'paper_reception':
+                    Object.assign(newObj,{w_m:4,h_m:3,roomHeight:2.8,color:'#0369a1',strokeColor:'#7dd3fc',label:'PRIJEM DOKUMENTACIJE'});break;
                 case 'office':
                     newObj.w_m = 6.0;
                     newObj.h_m = 4.0;
@@ -913,7 +947,13 @@
                 case 'warning':
                     Object.assign(newObj,{w_m:1.5,h_m:1.5,color:'#facc15',strokeColor:'#f59e0b',label:'Upozorenje'});break;
                 case 'hydrant':
-                    Object.assign(newObj,{w_m:1.2,h_m:1.2,color:'#ef4444',strokeColor:'#f87171',label:'HIDRANT'});break;
+                    Object.assign(newObj,{w_m:0.8,h_m:0.25,color:'#ef4444',strokeColor:'#f87171',label:'HIDRANT',hydrantMountHeight:1.2});
+                    { const entered=prompt('Visina kačenja hidranta od poda (m), npr. 1.20:', '1.20');
+                      if(entered===null)return;
+                      const height=Number(entered.trim().replace(',','.'));
+                      if(!Number.isFinite(height)||height<0||height>30){alert('Visina mora biti između 0 i 30 m.');return;}
+                      newObj.hydrantMountHeight=height; }
+                    break;
                 case 'text':
                     newObj.w_m = 4.0;
                     newObj.h_m = 1.0;
@@ -931,7 +971,13 @@
                     newObj.levels = 4;
                     newObj.palletsPerLevel = 6;
                     newObj.verticals = 6;
+                    newObj.rackLevelHeight = 1.46;
+                    newObj.rackHeight = newObj.rackLevelHeight * newObj.levels;
+                    newObj.rackBayWidth = 1.2;
+                    newObj.rackBayLength = 1.0;
+                    newObj.rackSegments = '';
                     newObj.rackDoubles = 1;
+                    newObj.rackBackGap = 0;
                     break;
                 case 'ground_storage':
                     newObj.w_m = 5.0;
@@ -1319,6 +1365,39 @@
                     CTX.beginPath();CTX.arc(-w/2,-h/2+radius,2.5,0,Math.PI*2);CTX.fillStyle=forExport?'#334155':'#e2e8f0';CTX.fill();
                     break;
                 }
+                case 'standalone_table': {
+                    CTX.fillStyle=obj.color||'#a16207';CTX.fillRect(-w/2,-h/2,w,h);
+                    CTX.strokeStyle=strokeC;CTX.lineWidth=Math.max(1.5,strokeW);CTX.strokeRect(-w/2,-h/2,w,h);
+                    const leg=Math.max(3,Math.min(w,h)*.08);CTX.fillStyle='#334155';
+                    for(const xx of [-w*.38,w*.38])for(const yy of [-h*.34,h*.34])CTX.fillRect(xx-leg/2,yy-leg/2,leg,leg);
+                    break;
+                }
+                case 'standalone_chair': {
+                    CTX.fillStyle=obj.color||'#2563eb';CTX.fillRect(-w*.40,-h*.26,w*.80,h*.66);
+                    CTX.strokeStyle=strokeC;CTX.lineWidth=Math.max(1.5,strokeW);CTX.strokeRect(-w*.40,-h*.26,w*.80,h*.66);
+                    CTX.fillStyle='#334155';CTX.fillRect(-w*.44,-h*.48,w*.88,h*.18);
+                    break;
+                }
+                case 'relax_house':
+                case 'driver_zone':
+                case 'paper_reception': {
+                    CTX.fillStyle=obj.color||'#059669';CTX.globalAlpha*=.25;
+                    CTX.fillRect(-w/2,-h/2,w,h);CTX.globalAlpha=1;
+                    CTX.strokeStyle=strokeC;CTX.lineWidth=Math.max(2,strokeW);CTX.strokeRect(-w/2,-h/2,w,h);
+                    CTX.save();CTX.strokeStyle=forExport?'#334155':'#f8fafc';CTX.lineWidth=2;
+                    const u=Math.min(w,h)*.20;
+                    if(obj.type==='relax_house'){
+                        CTX.strokeRect(-u*1.2,-u*.45,u*2.4,u*.9);
+                        CTX.beginPath();CTX.moveTo(-u*1.35,-u*.45);CTX.lineTo(0,-u*1.45);CTX.lineTo(u*1.35,-u*.45);CTX.stroke();
+                    }else if(obj.type==='driver_zone'){
+                        CTX.strokeRect(-u,-u*.65,u*2,u*1.3);
+                        CTX.beginPath();CTX.arc(0,0,u*.38,0,Math.PI*2);CTX.stroke();
+                    }else{
+                        CTX.strokeRect(-u*.8,-u*1.2,u*1.6,u*2.4);
+                        for(let i=-1;i<=1;i++){CTX.beginPath();CTX.moveTo(-u*.5,i*u*.5);CTX.lineTo(u*.5,i*u*.5);CTX.stroke();}
+                    }
+                    CTX.restore();break;
+                }
                 case 'office': {
                     CTX.fillStyle=obj.color||'#0284c7';CTX.globalAlpha*=((obj.fillOpacity ?? 40)/100);
                     CTX.fillRect(-w/2,-h/2,w,h);CTX.globalAlpha=1;
@@ -1381,29 +1460,30 @@
                     CTX.strokeRect(-w/2, -h/2, w, h);
 
                     const rackCopies=Math.max(1,Math.min(20,Math.round(Number(obj.rackDoubles)||1)));
+                    const rackGap=Math.max(0,Number(obj.rackBackGap)||0)*PIXELS_PER_METER;
                     CTX.strokeStyle='#fbbf24';CTX.lineWidth=Math.max(1,strokeW*.75);
                     // Dodatni regali nacrtani neposredno pored prvog, u istom lokalnom koordinatnom sistemu.
                     for(let ri=1;ri<rackCopies;ri++){
                         if(obj.h_m>=obj.w_m){
-                            const rx=-w/2+ri*w;
+                            const rx=-w/2+ri*(w+rackGap);
                             CTX.fillStyle='rgba(37,99,235,.13)';CTX.fillRect(rx,-h/2,w,h);
                             CTX.strokeRect(rx,-h/2,w,h);
                         }else{
-                            const ry=-h/2+ri*h;
+                            const ry=-h/2+ri*(h+rackGap);
                             CTX.fillStyle='rgba(37,99,235,.13)';CTX.fillRect(-w/2,ry,w,h);
                             CTX.strokeRect(-w/2,ry,w,h);
                         }
                     }
-                    const numBeams = Math.max(1, Math.round(obj.verticals || Math.floor(obj.h_m / 1.5)));
+                    const rackFractions=rackBayFractions(obj)||[0,1];
                     CTX.strokeStyle = '#60a5fa';
                     CTX.lineWidth = 1;
                     for(let ri=0;ri<rackCopies;ri++){
-                        for(let i=1;i<numBeams;i++){
+                        for(let i=1;i<rackFractions.length-1;i++){
                             if(obj.h_m>=obj.w_m){
-                                const yy=-h/2+h*i/numBeams,xx=-w/2+ri*w;
+                                const yy=-h/2+h*rackFractions[i],xx=-w/2+ri*(w+rackGap);
                                 CTX.beginPath();CTX.moveTo(xx,yy);CTX.lineTo(xx+w,yy);CTX.stroke();
                             }else{
-                                const xx=-w/2+w*i/numBeams,yy=-h/2+ri*h;
+                                const xx=-w/2+w*rackFractions[i],yy=-h/2+ri*(h+rackGap);
                                 CTX.beginPath();CTX.moveTo(xx,yy);CTX.lineTo(xx,yy+h);CTX.stroke();
                             }
                         }
@@ -2298,11 +2378,13 @@
                 const selected = objects.find(o => o.id === selectedObjectIds[0]);
                 if (!selected) return;
                 document.getElementById('prop-object-locked').checked=!!selected.locked;
+                document.getElementById('hydrant-wall-controls').classList.toggle('hidden',selected.type!=='hydrant');
+                if(selected.type==='hydrant')document.getElementById('hydrant-wall-height').value=selected.hydrantMountHeight??1.2;
                 const heightControls=document.getElementById('cad-3d-height-controls');
-                heightControls.classList.toggle('hidden', !['wall','roller_door','safety_fence'].includes(selected.type));
-                if(['wall','roller_door','safety_fence'].includes(selected.type)) {
-                    document.getElementById('cad-3d-height').value=selected.type==='wall'?(selected.wallHeight??2.8):selected.type==='roller_door'?(selected.doorHeight??2.8):(selected.fenceHeight??1.15);
-                    document.getElementById('cad-3d-height-label').textContent=selected.type==='safety_fence'?'Visina safety ograde (m)':'Visina u 3D (m)';
+                heightControls.classList.toggle('hidden', !['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception'].includes(selected.type));
+                if(['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception'].includes(selected.type)) {
+                    document.getElementById('cad-3d-height').value=selected.type==='wall'?(selected.wallHeight??2.8):selected.type==='roller_door'?(selected.doorHeight??2.8):(['relax_house','driver_zone','paper_reception'].includes(selected.type)?(selected.roomHeight??2.8):(selected.fenceHeight??1.15));
+                    document.getElementById('cad-3d-height-label').textContent=selected.type==='safety_fence'?'Visina safety ograde (m)':(['relax_house','driver_zone','paper_reception'].includes(selected.type)?'Visina kućice / prostorije (m)':'Visina u 3D (m)');
                 }
 
                 document.getElementById('prop-label').value = selected.label || '';
@@ -2350,13 +2432,21 @@
                 const rackPanel = document.getElementById('rack-properties');
                 if (selected.type === 'rack') {
                     rackPanel.classList.remove('hidden');
+                    document.getElementById('dim-controls').classList.add('hidden');
                     document.getElementById('prop-levels').value = selected.levels || 4;
                     document.getElementById('prop-pallets').value = selected.palletsPerLevel || 6;
                     document.getElementById('prop-verticals').value = selected.verticals || 6;
+                    document.getElementById('rack-bay-width').value = selected.rackBayWidth || selected.w_m || 1.2;
+                    document.getElementById('rack-bay-length').value = selected.rackBayLength || ((selected.h_m||6)/Math.max(1,selected.verticals||6));
+                    document.getElementById('rack-calculated-size').textContent = `Ukupno: ${(Number(selected.w_m)||0).toFixed(2)} × ${(Number(selected.h_m)||0).toFixed(2)} × ${rackTotalHeight(selected).toFixed(2)} m (${Math.max(1,Number(selected.levels)||4)} nivoa × ${rackOneLevelHeight(selected).toFixed(2)} m)`;
+                    document.getElementById('rack-dim-height').value = rackOneLevelHeight(selected).toFixed(2);
+                    document.getElementById('rack-segments').value = selected.rackSegments || '';
                     document.getElementById('prop-rack-doubles').value = selected.rackDoubles || 1;
+                    document.getElementById('prop-rack-back-gap').value = Math.max(0,Number(selected.rackBackGap)||0);
                     const total = (selected.levels || 4) * (selected.palletsPerLevel || 6) * (selected.verticals || 1) * (selected.rackDoubles || 1);
                     document.getElementById('prop-total-pallets').innerText = `${total} paletnih mesta`;
                 } else {
+                    document.getElementById('dim-controls').classList.remove('hidden');
                     rackPanel.classList.add('hidden');
                 }
             } else {
@@ -2391,10 +2481,72 @@
                     if(o.type==='wall')o.wallHeight=height;
                     if(o.type==='roller_door')o.doorHeight=height;
                     if(o.type==='safety_fence')o.fenceHeight=height;
+                    if(['relax_house','driver_zone','paper_reception'].includes(o.type))o.roomHeight=height;
                 }
             });
             draw();updateInspector();
             if(cad3dActive) scheduleCAD3DRefresh();
+        }
+
+        // Dimenzija jednog nivoa je izvor istine. Stari projekti sa samo rackHeight
+        // se konvertuju bez promene postojece ukupne visine.
+        function rackOneLevelHeight(o){
+            const n=Math.max(1,Math.min(10,Math.round(Number(o.levels)||4)));
+            const explicit=Number(o.rackLevelHeight);
+            return Number.isFinite(explicit)&&explicit>=.1?explicit:Math.max(.1,(Number(o.rackHeight)||3.5)/n);
+        }
+        function rackTotalHeight(o){return rackOneLevelHeight(o)*Math.max(1,Math.min(10,Math.round(Number(o.levels)||4)));}
+        function updateRackLevelHeight(raw){
+            const v=Number(raw),o=objects.find(x=>x.id===selectedObjectIds[0]);
+            if(!o||o.type!=='rack')return;
+            if(!Number.isFinite(v)||v<.1||v>30){alert('Visina jednog nivoa mora biti od 0.1 do 30 m.');updateInspector();return;}
+            snapshotCAD();o.rackLevelHeight=v;o.rackHeight=rackTotalHeight(o);
+            updateInspector();updateStats();draw();queueCAD3DRefresh();
+        }
+        function rackBayFractions(o) {
+            const raw=String(o.rackSegments||'').trim();
+            if(!raw) { const count=Math.max(1,Math.min(200,Math.round(Number(o.verticals)||6))); return Array.from({length:count+1},(_,i)=>i/count); }
+            const parts=raw.split(';').map(t=>t.trim()).filter(Boolean).map(t=>t.split(':').map(Number));
+            if(!parts.length || parts.some(p=>p.length!==2||!Number.isFinite(p[0])||p[0]<=0||!Number.isInteger(p[1])||p[1]<1||p[1]>100) || parts.reduce((a,p)=>a+p[1],0)>200) return null;
+            const total=parts.reduce((a,p)=>a+p[0],0), result=[0];let position=0;
+            for(const [length,bays] of parts){for(let i=1;i<=bays;i++)result.push((position+length*i/bays)/total);position+=length;}
+            return result;
+        }
+        function updateRackBayDimension(which,raw){
+            const v=Number(raw),o=objects.find(x=>x.id===selectedObjectIds[0]);
+            if(!o||o.type!=='rack')return;
+            if(!Number.isFinite(v)||v<.1||v>10000){alert('Dimenzija jednog polja mora biti najmanje 0.1 m.');updateInspector();return;}
+            snapshotCAD();
+            if(which==='width'){o.rackBayWidth=v;o.w_m=v;}
+            else {o.rackBayLength=v;if(!String(o.rackSegments||'').trim())o.h_m=v*Math.max(1,Number(o.verticals)||1);}
+            updateInspector();updateStats();draw();queueCAD3DRefresh();
+        }
+        function updateRackBayCount(raw){
+            const n=Number(raw),o=objects.find(x=>x.id===selectedObjectIds[0]);
+            if(!o||o.type!=='rack')return;
+            if(!Number.isInteger(n)||n<1||n>200){alert('Broj polja mora biti od 1 do 200.');updateInspector();return;}
+            snapshotCAD();o.verticals=n;o.rackSegments='';
+            o.h_m=n*(Number(o.rackBayLength)||((Number(o.h_m)||6)/Math.max(1,n)));
+            updateInspector();updateStats();draw();queueCAD3DRefresh();
+        }
+        function updateRackDimension(prop,raw){const value=Number(raw);if(!Number.isFinite(value)||value<.1||value>10000){alert('Unesi dimenziju veću od 0.1 m.');updateInspector();return;}updateSelectedProp(prop,value);}
+        function updateRackSegments(raw){const selected=objects.find(o=>o.id===selectedObjectIds[0]);if(!selected||selected.type!=='rack')return;const test={...selected,rackSegments:raw};const fractions=rackBayFractions(test);if(!fractions){alert('Format mora biti dužina:brojPolja;dužina:brojPolja, npr. 2:1;4:4 (najviše 200 polja).');updateInspector();return;}snapshotCAD();selected.rackSegments=raw.trim();selected.verticals=fractions.length-1;if(raw.trim()){const pairs=raw.trim().split(';').map(x=>x.trim().split(':').map(Number));selected.h_m=pairs.reduce((a,p)=>a+p[0],0);}else{selected.h_m=(Number(selected.rackBayLength)||1)*selected.verticals;}updateInspector();updateStats();draw();queueCAD3DRefresh();}
+
+        // Unos je u metrima: 0.30 = 30 cm, bez zaokruživanja na 0.10 m.
+        function updateRackBackGap(raw) {
+            const value=Number(String(raw).trim().replace(',', '.'));
+            if (!Number.isFinite(value) || value<0 || value>10) {
+                alert('Unesi razmak od 0 do 10 m (npr. 0.30 za 30 cm).');
+                updateInspector();
+                return;
+            }
+            updateSelectedProp('rackBackGap',value);
+        }
+
+        function updateHydrantWallHeight(raw){
+            const value=Number(String(raw).replace(',','.'));
+            if(!Number.isFinite(value)||value<0||value>30){alert('Visina kačenja mora biti od 0 do 30 m.');updateInspector();return;}
+            updateSelectedProp('hydrantMountHeight',value);
         }
 
         function updateSelectedProp(prop, value) {
@@ -2403,7 +2555,12 @@
                 const selected = objects.find(o => o.id === id);
                 if (!selected || !layerEditable(selected)) return;
 
-                selected[prop] = value;
+                if (selected.type === 'rack' && prop === 'levels') {
+                    const previousLevelHeight=rackOneLevelHeight(selected);
+                    selected.levels=Math.max(1,Math.min(10,Math.round(Number(value)||1)));
+                    selected.rackLevelHeight=previousLevelHeight;
+                    selected.rackHeight=rackTotalHeight(selected);
+                } else { selected[prop] = value; }
 
                 if (prop === 'strokeWidth') {
                     document.getElementById('prop-stroke-width-val').innerText = `${value} px`;
@@ -2426,6 +2583,7 @@
             if (!['color','strokeColor','fillOpacity'].includes(prop)) updateInspector();
             updateStats();
             requestAnimationFrame(() => draw());
+            if (['levels','rackDoubles','rackBackGap','hydrantMountHeight'].includes(prop) && cad3dActive) queueCAD3DRefresh();
         }
 
         let cadClipboard = [];
@@ -2718,14 +2876,32 @@
                     return true;
                 }
                 if(o.type==='hydrant'){
-                    const r=Math.max(.13,Math.min(w,d)*.16),h=Math.max(.7,Math.min(1.25,Math.max(w,d)*.8));
-                    detailCylinder(o,cx,cz,r*1.25,.13,'#991b1b',0);
-                    detailCylinder(o,cx,cz,r,h*.68,'#dc2626',.13);
-                    detailCylinder(o,cx,cz,r*1.18,.13,'#b91c1c',h*.70);
-                    detailCylinder(o,cx,cz,r*.65,.17,'#ef4444',h*.82);
-                    detailBox(o,cx-r*1.75,cz-r*.45,r*3.5,r*.9,.15,'#dc2626',h*.44);
-                    for(const xx of [cx-r*1.75,cx+r*1.75])detailCylinder(o,xx,cz,r*.47,.12,'#d1d5db',h*.45);
-                    return true;
+                    // Zidni hidrantski ormaric: plitka pravougaona kutija, donja ivica na zadatoj visini.
+                    const group=new T.Group();
+                    group.position.set(cx,0,cz);
+                    group.rotation.y=-(Number(o.angle)||0)*Math.PI/180;
+                    const width=Math.max(.2,w),depth=Math.max(.08,d),height=Math.max(.35,Math.min(1.2,width*.9));
+                    const mount=Math.max(0,Number(o.hydrantMountHeight??1.2));
+                    function panel(px,py,pz,bw,bh,bd,color){
+                        const mesh=new T.Mesh(new T.BoxGeometry(bw,bh,bd),new T.MeshStandardMaterial({color,roughness:.56,metalness:.12}));
+                        mesh.position.set(px,py,pz);mesh.userData.objectId=o.id;editableMeshes.push(mesh);group.add(mesh);
+                    }
+                    panel(0,mount+height/2,0,width,height,depth,'#b91c1c');
+                    panel(0,mount+height/2,depth/2+.012,width*.91,height*.91,.025,'#ef4444');
+                    // Vrata sa svetlim okvirom i ruckom na prednjoj strani.
+                    const front=depth/2+.029;
+                    panel(0,mount+height/2,front,width*.79,.018,.012,'#fecaca');
+                    panel(0,mount+height/2,front,.018,height*.76,.012,'#fecaca');
+                    panel(width*.38,mount+height/2,front,.018,height*.76,.012,'#fecaca');
+                    panel(0,mount+height*.12,front,width*.79,.018,.012,'#fecaca');
+                    panel(width*.28,mount+height*.47,front+.015,.035,.13,.03,'#d1d5db');
+                    // Belo slovo H na crvenim vratima.
+                    const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
+                    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,128,128);ctx.fillStyle='#ffffff';ctx.font='bold 100px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('H',64,68);
+                    const tex=new T.CanvasTexture(canvas);
+                    const sign=new T.Mesh(new T.PlaneGeometry(width*.42,height*.52),new T.MeshBasicMaterial({map:tex,transparent:true,side:T.DoubleSide,depthWrite:false}));
+                    sign.position.set(-width*.09,mount+height*.53,front+.015);sign.userData.objectId=o.id;editableMeshes.push(sign);group.add(sign);
+                    cad3dScene.add(group);return true;
                 }
                 if(o.type==='safety_fence'){
                     const angle=(o.angle||0)*Math.PI/180,group=new T.Group();
@@ -2817,42 +2993,141 @@
                     return true;
                 }
                 if(o.type==='rack'){
+                    // Lokalni koordinatni sistem kao u 2D: polja se ređaju duž duže ose.
+                    // Cela konstrukcija se rotira kao jedna grupa oko centra prvog regala.
                     const copies=Math.max(1,Math.min(20,Math.round(Number(o.rackDoubles)||1)));
-                    const bays=Math.max(1,Math.min(200,Math.round(Number(o.verticals)||6)));
+                    const fractions=rackBayFractions(o)||[0,1];
+                    const bays=fractions.length-1;
                     const levels=Math.max(1,Math.min(10,Math.round(Number(o.levels)||4)));
                     const longOnZ=d>=w,run=longOnZ?d:w,depth=longOnZ?w:d;
-                    const height=Math.max(1.4,levels*.86+.20),pitch=height/levels;
-                    const thickness=Math.min(.095,depth*.10,run/(bays*6));
-                    // Svaki modul dobija četiri stuba, horizontalne nosače i vidljive police po nivoima.
+                    const pitch=rackOneLevelHeight(o),height=pitch*levels;
+                    const thickness=Math.max(.018,Math.min(.085,depth*.09,run/(Math.max(1,bays)*7)));
+                    const rackGroup=new T.Group();
+                    rackGroup.position.set(x+w/2,0,z+d/2);
+                    rackGroup.rotation.y=-(Number(o.angle)||0)*Math.PI/180;
+                    cad3dScene.add(rackGroup);
                     function component(u,v,du,dv,h,color,y){
-                        // u = duž regala, v = širina pojedinačnog regala
-                        let bx=longOnZ?x+v:x+u;
-                        let bz=longOnZ?z+u:z+v;
-                        return detailBox(o,bx,bz,longOnZ?dv:du,longOnZ?du:dv,h,color,y);
+                        // u: dužina regala; v: poprečno, kao na 2D nacrtu.
+                        const lx=longOnZ?(-w/2+v):(-w/2+u);
+                        const lz=longOnZ?(-d/2+u):(-d/2+v);
+                        const bw=longOnZ?dv:du,bd=longOnZ?du:dv;
+                        const part=new T.Mesh(new T.BoxGeometry(Math.max(.012,bw),Math.max(.012,h),Math.max(.012,bd)),
+                            new T.MeshStandardMaterial({color,roughness:.68,metalness:.12}));
+                        part.position.set(lx+bw/2,y+h/2,lz+bd/2);
+                        part.userData.objectId=o.id;
+                        editableMeshes.push(part);
+                        rackGroup.add(part);
                     }
                     for(let ri=0;ri<copies;ri++){
-                        const across=ri*depth;
+                        const across=ri*(depth+Math.max(0,Number(o.rackBackGap)||0));
                         for(let bi=0;bi<=bays;bi++){
-                            const u=bi*run/bays;
-                            for(const v of [across,across+depth-thickness]){
+                            const u=fractions[bi]*run;
+                            for(const v of [across,across+depth-thickness])
                                 component(Math.max(0,u-thickness/2),v,thickness,thickness,height,'#2563eb',0);
-                            }
                         }
                         for(let li=1;li<=levels;li++){
                             const yy=li*pitch;
                             for(let bi=0;bi<bays;bi++){
-                                const u=bi*run/bays;
-                                const seg=run/bays;
-                                component(u,across,seg,thickness,.11,'#f59e0b',yy-.12);
-                                component(u,across+depth-thickness,seg,thickness,.11,'#f59e0b',yy-.12);
-                                // Tanka polica koja se vidi odozgo i iz ugla.
-                                component(u+thickness,across+thickness,Math.max(.03,seg-2*thickness),Math.max(.03,depth-2*thickness),.045,'#94a3b8',yy-.055);
+                                const u=fractions[bi]*run;
+                                const seg=(fractions[bi+1]-fractions[bi])*run;
+                                component(u,across,seg,thickness,.10,'#f59e0b',Math.max(0,yy-.12));
+                                component(u,across+depth-thickness,seg,thickness,.10,'#f59e0b',Math.max(0,yy-.12));
+                                // Police ostaju tačno unutar svojih polja, bez izbočenih krajeva.
+                                const inside=Math.max(.012,seg-2*thickness);
+                                const innerDepth=Math.max(.012,depth-2*thickness);
+                                component(u+thickness,across+thickness,inside,innerDepth,.045,'#94a3b8',Math.max(0,yy-.055));
                             }
                         }
-                        for(let bi=0;bi<=bays;bi+=Math.max(1,Math.floor(bays/5))){
-                            const u=Math.min(run-thickness,bi*run/bays);
-                            component(u,across,thickness,depth,.055,'#475569',Math.min(height*.50,1.2));
+                        // Poprečna ukrućenja na granicama polja, bez dodatnih plutajućih delova.
+                        for(let bi=0;bi<=bays;bi++){
+                            const u=Math.min(run-thickness,Math.max(0,fractions[bi]*run-thickness/2));
+                            component(u,across,thickness,depth,.045,'#475569',Math.min(height*.5,1.2));
                         }
+                    }
+                    return true;
+                }
+                if(o.type==='standalone_table' || o.type==='standalone_chair'){
+                    // Jedan koordinatni sistem za plocu, sediste, naslon i nogare.
+                    // Rotacija celog sklopa oko zajednickog centra sprecava razdvajanje delova.
+                    const furniture=new T.Group();
+                    furniture.position.set(cx,0,cz);
+                    furniture.rotation.y=-(Number(o.angle)||0)*Math.PI/180;
+                    const addPart=(lx,ly,lz,bw,bh,bd,color)=>{
+                        const part=new T.Mesh(new T.BoxGeometry(bw,bh,bd),
+                            new T.MeshStandardMaterial({color,roughness:.68,metalness:.05}));
+                        part.position.set(lx,ly,lz);
+                        part.userData.objectId=o.id;
+                        editableMeshes.push(part);
+                        furniture.add(part);
+                    };
+                    if(o.type==='standalone_table'){
+                        const thickness=.065, tableHeight=.77;
+                        addPart(0,tableHeight-thickness/2,0,w,thickness,d,o.color||'#a16207');
+                        const leg=Math.min(.055,w*.12,d*.12);
+                        const insetX=Math.min(.11,w*.20),insetZ=Math.min(.11,d*.20);
+                        const px=Math.max(0,w/2-insetX-leg/2),pz=Math.max(0,d/2-insetZ-leg/2);
+                        for(const sx of [-1,1])for(const sz of [-1,1])
+                            addPart(sx*px,(tableHeight-thickness)/2,sz*pz,leg,tableHeight-thickness,leg,'#475569');
+                    }else{
+                        const seatHeight=.46,seatThickness=.075;
+                        const seatW=w*.84,seatD=d*.76,seatZ=-d*.06;
+                        addPart(0,seatHeight+seatThickness/2,seatZ,seatW,seatThickness,seatD,o.color||'#2563eb');
+                        const backD=Math.max(.035,Math.min(.07,d*.12));
+                        const backZ=seatZ+seatD/2-backD/2;
+                        addPart(0,seatHeight+seatThickness+.24,backZ,seatW, .48,backD,o.color||'#2563eb');
+                        const leg=Math.min(.045,w*.12,d*.12);
+                        const px=Math.max(0,seatW/2-leg*.85);
+                        const frontZ=seatZ-seatD/2+leg*.8;
+                        const rearZ=seatZ+seatD/2-leg*.8;
+                        for(const sx of [-1,1])for(const pz of [frontZ,rearZ])
+                            addPart(sx*px,seatHeight/2,pz,leg,seatHeight,leg,'#475569');
+                    }
+                    cad3dScene.add(furniture);
+                    return true;
+                }
+                if(['relax_house','driver_zone','paper_reception'].includes(o.type)){
+                    // Montažna kućica / funkcionalna prostorija sa realnim dimenzijama.
+                    const H=Math.max(1.8,Math.min(8,Number(o.roomHeight)||2.8));
+                    const thick=Math.min(.12,w*.05,d*.05);
+                    detailBox(o,x,z,w,d,.12,'#94a3b8');
+                    const wallColor=o.type==='relax_house'?'#d1fae5':o.type==='driver_zone'?'#ffedd5':'#dbeafe';
+                    // Prednji zid sa otvorom za vrata; ostali zidovi su poluprovidni.
+                    const doorW=Math.min(1.05,w*.3),left=(w-doorW)/2;
+                    detailBox(o,x,z,left,thick,H,wallColor);
+                    detailBox(o,x+left+doorW,z,w-left-doorW,thick,H,wallColor);
+                    detailBox(o,x+left,z,doorW,thick,Math.max(.1,H-2.12),wallColor,2.12);
+                    detailBox(o,x,z+d-thick,w,thick,H,wallColor);
+                    detailBox(o,x,z,thick,d,H,wallColor);
+                    detailBox(o,x+w-thick,z,thick,d,H,wallColor);
+                    // Krov tanak i proziran: unutrašnjost je vidljiva odozgo.
+                    const roof=detailBox(o,x,z,w,d,.09,'#64748b',H);
+                    roof.material.transparent=true;roof.material.opacity=.23;roof.material.depthWrite=false;
+                    // Prozori na bočnim zidovima.
+                    for(const sideX of [x+.015,x+w-.055]){
+                        const win=detailBox(o,sideX,z+d*.35,.04,d*.30,.75,'#7dd3fc',1.05);
+                        win.material.transparent=true;win.material.opacity=.6;
+                    }
+                    if(o.type==='relax_house'){
+                        // Dvosjed, stočić i automat za napitke.
+                        detailBox(o,x+w*.12,z+d*.58,w*.38,d*.18,.45,'#166534',.15);
+                        detailBox(o,x+w*.12,z+d*.74,w*.38,.12,.60,'#15803d',.22);
+                        detailBox(o,x+w*.58,z+d*.55,w*.20,d*.20,.06,'#92400e',.55);
+                        for(const dx of [w*.60,w*.75])for(const dz of [d*.57,d*.72])detailBox(o,x+dx,z+dz,.05,.05,.52,'#475569');
+                        detailBox(o,x+w*.78,z+d*.13,w*.14,d*.17,1.65,'#334155');
+                    }else if(o.type==='driver_zone'){
+                        // Čekaonica za vozače sa klupama i stolom.
+                        for(const xx of [x+w*.12,x+w*.62]){
+                            detailBox(o,xx,z+d*.57,w*.26,d*.13,.13,'#1d4ed8',.44);
+                            detailBox(o,xx,z+d*.69,w*.26,.08,.55,'#1e40af',.48);
+                        }
+                        detailBox(o,x+w*.39,z+d*.32,w*.22,d*.18,.07,'#a16207',.68);
+                        detailBox(o,x+w*.43,z+d*.35,.06,.06,.66,'#475569');
+                    }else{
+                        // Šalter sa pultom i prostorom za predaju papira.
+                        detailBox(o,x+w*.15,z+d*.46,w*.70,d*.15,1.05,'#475569');
+                        detailBox(o,x+w*.15,z+d*.46,w*.70,d*.15,.08,'#cbd5e1',1.05);
+                        detailBox(o,x+w*.37,z+d*.68,w*.25,d*.14,.06,'#a16207',.73);
+                        detailBox(o,x+w*.45,z+d*.69,w*.11,.06,.32,'#1e293b',.8);
                     }
                     return true;
                 }
@@ -2997,7 +3272,7 @@
                         mesh.add(edges);
                     }
                 }else{
-                    const height=o.type==='wall'?Math.max(.1,Number(o.wallHeight)||2.8):o.type==='rack'?3.5:o.type==='office'?2.7:o.type==='ground_storage'?.06:o.type==='road'?.05:o.type==='dock'?.6:.5;
+                    const height=o.type==='wall'?Math.max(.1,Number(o.wallHeight)||2.8):o.type==='rack'?rackTotalHeight(o):o.type==='office'?2.7:o.type==='ground_storage'?.06:o.type==='road'?.05:o.type==='dock'?.6:.5;
                     block(x,z,w,d,height,o.color||'#64748b',angle,0,o);
                 }
             }
@@ -3192,6 +3467,7 @@
             const minX=Math.min(...objects.map(o=>o.x_m)),minY=Math.min(...objects.map(o=>o.y_m));
             const maxX=Math.max(...objects.map(o=>o.x_m+o.w_m)),maxY=Math.max(...objects.map(o=>o.y_m+o.h_m));
             const scale=Math.min((W-2*margin)/Math.max(.1,maxX-minX),(H-2*margin)/Math.max(.1,maxY-minY));
+            // Svi objekti i natpisi koriste isti metrički faktor, bez fiksnog uvećanja simbola.
             const offsetX=(W-(maxX-minX)*scale)/2,offsetY=(H-(maxY-minY)*scale)/2;
             const X=x=>offsetX+(x-minX)*scale,Y=y=>offsetY+(y-minY)*scale;
             function rgb(hex){const v=/^#[0-9a-f]{6}$/i.test(hex||'')?hex:'#334155';return [1,3,5].map(i=>parseInt(v.slice(i,i+2),16))}
@@ -3204,9 +3480,28 @@
                 const rotate=(px,py)=>[cx+px*Math.cos(a)-py*Math.sin(a),cy+px*Math.sin(a)+py*Math.cos(a)];
                 if(o.type==='text') { /* samo tekst */ }
                 else if(o.type==='safety_fence'){
-                    const sections=Math.max(2,Math.ceil(o.w_m/.4));
-                    for(let i=0;i<sections;i++){const p=rotate(-w/2+(i+.5)*w/sections,0);doc.setDrawColor(i%2?20:245,i%2?24:195,i%2?28:20);doc.setLineWidth(Math.max(.7,h*.75));const a=rotate(-w/2+i*w/sections,0),b=rotate(-w/2+(i+1)*w/sections,0);doc.line(...a,...b);}
-                    doc.setDrawColor(15,23,42);doc.setLineWidth(.3);const a=rotate(-w/2,-h/2),b=rotate(w/2,-h/2);doc.line(...a,...b);
+                    // Ograda je u PDF-u u stvarnoj razmeri: širina trake prati h_m,
+                    // bez minimalne debljine koja bi prekrila susedne objekte.
+                    const strip=Math.max(.08,Math.min(h*.85,1.8));
+                    const segments=Math.max(2,Math.min(250,Math.ceil(Math.abs(o.w_m)/.22)));
+                    doc.setLineCap('butt');
+                    for(let i=0;i<segments;i++){
+                        const p=rotate(-w/2+i*w/segments,0),q=rotate(-w/2+(i+1)*w/segments,0);
+                        doc.setDrawColor(i%2?22:250,i%2?24:204,i%2?28:21);
+                        doc.setLineWidth(strip);
+                        doc.line(...p,...q);
+                    }
+                    doc.setDrawColor(20,25,35);
+                    doc.setLineWidth(Math.max(.08,Math.min(.25,h*.12)));
+                    const p=rotate(-w/2,-h/2),q=rotate(w/2,-h/2);
+                    doc.line(...p,...q);
+                    const p2=rotate(-w/2,h/2),q2=rotate(w/2,h/2);
+                    doc.line(...p2,...q2);
+                    const posts=Math.max(2,Math.min(200,Math.ceil(Math.abs(o.w_m)/2)+1));
+                    for(let i=0;i<posts;i++){
+                        const t=i/(posts-1),px=-w/2+t*w;
+                        doc.line(...rotate(px,-h/2),...rotate(px,h/2));
+                    }
                 }
                 else if(o.type==='worker'){
                     doc.setDrawColor(15,23,42);doc.setFillColor(250,204,21);doc.circle(cx,cy,Math.max(.6,Math.min(w,h)*.3),'FD');
@@ -3292,15 +3587,97 @@
 
                     }
                     if(o.type==='rack'){
-                        const n=Math.max(1,Math.round(o.verticals||Math.floor(o.h_m/1.5)));
-                        for(let i=1;i<n;i++){const yy=-h/2+h*i/n;doc.line(...rotate(-w/2,yy),...rotate(w/2,yy))}
+                        const marks=rackBayFractions(o)||[0,1];
+                        const copies=Math.max(1,Math.min(20,Math.round(Number(o.rackDoubles)||1)));
+                        const gap=Math.max(0,Number(o.rackBackGap)||0)*scale;
+                        for(let ri=0;ri<copies;ri++){
+                            const dx=o.h_m>=o.w_m?ri*(w+gap):0;
+                            const dy=o.h_m>=o.w_m?0:ri*(h+gap);
+                            if(ri>0){
+                                const corners=[[-w/2+dx,-h/2+dy],[w/2+dx,-h/2+dy],[w/2+dx,h/2+dy],[-w/2+dx,h/2+dy]].map(([a,b])=>rotate(a,b));
+                                for(let k=0;k<4;k++)doc.line(...corners[k],...corners[(k+1)%4]);
+                            }
+                            for(let i=1;i<marks.length-1;i++){
+                                if(o.h_m>=o.w_m){const yy=-h/2+h*marks[i]+dy;doc.line(...rotate(-w/2+dx,yy),...rotate(w/2+dx,yy));}
+                                else{const xx=-w/2+w*marks[i]+dx;doc.line(...rotate(xx,-h/2+dy),...rotate(xx,h/2+dy));}
+                            }
+                        }
                     }
                     if(o.type==='road')doc.line(...rotate(0,-h/2),...rotate(0,h/2));
                 }
-                if(o.label && !['hydrant','extinguisher','pedestrian_path','wc_fixture'].includes(o.type)){doc.setTextColor(20,30,45);doc.setFontSize(Math.max(5,Math.min(10,scale*.38)));
-                    doc.text(String(o.label).slice(0,100),cx,['office','toilet'].includes(o.type)?cy+h*.37:cy,{align:'center',baseline:'middle',maxWidth:Math.max(w,12)});}
+                // Oznake se crtaju u zasebnom prolazu da nijedna ne nestane.
+                // Tako se čuvaju i oznake ograda, sitnih simbola i korisnički tekst.
+
             }
             objects.slice().sort((a,b)=>(a.zIndex||0)-(b.zIndex||0)).forEach(o=>render(o));
+            // CAD/PDF: isti princip natpisa kao na 2D platnu.
+            // Natpis ostaje u svom objektu, bez automatskog razmeštanja,
+            // velikih fontova, pozadinskih belih kutija i spojnih linija.
+            function renderLabel(o,ox=0,oy=0){
+                if(o.type==='group'){
+                    (o.children||[]).forEach(c=>renderLabel(c,ox+o.x_m,oy+o.y_m));
+                    return;
+                }
+                if(!o.label || ['hydrant','extinguisher','pedestrian_path','wc_fixture'].includes(o.type))return;
+                const label=String(o.label);
+                const w=Math.abs(o.w_m)*scale,h=Math.abs(o.h_m)*scale;
+                if(w<.01||h<.01)return;
+                const cx=X(o.x_m+ox+o.w_m/2),cy=Y(o.y_m+oy+o.h_m/2);
+                const rackVertical=o.type==='rack' && h>w;
+                const aw=(rackVertical?h:w)*.88,ah=(rackVertical?w:h)*.75;
+                if(aw<=0||ah<=0)return;
+                // Canvas: 9px na 20px/m, tj. 0.45m; PDF pretvara mm u pt.
+                // Ne namećemo minimalni font koji bi prešao granice objekta.
+                doc.setFont('helvetica','bold');
+                let pt=Math.min(.45*scale*72/25.4,ah*.7*72/25.4);
+                const textLines=label.split('\n');
+                const maxTextWidth=Math.max(...textLines.map(t=>{
+                    doc.setFontSize(Math.max(.01,pt));
+                    return doc.getTextWidth(t);
+                }));
+                if(maxTextWidth>aw && maxTextWidth>0)pt*=aw/maxTextWidth;
+                if(textLines.length>1)pt=Math.min(pt,ah*72/25.4/(textLines.length*1.25));
+                if(pt<.12)return; // kao na platnu: nečitljiv tekst se ne uvećava
+                doc.setFontSize(pt);
+                const [r,g,b]=rgb(o.type==='text'?(o.strokeColor||'#e879f9'):'#0f172a');
+                doc.setTextColor(r,g,b);
+                const angle=(o.angle||0)+(rackVertical?-90:0);
+                const bottom=['office','toilet'].includes(o.type);
+                const yOffset=bottom?Math.max(0,h/2-pt*25.4/72*.9):0;
+                const lineMm=pt*25.4/72*1.18;
+                textLines.forEach((t,i)=>{
+                    const yy=yOffset+(i-(textLines.length-1)/2)*lineMm;
+                    // Pozicija rotiranog teksta ostaje u koordinatama objekta.
+                    const a=(o.angle||0)*Math.PI/180;
+                    const px=cx-yy*Math.sin(a),py=cy+yy*Math.cos(a);
+                    doc.text(t,px,py,{align:'center',baseline:'middle',angle:-angle});
+                });
+            }
+            objects.slice().sort((a,b)=>(a.zIndex||0)-(b.zIndex||0)).forEach(o=>renderLabel(o));
+            // Koordinate su uz samu ivicu nacrta (kao CAD kotiranje),
+            // a ne udaljene po stranici ili preko susednih objekata.
+            // Ispisuju se samo kada ima prostora za čitljive oznake.
+            const major=Math.max(.001,Number(gridMajorSpacing)||5);
+            const tickStep=Math.max(major,Math.ceil(9/Math.max(.01,scale)/major)*major);
+            const coordPt=Math.max(2.5,Math.min(6,scale*.45));
+            doc.setFont('helvetica','normal');doc.setFontSize(coordPt);
+            doc.setTextColor(85,100,120);doc.setDrawColor(180,190,205);doc.setLineWidth(.12);
+            const topEdge=Y(minY),leftEdge=X(minX);
+            const labelH=coordPt*25.4/72;
+            if(topEdge>margin+labelH+1){
+                for(let v=Math.ceil(minX/tickStep)*tickStep;v<=maxX+1e-7;v+=tickStep){
+                    const xx=X(v);if(xx<margin+5||xx>W-margin-5)continue;
+                    doc.line(xx,topEdge,xx,topEdge-1.2);
+                    doc.text(`${Number(v.toFixed(3))}X`,xx,topEdge-2,{align:'center'});
+                }
+            }
+            if(leftEdge>margin+labelH+2){
+                for(let v=Math.ceil(minY/tickStep)*tickStep;v<=maxY+1e-7;v+=tickStep){
+                    const yy=Y(v);if(yy<margin+3||yy>H-margin-3)continue;
+                    doc.line(leftEdge,yy,leftEdge-1.2,yy);
+                    doc.text(`${Number(v.toFixed(3))}Y`,leftEdge-2,yy,{align:'right',baseline:'middle'});
+                }
+            }
             doc.setProperties({title:'MagacinCAD - Tlocrt',creator:'MagacinCAD v5'});
             // PDF ostaje čitljiv u standardnim preglednicima, a dodatak čuva CAD projekat.
             // Napomena: PDF editori koji prepisuju fajl mogu ukloniti ove podatke.
