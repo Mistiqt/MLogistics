@@ -382,6 +382,7 @@
                 <option value="leva">Leva Hungary KFT</option>
                 <option value="itw_pronovia">ITW Pronovia</option>
                 <option value="itw_slovakia">ITW Slovakia</option>
+<option value="custom">RUČNI UNOS KUPCA</option>
             </select>
         </div>
         <div class="form-group">
@@ -419,6 +420,12 @@
             <label>DAP Grad:</label>
             <input type="text" id="inputDapGrad" value="Zagreb" placeholder="Unesi grad" oninput="azurirajIncoterm()">
         </div>
+        <div class="form-group" id="rucniKupacPanel" style="display:none; background:#eaf4ff;padding:8px;border-radius:5px">
+          <label>Naziv kupca</label><input id="rucniKupacNaziv" placeholder="Naziv firme" oninput="azurirajRucnogKupca()">
+          <label>Adresa kupca</label><textarea id="rucniKupacAdresa" rows="3" style="width:100%;box-sizing:border-box" placeholder="Ulica, broj, grad, država" oninput="azurirajRucnogKupca()"></textarea>
+          <label>Kontakt / Destination</label><textarea id="rucniKupacKontakt" rows="2" style="width:100%;box-sizing:border-box" oninput="azurirajRucnogKupca()"></textarea>
+        </div>
+        <div class="form-group"><label>Broj kopija svakog dokumenta:</label><input id="brojKopija" type="number" min="1" max="50" value="7"></div>
         <button class="btn-stampaj" onclick="stampajGlavneDokumente()">🖨️ Štampaj PF, DDT, CMR</button>
         <button class="btn-sacuvaj" onclick="pokreniCuvanjeDokumenta('glavni')">💾 Sačuvaj PF, DDT, CMR (Izaberi folder)</button>
     </div>
@@ -475,6 +482,7 @@
             </select>
             <input type="text" id="inputTabliceOtpremnica" value="KG 380 BT" placeholder="Unesi tablice" oninput="azurirajOtpremnicuKontrole()" style="display: none; margin-top: 5px;">
         </div>
+        <div id="rucnaAdresaOtp" class="form-group" style="display:none"><label>Ulica i broj</label><input id="rucnaOtpAdresa1" oninput="azurirajDobavljacaRucno()"><label>Poštanski broj, grad, država</label><input id="rucnaOtpAdresa2" oninput="azurirajDobavljacaRucno()"></div>
         <button class="btn-stampaj" onclick="stampajOtpremnicu()">🖨️ Štampaj Otpremnicu</button>
         <button class="btn-sacuvaj" onclick="pokreniCuvanjeDokumenta('otpremnica')">💾 Sačuvaj Otpremnicu (Izaberi folder)</button>
     </div>
@@ -1495,11 +1503,45 @@
 
 
     function stampajGlavneDokumente() {
-        document.body.classList.remove("printing-otpremnica");
-        document.body.classList.add("printing-glavni");
-        window.print();
+        const kopije = Math.max(1, Math.min(50, parseInt(document.getElementById('brojKopija').value,10) || 7));
+        const ids = ['proformaTab','ddtTab','cmrTab'];
+        // Pripremi poseban dokument sa redosledom: sve PF, zatim sve DDT, zatim sve CMR.
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) { alert('Dozvoli pop-up prozor za štampu u pregledaču.'); return; }
+        const css = Array.from(document.querySelectorAll('style')).map(x => x.textContent).join('\n');
+        let pages = '';
+        ids.forEach(id => {
+            const source = document.getElementById(id);
+            for (let n=0;n<kopije;n++) {
+                const clone = source.cloneNode(true);
+                clone.removeAttribute('id');
+                clone.classList.add('print-copy', id + '-copy');
+                const originalInputs = source.querySelectorAll('input,textarea,select');
+                const clonedInputs = clone.querySelectorAll('input,textarea,select');
+                clonedInputs.forEach((el,i) => {
+                    const orig=originalInputs[i]; if (!orig) return;
+                    const span=document.createElement('span');
+                    span.textContent=orig.tagName==='SELECT' ? (orig.selectedOptions[0]?.textContent || '') : orig.value;
+                    span.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;';
+                    el.replaceWith(span);
+                });
+                clone.querySelectorAll('button,.no-print,.sakrij-pri-stampanju').forEach(el => el.remove());
+                pages += clone.outerHTML;
+            }
+        });
+        const printCSS = `@page { size:A4 portrait; margin:10mm } @page ddtBatch { size:A4 landscape; margin:6mm }
+          html,body{margin:0!important;padding:0!important;background:white!important;display:block!important}
+          .print-copy{display:block!important;box-shadow:none!important;break-after:page;page-break-after:always;box-sizing:border-box;max-width:none!important;margin:0 auto!important}
+          .proformaTab-copy,.cmrTab-copy{width:190mm!important;page:auto}
+          .ddtTab-copy{width:285mm!important;page:ddtBatch}
+          .print-copy:last-child{break-after:auto;page-break-after:auto}
+          .no-print,.sakrij-pri-stampanju{display:none!important}`;
+        printWindow.document.open();
+        printWindow.document.write('<!doctype html><html><head><meta charset="utf-8"><title>PF-DDT-CMR grupisana štampa</title><style>'+css+'\n'+printCSS+'</style></head><body>'+pages+'</body></html>');
+        printWindow.document.close();
+        printWindow.onload=()=>{printWindow.focus();setTimeout(()=>printWindow.print(),400)};
+        if(printWindow.document.readyState==='complete') setTimeout(()=>{printWindow.focus();printWindow.print()},600);
     }
-
 
     function stampajOtpremnicu() {
         document.body.classList.remove("printing-glavni");
@@ -1942,9 +1984,23 @@
     }
 
 
+    function azurirajRucnogKupca() {
+        // Osveži kupca bez brisanja već unetih artikala.
+        const rows=document.getElementById('redoviTabelaProforma');
+        const snapshot=Array.from(rows.children).map(r=>r.cloneNode(true));
+        promeniKupca();
+        rows.replaceChildren(...snapshot);
+        prebrojUkupno();
+    }
+
     function promeniKupca() {
         let izabraniKupac = document.getElementById("selectKupac").value;
-        let kupacInfo = podaciKupaca[izabraniKupac];
+        document.getElementById('rucniKupacPanel').style.display = izabraniKupac === 'custom' ? 'block' : 'none';
+        let kupacInfo = izabraniKupac === 'custom' ? {
+            naziv: document.getElementById('rucniKupacNaziv').value || 'NOVI KUPAC',
+            adresa: document.getElementById('rucniKupacAdresa').value.replace(/\n/g, '<br>'),
+            kontaktDestination: document.getElementById('rucniKupacKontakt').value.replace(/\n/g, '<br>')
+        } : podaciKupaca[izabraniKupac];
         let htmlKupac = `
             <span style="font-size: 8px; color: #333;">Kupac/Customer:</span><br>
             <span class="din-vrednost"><strong>${kupacInfo.naziv}</strong><br>${kupacInfo.adresa}</span>
@@ -2107,10 +2163,12 @@
         
         if (tip === "custom") {
             inputDobavljacRucno.style.display = "block";
+            document.getElementById("rucnaAdresaOtp").style.display = "block";
             inputDobavljacRucno.focus();
             azurirajDobavljacaRucno();
         } else {
             inputDobavljacRucno.style.display = "none";
+            document.getElementById("rucnaAdresaOtp").style.display = "none";
             if (tip === "pmc") {
                 inputDobavljacRucno.value = "PMC AUTOMOTIVE D.O.O KRAGUJEVAC";
                 document.getElementById("otpPrimalacNaziv").innerText = "PMC AUTOMOTIVE D.O.O KRAGUJEVAC";
@@ -2195,6 +2253,8 @@
         if (tip === "custom") {
             let naziv = document.getElementById("inputDobavljacRucno").value;
             document.getElementById("otpPrimalacNaziv").innerText = naziv;
+            document.getElementById("otpPrimalacAdresa1").innerText = document.getElementById('rucnaOtpAdresa1').value;
+            document.getElementById("otpPrimalacAdresa2").innerText = document.getElementById('rucnaOtpAdresa2').value;
         }
     }
 
@@ -2366,6 +2426,10 @@
                 <td style="text-align: center; vertical-align: middle;" class="no-print"><button class="btn-brisi" onclick="obrisiRed(this)">X</button></td>
             `;
         }
+        if (izabraniKupac !== "pomigliano" && izabraniKupac !== "san_benigno") {
+            const cell=row.querySelector('.input-kod').closest('td');
+            cell.insertAdjacentHTML('beforeend', '<label class="no-print" style="display:block;font-size:8px"><input type="checkbox" class="rucna-stavka" onchange="promeniRezimStavke(this)"> Ručno</label>');
+        }
         tbody.appendChild(row);
         let targetInput = row.querySelector('.input-kod');
         if (targetInput) {
@@ -2381,6 +2445,27 @@
     }
 
 
+    function promeniRezimStavke(checkbox) {
+        const row=checkbox.closest('tr');
+        const manual=checkbox.checked;
+        const fields=[['.oznaka-celija','oznaka'],['.opis-celija','opis'],['.cena-celija','cena'],['.bruto-celija','tezina']];
+        fields.forEach(([selector,key])=>{
+            const cell=row.querySelector(selector);
+            if(manual) {
+                const val=cell.textContent.trim();
+                const inp=document.createElement('input');
+                inp.className='input-tekst manual-'+key;
+                inp.type=key==='cena'||key==='tezina'?'number':'text';
+                if(inp.type==='number') {inp.step='any';inp.min='0';}
+                inp.value=(val==='-'||val==='Nepoznat kod')?'':val;
+                inp.placeholder=key==='tezina'?'Ukupna težina (kg)':key;
+                inp.addEventListener('input',()=>izracunaj(row.querySelector('.input-kod')));
+                cell.replaceChildren(inp);
+            } else cell.textContent='-';
+        });
+        izracunaj(row.querySelector('.input-kod'));
+    }
+
     function izracunaj(element) {
         let row = element.closest("tr");
         let kodInput = row.querySelector(".input-kod").value.trim();
@@ -2393,6 +2478,14 @@
         let izabraniKupac = document.getElementById("selectKupac").value;
         let aktivnaBaza = bazeAmbalaze[izabraniKupac] || {};
         let stavka = aktivnaBaza[kodInput];
+        if (row.querySelector('.rucna-stavka')?.checked) {
+            const cena=parseFloat(row.querySelector('.manual-cena').value)||0;
+            const bruto=parseFloat(row.querySelector('.manual-tezina').value)||0;
+            totalCelija.innerText=(kolInput*cena).toFixed(2);
+            row.dataset.manualBruto=bruto;
+            prebrojUkupno();
+            return;
+        }
         if (stavka) {
             oznakaCelija.innerText = stavka.oznaka;
             opisCelija.innerHTML = stavka.opis;
@@ -2451,9 +2544,14 @@
             } else {
                 let kodInput = r.querySelector(".input-kod").value.trim();
                 let stavka = aktivnaBaza[kodInput];
-                brutoVal = parseFloat(r.querySelector(".bruto-celija").innerText) || 0;
+                const manual=r.querySelector('.rucna-stavka')?.checked;
+                brutoVal = manual ? (parseFloat(r.querySelector('.manual-tezina').value)||0) : (parseFloat(r.querySelector(".bruto-celija").innerText)||0);
                 sumBruto += brutoVal;
-                if (stavka) {
+                if (manual) {
+                    sumNeto += brutoVal;
+                    kodOznaka = r.querySelector('.manual-oznaka').value || kodInput;
+                    opisTekst = r.querySelector('.manual-opis').value;
+                } else if (stavka) {
                     sumNeto += kol * stavka.tezina;
                     kodOznaka = stavka.oznaka;
                     opisTekst = stavka.opis;
