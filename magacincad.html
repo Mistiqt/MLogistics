@@ -295,7 +295,7 @@
                         <i class="fa-solid fa-road"></i> Saobraćaj & Oznake
                     </h4>
                     <div class="grid grid-cols-2 gap-2">
-                        <div onclick="addPreset('road')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-yellow-500 cursor-pointer flex flex-col items-center text-center group transition">
+                        <div onclick="startRoadDrawing()" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-route text-yellow-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Saobraćajnica po tačkama</span></div><div onclick="addPreset('road')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-yellow-500 cursor-pointer flex flex-col items-center text-center group transition">
                             <i class="fa-solid fa-road text-yellow-400 text-lg group-hover:scale-110 transition"></i>
                             <span class="text-[11px] font-medium text-slate-300 mt-1">Saobraćajnica</span>
                         </div>
@@ -326,7 +326,7 @@
                             <i class="fa-solid fa-truck-pickup text-amber-500 text-lg group-hover:scale-110 transition"></i>
                             <span class="text-[11px] font-medium text-slate-300 mt-1">Viljuškar</span>
                         </div>
-                        <div onclick="addPreset('safety_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-road-barrier text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Safety ograda</span></div><div onclick="addPreset('worker')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-person text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Radnik (3D)</span></div><div onclick="addPreset('elevated_sign')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-sign-hanging text-amber-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Tabla / Broj crteža (3D visina)</span></div>
+                        <div onclick="addPreset('sliding_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-arrows-left-right text-slate-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Klizna ograda (točkići)</span></div><div onclick="addPreset('safety_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-road-barrier text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Safety ograda</span></div><div onclick="addPreset('worker')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-person text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Radnik (3D)</span></div><div onclick="addPreset('elevated_sign')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-sign-hanging text-amber-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Tabla / Broj crteža (3D visina)</span></div>
                          <div onclick="addPreset('extinguisher')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-red-400 cursor-pointer flex flex-col items-center text-center group transition">
                             <span class="inline-flex bg-red-600 text-white font-black text-lg items-center justify-center w-6 h-6">H</span>
                             <span class="text-[11px] font-medium text-slate-300 mt-1">PP Aparat</span>
@@ -521,9 +521,9 @@
                 <div id="cad-3d-height-controls" class="hidden border-t border-slate-700 pt-3 space-y-2">
                 <label id="cad-3d-height-label" class="block text-sky-300 font-semibold">Visina u 3D (m)</label>
                 <input id="cad-3d-height" type="number" min="0.1" max="30" step="0.05" onchange="updateCAD3DHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2" />
-                <p class="text-slate-400 text-[10px]">Za zid, rolo vrata i safety ogradu: unesi željenu visinu u metrima. Visina u 3D je nezavisna od dimenzija u 2D.</p>
+                <p class="text-slate-400 text-[10px]">Za stub, zid, rolo vrata i safety ogradu: unesi željenu visinu u metrima. Visina u 3D je nezavisna od dimenzija u 2D.</p>
             </div>
-            <div id="rack-properties" class="border-t border-slate-700 pt-3 space-y-3 hidden">
+            <div id="sliding-fence-controls" class="hidden border-t border-slate-700 pt-3 space-y-2"><h5 class="font-bold text-slate-300">Klizna ograda na točkićima</h5><label class="block">Visina (m)<input id="sliding-fence-height" type="number" min="0.2" max="15" step="0.05" onchange="updateSlidingFenceHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label><p class="text-slate-400 text-[10px]">Širinu (dužinu ograde), dubinu i ugao menjaš u standardnim poljima iznad. Siva boja je podrazumevana.</p></div><div id="rack-properties" class="border-t border-slate-700 pt-3 space-y-3 hidden">
                     <h5 class="font-bold text-blue-400 uppercase tracking-wider text-[10px]">Specifično za Regal</h5>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
@@ -548,9 +548,9 @@
                         </div>
                         <label class="block text-slate-300">Broj polja / vertikala<input type="number" min="1" max="200" id="prop-verticals" onchange="updateRackBayCount(this.value)" class="w-full mt-1 bg-slate-900 border border-slate-600 rounded p-1"></label>
                         <div id="rack-calculated-size" class="text-emerald-300 text-[11px] font-semibold"></div>
-                        <label class="block text-sky-300">Različite dužine polja po delovima (opciono)</label>
-                        <input id="rack-segments" type="text" placeholder="npr. 2:1;4:4" onchange="updateRackSegments(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-1.5">
-                        <p class="text-slate-400 text-[10px]">Standardno: ukupna dužina = dužina jednog polja × broj polja; ukupna visina = visina jednog nivoa × broj nivoa. Za mešovite delove format je dužina dela (m):broj polja, npr. 2:1;4:4. Tada se ukupna dužina računa kao zbir unetih delova.</p>
+                        <label class="block text-sky-300">Broj nivoa po vertikali (bez ground nivoa)</label>
+                        <input id="rack-bay-levels" type="text" placeholder="npr. 2, 4, 4, 2, 2, 2" onchange="updateRackBayLevels(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-1.5">
+                        <p class="text-slate-400 text-[10px]">Unesi po jedan broj za svako polje, redom. Primer za 6 polja: 2, 4, 4, 2, 2, 2. Ground (parter) je dodatni nivo svakog polja. Visina svakog nivoa ostaje ista; ukupna visina svakog polja zavisi od unetog broja.</p>
                     </div>
                     <div class="bg-blue-950/40 p-2 rounded border border-blue-800/50 text-blue-300 text-[11px] flex justify-between">
                         <span>Ukupan Kapacitet:</span>
@@ -683,6 +683,7 @@
         let measureStart=null, measureEnd=null, measureHover=null;
         function setMode(newMode) {
             if(newMode !== 'draw_column') columnPreview=null;
+            if(newMode !== 'draw_road_path'){roadDrawingPoints=[];roadDrawingHover=null;}
             measureStart=null;measureEnd=null;measureHover=null;
 
             if (mode === 'draw_free_line' && freeLineAwaitingEnd) { currentDrawingObj = null; freeLineAwaitingEnd = false; freeLineMouseDown = false; freeLineDragStarted = false; freeLinePressPos = null; }
@@ -856,12 +857,39 @@
         }
         function placeColumn(point) {
             snapshotCAD();
-            const size=0.45;
+            const size=0.3;
             const obj={id:generateId(),type:'column_cross',x_m:point.x-size/2,y_m:point.y-size/2,
                 w_m:size,h_m:size,angle:0,color:'#14b8a6',strokeColor:'#2dd4bf',strokeWidth:2,
-                label:'Stub',zIndex:objects.length,layerId:activeLayerId};
+                label:'',columnHeight:7,zIndex:objects.length,layerId:activeLayerId};
             objects.push(obj);selectedObjectIds=[obj.id];
             updateInspector();updateStats();draw();
+        }
+        let roadDrawingPoints=[],roadDrawingHover=null,roadDrawingWidth=4;
+        function startRoadDrawing(){
+            if(!layerEditable({layerId:activeLayerId})){alert('Aktivni sloj je zaključan ili skriven.');return;}
+            const input=prompt('Širina saobraćajnice (m):',String(roadDrawingWidth));
+            if(input===null)return;
+            const width=Number(String(input).replace(',','.'));
+            if(!Number.isFinite(width)||width<=0||width>100){alert('Unesi širinu između 0 i 100 m.');return;}
+            roadDrawingWidth=width;roadDrawingPoints=[];roadDrawingHover=null;setMode('draw_road_path');draw();
+        }
+        function appendRoadPoint(point){
+            const last=roadDrawingPoints[roadDrawingPoints.length-1];
+            if(last){
+                const dx=point.x-last.x,dy=point.y-last.y,len=Math.hypot(dx,dy);
+                if(len<.02)return;
+                snapshotCAD();
+                const midX=(last.x+point.x)/2,midY=(last.y+point.y)/2;
+                const obj={id:generateId(),type:'road',x_m:midX-roadDrawingWidth/2,y_m:midY-len/2,w_m:roadDrawingWidth,h_m:len,angle:Math.atan2(-dx,dy)*180/Math.PI,color:'#334155',strokeColor:'#eab308',strokeWidth:2,label:'',zIndex:objects.length,layerId:activeLayerId};
+                objects.push(obj);selectedObjectIds=[obj.id];updateInspector();updateStats();
+            }
+            roadDrawingPoints.push({x:point.x,y:point.y});draw();
+        }
+        function updateSlidingFenceHeight(value){
+            const h=Number(String(value).replace(',','.'));
+            if(!Number.isFinite(h)||h<.2||h>15){alert('Visina mora biti između 0.2 i 15 m.');updateInspector();return;}
+            snapshotCAD();selectedObjectIds.forEach(id=>{const o=objects.find(x=>x.id===id);if(o&&o.type==='sliding_fence'&&!o.locked&&layerEditable(o))o.slidingFenceHeight=h;});
+            updateInspector();draw();if(cad3dActive)scheduleCAD3DRefresh();
         }
         function addPreset(type) {
             if(type === 'column_cross') { startColumnPlacement(); return; }
@@ -884,7 +912,7 @@
 
             switch (type) {
                 case 'column_cross':
-                    Object.assign(newObj,{w_m:0.45,h_m:0.45,color:'#14b8a6',strokeColor:'#2dd4bf',label:'Stub'});
+                    Object.assign(newObj,{w_m:0.45,h_m:0.45,color:'#14b8a6',strokeColor:'#2dd4bf',label:'',columnHeight:7});
                     break;
                 case 'circle':
                     newObj.solidHeight=1;newObj.floorHeight=0;
@@ -896,6 +924,8 @@
                     break;
                 case 'elevated_sign':
                     Object.assign(newObj,{w_m:2.4,h_m:.12,solidHeight:.7,floorHeight:5,color:'#facc15',strokeColor:'#111827',label:'PN-123456'});break;
+                case 'sliding_fence':
+                    Object.assign(newObj,{w_m:5,h_m:.24,slidingFenceHeight:2,color:'#94a3b8',strokeColor:'#cbd5e1',label:'Klizna ograda'});break;
                 case 'safety_fence':
                     Object.assign(newObj,{w_m:5,h_m:.18,fenceHeight:1.15,color:'#facc15',strokeColor:'#111827',label:'Safety ograda'});break;
                 case 'worker':
@@ -976,6 +1006,7 @@
                     newObj.rackBayWidth = 1.2;
                     newObj.rackBayLength = 1.0;
                     newObj.rackSegments = '';
+                    newObj.rackBayLevels = '';
                     newObj.rackDoubles = 1;
                     newObj.rackBackGap = 0;
                     break;
@@ -1105,6 +1136,12 @@
                 if (!layerVisible(obj)) return;
                 drawObject(obj, false, forExport);
             });
+            if(!forExport&&mode==='draw_road_path'&&roadDrawingPoints.length){
+                CTX.save();CTX.strokeStyle='#facc15';CTX.lineWidth=Math.max(2,roadDrawingWidth*PIXELS_PER_METER*zoom);CTX.globalAlpha=.28;CTX.lineJoin='round';CTX.lineCap='butt';CTX.beginPath();
+                const first=worldToScreen(roadDrawingPoints[0].x,roadDrawingPoints[0].y);CTX.moveTo(first.x,first.y);
+                for(const pt of roadDrawingPoints.slice(1)){const q=worldToScreen(pt.x,pt.y);CTX.lineTo(q.x,q.y);}
+                if(roadDrawingHover){const q=worldToScreen(roadDrawingHover.x,roadDrawingHover.y);CTX.lineTo(q.x,q.y);}CTX.stroke();CTX.restore();
+            }
             if (!forExport && mode === 'draw_column' && columnPreview) {
                 const q=worldToScreen(columnPreview.x,columnPreview.y);
                 CTX.save();CTX.strokeStyle='#2dd4bf';CTX.lineWidth=2;
@@ -1237,6 +1274,13 @@
                     break;
                 case 'elevated_sign': {
                     CTX.fillStyle=obj.color||'#facc15';CTX.fillRect(-w/2,-h/2,w,h);CTX.strokeStyle=obj.strokeColor||'#111827';CTX.lineWidth=2;CTX.strokeRect(-w/2,-h/2,w,h);CTX.fillStyle='#111827';CTX.textAlign='center';CTX.textBaseline='bottom';CTX.font=`bold ${Math.max(10,Math.min(15,w*.12))}px sans-serif`;CTX.fillText((obj.label||'PN').slice(0,32),0,-h/2-4);break;
+                }
+                case 'sliding_fence':{
+                    CTX.fillStyle=obj.color||'#94a3b8';CTX.fillRect(-w/2,-h/2,w,h);
+                    CTX.strokeStyle=obj.strokeColor||'#cbd5e1';CTX.lineWidth=2;CTX.strokeRect(-w/2,-h/2,w,h);
+                    CTX.strokeStyle='#334155';CTX.lineWidth=Math.max(1,h*.15);
+                    for(let i=1;i<Math.max(2,Math.ceil(w/35));i++){const xx=-w/2+i*w/Math.max(2,Math.ceil(w/35));CTX.beginPath();CTX.moveTo(xx,-h/2);CTX.lineTo(xx,h/2);CTX.stroke();}
+                    break;
                 }
                 case 'safety_fence': {
                     CTX.fillStyle='#facc15';CTX.fillRect(-w/2,-h/2,w,h);
@@ -1860,6 +1904,7 @@
             }
         }
         CANVAS.addEventListener('contextmenu', (e) => {
+            if(mode==='draw_column'||mode==='draw_road_path'){e.preventDefault();setMode('select');draw();return;}
             if (mode === 'draw_polyline' || mode === 'draw_polygon') {
                 e.preventDefault();
                 finishPolyline();
@@ -1889,6 +1934,7 @@
 
             if (e.button === 0) {
                 if (mode === 'draw_column') { placeColumn(columnPoint(mouse)); return; }
+                if(mode==='draw_road_path'){appendRoadPoint(screenToWorld(mouse.x,mouse.y));return;}
                 if (mode === 'draw_line' && !gridLineAwaitingEnd) { gridLineMouseDown = true; gridLineDragStarted = false; gridLinePressPos = mouse; }
                 if (mode === 'draw_free_line' && !freeLineAwaitingEnd) { freeLineMouseDown = true; freeLineDragStarted = false; freeLinePressPos = mouse; }
                 if(mode.startsWith('measure_')){
@@ -2077,6 +2123,7 @@
 
             document.getElementById('hud-coords').innerText = `X: ${world.x.toFixed(3)}m | Y: ${world.y.toFixed(3)}m`;
             if (mode === 'draw_column') { columnPreview=columnPoint(mouse); draw(); return; }
+            if(mode==='draw_road_path'){roadDrawingHover=screenToWorld(mouse.x,mouse.y);draw();return;}
             if(mode.startsWith('measure_') && measureStart && !measureEnd){measureHover={...world};draw();return;}
 
             if (isPanning) {
@@ -2380,11 +2427,12 @@
                 document.getElementById('prop-object-locked').checked=!!selected.locked;
                 document.getElementById('hydrant-wall-controls').classList.toggle('hidden',selected.type!=='hydrant');
                 if(selected.type==='hydrant')document.getElementById('hydrant-wall-height').value=selected.hydrantMountHeight??1.2;
+                const slidingControls=document.getElementById('sliding-fence-controls');slidingControls.classList.toggle('hidden',selected.type!=='sliding_fence');if(selected.type==='sliding_fence')document.getElementById('sliding-fence-height').value=selected.slidingFenceHeight??2;
                 const heightControls=document.getElementById('cad-3d-height-controls');
-                heightControls.classList.toggle('hidden', !['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception'].includes(selected.type));
-                if(['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception'].includes(selected.type)) {
-                    document.getElementById('cad-3d-height').value=selected.type==='wall'?(selected.wallHeight??2.8):selected.type==='roller_door'?(selected.doorHeight??2.8):(['relax_house','driver_zone','paper_reception'].includes(selected.type)?(selected.roomHeight??2.8):(selected.fenceHeight??1.15));
-                    document.getElementById('cad-3d-height-label').textContent=selected.type==='safety_fence'?'Visina safety ograde (m)':(['relax_house','driver_zone','paper_reception'].includes(selected.type)?'Visina kućice / prostorije (m)':'Visina u 3D (m)');
+                heightControls.classList.toggle('hidden', !['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception','column_cross'].includes(selected.type));
+                if(['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception','column_cross'].includes(selected.type)) {
+                    document.getElementById('cad-3d-height').value=selected.type==='column_cross'?(selected.columnHeight??7):selected.type==='wall'?(selected.wallHeight??2.8):selected.type==='roller_door'?(selected.doorHeight??2.8):(['relax_house','driver_zone','paper_reception'].includes(selected.type)?(selected.roomHeight??2.8):(selected.fenceHeight??1.15));
+                    document.getElementById('cad-3d-height-label').textContent=selected.type==='column_cross'?'Visina stuba od poda (m)':selected.type==='safety_fence'?'Visina safety ograde (m)':(['relax_house','driver_zone','paper_reception'].includes(selected.type)?'Visina kućice / prostorije (m)':'Visina u 3D (m)');
                 }
 
                 document.getElementById('prop-label').value = selected.label || '';
@@ -2440,10 +2488,10 @@
                     document.getElementById('rack-bay-length').value = selected.rackBayLength || ((selected.h_m||6)/Math.max(1,selected.verticals||6));
                     document.getElementById('rack-calculated-size').textContent = `Ukupno: ${(Number(selected.w_m)||0).toFixed(2)} × ${(Number(selected.h_m)||0).toFixed(2)} × ${rackTotalHeight(selected).toFixed(2)} m (${Math.max(1,Number(selected.levels)||4)} nivoa × ${rackOneLevelHeight(selected).toFixed(2)} m)`;
                     document.getElementById('rack-dim-height').value = rackOneLevelHeight(selected).toFixed(2);
-                    document.getElementById('rack-segments').value = selected.rackSegments || '';
+                    document.getElementById('rack-bay-levels').value = selected.rackBayLevels || '';
                     document.getElementById('prop-rack-doubles').value = selected.rackDoubles || 1;
                     document.getElementById('prop-rack-back-gap').value = Math.max(0,Number(selected.rackBackGap)||0);
-                    const total = (selected.levels || 4) * (selected.palletsPerLevel || 6) * (selected.verticals || 1) * (selected.rackDoubles || 1);
+                    const total = rackBayLevelCounts(selected).reduce((sum,n)=>sum+n+1,0) * (selected.palletsPerLevel || 6) * (selected.rackDoubles || 1);
                     document.getElementById('prop-total-pallets').innerText = `${total} paletnih mesta`;
                 } else {
                     document.getElementById('dim-controls').classList.remove('hidden');
@@ -2478,6 +2526,7 @@
             selectedObjectIds.forEach(id=>{
                 const o=objects.find(item=>item.id===id);
                 if(o&&!o.locked&&layerEditable(o)){
+                    if(o.type==='column_cross')o.columnHeight=height;
                     if(o.type==='wall')o.wallHeight=height;
                     if(o.type==='roller_door')o.doorHeight=height;
                     if(o.type==='safety_fence')o.fenceHeight=height;
@@ -2495,7 +2544,24 @@
             const explicit=Number(o.rackLevelHeight);
             return Number.isFinite(explicit)&&explicit>=.1?explicit:Math.max(.1,(Number(o.rackHeight)||3.5)/n);
         }
-        function rackTotalHeight(o){return rackOneLevelHeight(o)*Math.max(1,Math.min(10,Math.round(Number(o.levels)||4)));}
+        // Svaka vertikala ima svoj broj nivoa; ground je dodatno paletno mesto.
+        function rackBayLevelCounts(o){
+            const count=(rackBayFractions(o)||[0,1]).length-1;
+            const raw=String(o.rackBayLevels||'').trim();
+            const values=raw?raw.split(/[,;\s]+/).filter(Boolean).map(Number):[];
+            return Array.from({length:count},(_,i)=>Number.isInteger(values[i])&&values[i]>=0&&values[i]<=30?values[i]:Math.max(1,Math.round(Number(o.levels)||4)));
+        }
+        function rackTotalHeight(o){return rackOneLevelHeight(o)*Math.max(...rackBayLevelCounts(o),1);}
+        function updateRackBayLevels(raw){
+            const o=objects.find(x=>x.id===selectedObjectIds[0]);if(!o||o.type!=='rack')return;
+            const count=(rackBayFractions(o)||[0,1]).length-1;
+            const values=String(raw).trim().split(/[,;\s]+/).filter(Boolean).map(Number);
+            if(String(raw).trim() && (values.length!==count || values.some(n=>!Number.isInteger(n)||n<0||n>30))){
+                alert('Unesi tačno '+count+' celih brojeva od 0 do 30, po jedan za svaku vertikalu (npr. 2, 4, 4, 2, 2, 2).');updateInspector();return;
+            }
+            snapshotCAD();o.rackBayLevels=values.join(', ');o.rackHeight=rackTotalHeight(o);
+            updateInspector();updateStats();draw();queueCAD3DRefresh();
+        }
         function updateRackLevelHeight(raw){
             const v=Number(raw),o=objects.find(x=>x.id===selectedObjectIds[0]);
             if(!o||o.type!=='rack')return;
@@ -2525,7 +2591,7 @@
             const n=Number(raw),o=objects.find(x=>x.id===selectedObjectIds[0]);
             if(!o||o.type!=='rack')return;
             if(!Number.isInteger(n)||n<1||n>200){alert('Broj polja mora biti od 1 do 200.');updateInspector();return;}
-            snapshotCAD();o.verticals=n;o.rackSegments='';
+            snapshotCAD();o.verticals=n;o.rackSegments='';o.rackBayLevels='';
             o.h_m=n*(Number(o.rackBayLength)||((Number(o.h_m)||6)/Math.max(1,n)));
             updateInspector();updateStats();draw();queueCAD3DRefresh();
         }
@@ -2903,6 +2969,26 @@
                     sign.position.set(-width*.09,mount+height*.53,front+.015);sign.userData.objectId=o.id;editableMeshes.push(sign);group.add(sign);
                     cad3dScene.add(group);return true;
                 }
+                if(o.type==='sliding_fence'){
+                    const group=new T.Group(),angle=(o.angle||0)*Math.PI/180;
+                    group.position.set(cx,0,cz);group.rotation.y=-angle;
+                    const length=Math.max(.2,w),height=Math.max(.2,Number(o.slidingFenceHeight)||2),depth=Math.max(.08,d);
+                    const steel=new T.MeshStandardMaterial({color:o.color||'#94a3b8',metalness:.65,roughness:.4});
+                    const dark=new T.MeshStandardMaterial({color:'#334155',metalness:.3,roughness:.65});
+                    function part(geo,mat,px,py,pz){const m=new T.Mesh(geo,mat);m.position.set(px,py,pz);m.userData.objectId=o.id;editableMeshes.push(m);group.add(m);return m;}
+                    function beam(px,py,pz,bw,bh,bd,mat=steel){part(new T.BoxGeometry(bw,bh,bd),mat,px,py,pz);}
+                    for(const yy of [height*.12,height*.52,height*.96])beam(0,yy,0,length,.065,Math.min(.09,depth),steel);
+                    const n=Math.max(2,Math.ceil(length/.28));
+                    for(let i=0;i<=n;i++)beam(-length/2+length*i/n,height*.54,0,.035,height*.85,.04,steel);
+                    for(const xx of [-length/2,length/2])beam(xx,height*.52,0,.09,height*.95,.10,steel);
+                    // Tocak i nosac na svakom kraju, bocno klizanje po podu.
+                    for(const xx of [-length*.38,length*.38]){
+                        beam(xx,.18,0,.12,.27,.13,dark);
+                        const wheel=part(new T.CylinderGeometry(.12,.12,.07,20),dark,xx,.12,0);wheel.rotation.x=Math.PI/2;
+                    }
+                    beam(0,.025,0,length+.25,.035,.09,dark);
+                    cad3dScene.add(group);return true;
+                }
                 if(o.type==='safety_fence'){
                     const angle=(o.angle||0)*Math.PI/180,group=new T.Group();
                     group.position.set(cx,0,cz);group.rotation.y=-angle;
@@ -2998,7 +3084,8 @@
                     const copies=Math.max(1,Math.min(20,Math.round(Number(o.rackDoubles)||1)));
                     const fractions=rackBayFractions(o)||[0,1];
                     const bays=fractions.length-1;
-                    const levels=Math.max(1,Math.min(10,Math.round(Number(o.levels)||4)));
+                    const bayLevels=rackBayLevelCounts(o);
+                    const levels=Math.max(...bayLevels,1);
                     const longOnZ=d>=w,run=longOnZ?d:w,depth=longOnZ?w:d;
                     const pitch=rackOneLevelHeight(o),height=pitch*levels;
                     const thickness=Math.max(.018,Math.min(.085,depth*.09,run/(Math.max(1,bays)*7)));
@@ -3022,12 +3109,14 @@
                         const across=ri*(depth+Math.max(0,Number(o.rackBackGap)||0));
                         for(let bi=0;bi<=bays;bi++){
                             const u=fractions[bi]*run;
+                            const postLevels=Math.max(bayLevels[Math.max(0,bi-1)]||0,bayLevels[Math.min(bays-1,bi)]||0);
                             for(const v of [across,across+depth-thickness])
-                                component(Math.max(0,u-thickness/2),v,thickness,thickness,height,'#2563eb',0);
+                                component(Math.max(0,u-thickness/2),v,thickness,thickness,Math.max(.08,postLevels*pitch),'#2563eb',0);
                         }
                         for(let li=1;li<=levels;li++){
                             const yy=li*pitch;
                             for(let bi=0;bi<bays;bi++){
+                                if(li>bayLevels[bi])continue;
                                 const u=fractions[bi]*run;
                                 const seg=(fractions[bi+1]-fractions[bi])*run;
                                 component(u,across,seg,thickness,.10,'#f59e0b',Math.max(0,yy-.12));
@@ -3216,6 +3305,25 @@
                 if(o.type==='group'){(o.children||[]).forEach(c=>addObject(c,ox+o.x_m,oz+o.y_m));return;}
                 const x=o.x_m+ox,z=o.y_m+oz,w=o.w_m,d=o.h_m,angle=o.angle||0;
                 if(o.type==='line'||o.type==='polyline'||o.type==='text')return;
+                if(o.type==='column_cross'){
+                    // Stub ostaje krstić u 2D, ali je pun stub zadate visine u 3D.
+                    block(x,z,Math.max(.05,w),Math.max(.05,d),Math.max(.1,Number(o.columnHeight)||3),o.color||'#14b8a6',angle,0,o);
+                    return;
+                }
+                if(o.type==='ground_storage'){
+                    // Parter je samo obojena površina poda, bez ikakvog izdizanja.
+                    const geometry=new T.PlaneGeometry(Math.max(.01,w),Math.max(.01,d));
+                    const material=new T.MeshBasicMaterial({color:o.color||'#d97706',side:T.DoubleSide,transparent:true,opacity:Math.max(.08,Math.min(1,(Number(o.fillOpacity??70))/100)),depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});
+                    const zone=new T.Mesh(geometry,material);
+                    zone.rotation.x=-Math.PI/2;
+                    zone.rotation.z=0;
+                    zone.rotation.order='YXZ';
+                    zone.rotation.y=-angle*Math.PI/180;
+                    zone.position.set(x+w/2,.012,z+d/2);
+                    zone.renderOrder=2;
+                    zone.userData.objectId=o.id;editableMeshes.push(zone);cad3dScene.add(zone);
+                    return;
+                }
                 if(o.type==='circle'){
                     const height=Math.max(.01,Number(o.solidHeight)||1),floor=Math.max(0,Number(o.floorHeight)||0);
                     const mesh=new T.Mesh(new T.CylinderGeometry(Math.max(.01,w/2),Math.max(.01,w/2),height,48),new T.MeshStandardMaterial({color:o.color||'#14b8a6',roughness:.65}));
@@ -3479,6 +3587,12 @@
                 const a=(o.angle||0)*Math.PI/180,cx=X(x)+w/2,cy=Y(y)+h/2;
                 const rotate=(px,py)=>[cx+px*Math.cos(a)-py*Math.sin(a),cy+px*Math.sin(a)+py*Math.cos(a)];
                 if(o.type==='text') { /* samo tekst */ }
+                else if(o.type==='sliding_fence'){
+                    const q=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([u,v])=>rotate(u,v));
+                    doc.setFillColor(148,163,184);doc.lines(q.slice(1).map((p,i)=>[p[0]-q[i][0],p[1]-q[i][1]]),q[0][0],q[0][1],[1,1],'FD',true);
+                    doc.setDrawColor(71,85,105);doc.setLineWidth(.25);
+                    for(let i=1;i<Math.max(2,Math.ceil(Math.abs(o.w_m)/.4));i++){const t=i/Math.max(2,Math.ceil(Math.abs(o.w_m)/.4));doc.line(...rotate(-w/2+w*t,-h/2),...rotate(-w/2+w*t,h/2));}
+                }
                 else if(o.type==='safety_fence'){
                     // Ograda je u PDF-u u stvarnoj razmeri: širina trake prati h_m,
                     // bez minimalne debljine koja bi prekrila susedne objekte.
@@ -3588,6 +3702,7 @@
                     }
                     if(o.type==='rack'){
                         const marks=rackBayFractions(o)||[0,1];
+                        const bayLevelsPDF=rackBayLevelCounts(o);
                         const copies=Math.max(1,Math.min(20,Math.round(Number(o.rackDoubles)||1)));
                         const gap=Math.max(0,Number(o.rackBackGap)||0)*scale;
                         for(let ri=0;ri<copies;ri++){
