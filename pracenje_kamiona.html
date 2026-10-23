@@ -175,7 +175,7 @@ i.hatch,.f.hatch{background:repeating-linear-gradient(45deg,#a9c0ee 0 3px,#d6e2f
       <select id="pf" style="flex:0 0 150px"><option value="all">Svi delovi</option><option value="act">Sa zalihom/tranzitom</option></select>
     </div>
     <div class="hint" id="pHint" style="margin-bottom:6px"></div>
-    <table><thead><tr><th>Part number / naziv</th><th class="n">Stanje (sada)</th><th class="n">U tranzitu</th><th class="n">Ukupno</th></tr></thead><tbody id="pb"></tbody></table>
+    <table><thead><tr><th>Part number / naziv</th><th class="n">Stanje (popis)</th><th class="n">U tranzitu</th><th class="n">Ukupno</th></tr></thead><tbody id="pb"></tbody></table>
   </div>
 
   <!-- POKRIVENOST -->
@@ -221,7 +221,7 @@ i.hatch,.f.hatch{background:repeating-linear-gradient(45deg,#a9c0ee 0 3px,#d6e2f
     <div class="cvleg" id="cvLeg"></div>
     <div class="hint" id="cHint" style="margin-bottom:8px"></div>
     <div id="cb"></div>
-    <div class="hint">Pokrivenost (h) = količina ÷ (potreba/dan ÷ 24). Potreba/dan se uzima direktno, a ako nije uneta računa se kao <b>vozila/dan × po vozilu</b>.</div>
+    <div class="hint">Pokrivenost (h) = količina iz popisa ÷ (potreba/dan ÷ 24). Potreba/dan se uzima direktno, a ako nije uneta računa se kao <b>vozila/dan × po vozilu</b>.</div>
   </div>
 </section>
 
@@ -484,19 +484,21 @@ function renderList(){const f=$('flt').value;let L2=ships.slice().sort((a,b)=>(a
     $('list').appendChild(d)})}
 $('flt').onchange=renderList;
 
-/* ---------- satna potrošnja: stanje = popis − (potreba/dan ÷ 24) × broj punih sati od popisa ---------- */
+/* ---------- Pokrivenost se računa iz potrebe/dan, a stanje ostaje jednako poslednjem popisu ---------- */
 const hourFloor=d=>{const x=new Date(d);x.setMinutes(0,0,0);return x.getTime()};
 const hoursSincePopis=p=>{const t=parseDate(p.date);return t?Math.max(0,Math.round((hourFloor(Date.now())-hourFloor(t))/36e5)):0};   // pun sat = 10:00, 11:00, 12:00…
 const consumed=p=>Math.round(hoursSincePopis(p)*demOf(p.pn)/24);
-const curQty=p=>Math.max(0,(+p.qty||0)-consumed(p));
+// Stanje iz popisa je izvorna, nepromenljiva količina. Potreba/dan utiče na pokrivenost,
+// ali nikada ne smanjuje količinu iz Excel popisa samo zato što je uvezen šablon.
+const curQty=p=>Math.max(0,+p.qty||0);
 
 /* ---------- delovi ---------- */
 function renderParts(){$('dl').innerHTML=parts.map(p=>`<option value="${esc(p.pn)}">${esc(p.name)}</option>`).join('');
   const q=$('q').value.trim().toLowerCase(),f=$('pf').value;
   let rows=parts.map(p=>({...p,raw:+p.qty||0,hr:demOf(p.pn)/24,qty:curQty(p),tr:transitQty(p.pn)})).filter(p=>(!q||p.pn.toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q))&&(f==='all'||p.qty>0||p.tr>0));
   const latest=parts.map(p=>p.date).filter(Boolean).sort().pop();
-  $('pHint').textContent=parts.length?`${parts.length} delova u bazi · poslednji popis: ${latest||'—'} · stanje se automatski smanjuje na svaki pun sat (potreba/dan ÷ 24)`:'Baza je prazna – uvezi Excel popis iznad.';
-  $('pb').innerHTML=rows.map(p=>`<tr class="p" data-pn="${esc(p.pn)}"><td><b>${esc(p.pn)}</b><br><span style="color:var(--mut);font-size:12px">${esc((p.name||'(bez naziva)').split('/')[0].slice(0,80))}</span></td><td class="n">${fmt(p.qty)}${p.hr>0?`<br><span style="color:var(--mut);font-size:11px">popis ${fmt(p.raw)} · −${fmt(Math.round(p.hr*10)/10)}/h</span>`:''}</td><td class="n ${p.tr?'transit':''}">${p.tr?fmt(p.tr):'–'}</td><td class="n"><b>${fmt(p.qty+p.tr)}</b></td></tr>`).join('')||'<tr><td colspan=4 class="hint">Nema rezultata.</td></tr>'}
+  $('pHint').textContent=parts.length?`${parts.length} delova u bazi · poslednji popis: ${latest||'—'} · prikazano stanje je iz Excel popisa; potreba/dan služi samo za pokrivenost`:'Baza je prazna – uvezi Excel popis iznad.';
+  $('pb').innerHTML=rows.map(p=>`<tr class="p" data-pn="${esc(p.pn)}"><td><b>${esc(p.pn)}</b><br><span style="color:var(--mut);font-size:12px">${esc((p.name||'(bez naziva)').split('/')[0].slice(0,80))}</span></td><td class="n">${fmt(p.qty)}</td><td class="n ${p.tr?'transit':''}">${p.tr?fmt(p.tr):'–'}</td><td class="n"><b>${fmt(p.qty+p.tr)}</b></td></tr>`).join('')||'<tr><td colspan=4 class="hint">Nema rezultata.</td></tr>'}
 $('q').oninput=renderParts;$('pf').onchange=renderParts;
 $('pb').onclick=e=>{const tr=e.target.closest('tr.p');if(!tr)return;const pn=tr.dataset.pn;const c=ships.filter(s=>s.status==='U tranzitu'&&s.items.some(i=>i.pn===pn));
   if(!c.length)return toast('Nijedno vozilo trenutno ne nosi '+pn);
@@ -616,6 +618,7 @@ async function parseFile(f){const wb=XLSX.read(await f.arrayBuffer(),{type:'arra
   wb.SheetNames.forEach(sn=>{const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:false,defval:''});
     const hi=rows.findIndex(r=>r.some(c=>String(c).trim().toLowerCase()==='part number'));if(hi<0)return;
     const H=rows[hi].map(c=>String(c).trim().toLowerCase()),ix=k=>H.findIndex(h=>h===k),ci={n:ix('component name'),s:ix('supplier'),p:ix('part number'),q:ix('qty')},di=H.findIndex(h=>DN.includes(h));
+    if(ci.q<0)return;
     let date='';rows.slice(0,hi).forEach(r=>{if(/datum/i.test(r[0]))date=String(r[1]).trim();if(/vreme/i.test(r[0])&&date)date+=' '+String(r[1]).trim()});
     let sup='';rows.slice(0,hi).forEach(r=>{if(/dobavlja/i.test(r[0]))sup=String(r[1]).trim().replace(/_/g,' ')});
     rows.slice(hi+1).forEach(r=>{const pn=String(r[ci.p]??'').trim();if(!pn)return;out.push({pn,name:String(r[ci.n]??'').trim(),supplier:String(r[ci.s]||sup).trim(),qty:parseInt(String(r[ci.q]).replace(/[^\d-]/g,''))||0,date});
@@ -716,7 +719,7 @@ resetForm();renderPopisi();refresh();
 let lastHr=hourFloor(Date.now());
 setInterval(()=>{const h=hourFloor(Date.now());if(h===lastHr)return;const a=document.activeElement;
   if(a&&a.closest&&a.closest('#p-cv')&&/INPUT|TEXTAREA/.test(a.tagName))return;
-  lastHr=h;renderParts();renderCov();toast('Stanje je preračunato za novi sat')},15000);
+  lastHr=h;renderParts();renderCov()},15000);
 // Automatska sinhronizacija sa Google Sheets na svakih 20 sekundi.
 // Ne prekidaj aktivnu izmenu vozila ili unos podataka u Pokrivenosti.
 let autoRefreshBusy=false;
