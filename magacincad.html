@@ -326,7 +326,7 @@
                             <i class="fa-solid fa-truck-pickup text-amber-500 text-lg group-hover:scale-110 transition"></i>
                             <span class="text-[11px] font-medium text-slate-300 mt-1">Viljuškar</span>
                         </div>
-                        <div onclick="addPreset('sliding_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-arrows-left-right text-slate-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Klizna ograda (točkići)</span></div><div onclick="addPreset('safety_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-road-barrier text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Safety ograda</span></div><div onclick="addPreset('worker')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-person text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Radnik (3D)</span></div><div onclick="addPreset('elevated_sign')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-sign-hanging text-amber-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Tabla / Broj crteža (3D visina)</span></div>
+                        <div onclick="addPreset('mesh_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-border-all text-slate-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Klasična mrežasta ograda (siva)</span></div><div onclick="addPreset('sliding_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-arrows-left-right text-slate-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Klizna ograda (točkići)</span></div><div onclick="addPreset('safety_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-road-barrier text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Safety ograda</span></div><div onclick="addPreset('worker')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-person text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Radnik (3D)</span></div><div onclick="addPreset('elevated_sign')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-sign-hanging text-amber-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Tabla / Broj crteža (3D visina)</span></div>
                          <div onclick="addPreset('extinguisher')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-red-400 cursor-pointer flex flex-col items-center text-center group transition">
                             <span class="inline-flex bg-red-600 text-white font-black text-lg items-center justify-center w-6 h-6">H</span>
                             <span class="text-[11px] font-medium text-slate-300 mt-1">PP Aparat</span>
@@ -369,6 +369,7 @@
              <div id="cad3d" class="hidden absolute inset-0 bg-slate-950" style="z-index:2"></div>
             <div id="cad3d-help" class="hidden absolute bottom-14 right-3 bg-slate-800/90 border border-slate-600 rounded p-2 text-[11px] text-slate-200 pointer-events-none" style="z-index:5">3D: levi drag = standardna orbit rotacija · desni drag = pomeranje pogleda (nazad → napred) · klik na kutiju = slaganje · Shift + levi drag na objektu = pomeranje objekta · točkić = zoom · WASD = kretanje</div>
              <div class="absolute top-3 left-3 flex gap-1" style="z-index:5"><button onclick="switchCADView(false)" class="bg-blue-700 px-3 py-1.5 rounded text-xs">2D</button><button onclick="switchCADView(true)" class="bg-violet-700 px-3 py-1.5 rounded text-xs">3D prikaz</button></div>
+             <label id="cad3d-columns-toggle" class="hidden absolute top-14 left-3 bg-slate-800/95 border border-slate-600 rounded px-3 py-2 text-xs text-slate-100 items-center gap-2" style="z-index:6"><input id="cad3d-show-columns" type="checkbox" checked onchange="toggleCAD3DColumns(this.checked)" class="accent-blue-500"> Prikaži stubove u 3D</label>
 
             <!-- CANVAS OVERLAY TOOLBAR (ZOOM CONTROLS & HUD) -->
             <div class="absolute bottom-4 left-4 bg-slate-800/90 backdrop-blur border border-slate-700 rounded-lg p-1.5 flex items-center space-x-2 text-xs shadow-xl text-slate-300">
@@ -523,7 +524,7 @@
                 <input id="cad-3d-height" type="number" min="0.1" max="30" step="0.05" onchange="updateCAD3DHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2" />
                 <p class="text-slate-400 text-[10px]">Za stub, zid, rolo vrata i safety ogradu: unesi željenu visinu u metrima. Visina u 3D je nezavisna od dimenzija u 2D.</p>
             </div>
-            <div id="sliding-fence-controls" class="hidden border-t border-slate-700 pt-3 space-y-2"><h5 class="font-bold text-slate-300">Klizna ograda na točkićima</h5><label class="block">Visina (m)<input id="sliding-fence-height" type="number" min="0.2" max="15" step="0.05" onchange="updateSlidingFenceHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label><p class="text-slate-400 text-[10px]">Širinu (dužinu ograde), dubinu i ugao menjaš u standardnim poljima iznad. Siva boja je podrazumevana.</p></div><div id="rack-properties" class="border-t border-slate-700 pt-3 space-y-3 hidden">
+            <div id="mesh-fence-controls" class="hidden border-t border-slate-700 pt-3 space-y-2"><h5 class="font-bold text-slate-300">Klasična ograda – kvadratna mreža</h5><label class="block font-semibold text-sky-300">Visina ograde (m)<input id="mesh-fence-height" type="number" min="0.1" max="30" step="0.05" onchange="updateMeshFenceHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label><label class="block">Veličina otvora mreže (m)<input id="mesh-fence-cell" type="number" min="0.05" max="2" step="0.05" onchange="updateMeshFenceCell(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label><p class="text-slate-400 text-[10px]">Visinu unosiš ovde. Dužina, debljina, rotacija i boja podešavaju se u standardnim poljima iznad. Bez točkića, siva po defaultu.</p></div><div id="sliding-fence-controls" class="hidden border-t border-slate-700 pt-3 space-y-2"><h5 class="font-bold text-slate-300">Klizna ograda na točkićima</h5><label class="block">Visina (m)<input id="sliding-fence-height" type="number" min="0.2" max="15" step="0.05" onchange="updateSlidingFenceHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label><p class="text-slate-400 text-[10px]">Širinu (dužinu ograde), dubinu i ugao menjaš u standardnim poljima iznad. Siva boja je podrazumevana.</p></div><div id="dock-door-controls" class="hidden border-t border-slate-700 pt-3 space-y-2"><h5 class="font-bold text-sky-300">Doking – rolo vrata</h5><label class="block">Visina rolo vrata (m)<input id="dock-door-height" type="number" min="1.5" max="8" step="0.1" onchange="updateDockDoor('dockDoorHeight',this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label><label class="block">Podignutost vrata (%)<input id="dock-door-open" type="range" min="0" max="100" step="5" oninput="updateDockDoor('dockDoorOpen',this.value)" class="w-full mt-1"><span id="dock-door-open-value" class="text-slate-300">0%</span></label><p class="text-slate-400 text-[10px]">0% = spuštena, 100% = potpuno podignuta. Žuta podna zona ostaje bez uzvišenja.</p></div><div id="rack-properties" class="border-t border-slate-700 pt-3 space-y-3 hidden">
                     <h5 class="font-bold text-blue-400 uppercase tracking-wider text-[10px]">Specifično za Regal</h5>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
@@ -857,7 +858,7 @@
         }
         function placeColumn(point) {
             snapshotCAD();
-            const size=0.3;
+            const size=0.5;
             const obj={id:generateId(),type:'column_cross',x_m:point.x-size/2,y_m:point.y-size/2,
                 w_m:size,h_m:size,angle:0,color:'#14b8a6',strokeColor:'#2dd4bf',strokeWidth:2,
                 label:'',columnHeight:7,zIndex:objects.length,layerId:activeLayerId};
@@ -885,7 +886,31 @@
             }
             roadDrawingPoints.push({x:point.x,y:point.y});draw();
         }
-        function updateSlidingFenceHeight(value){
+        function updateMeshFenceHeight(value){
+            const height=Number(String(value).replace(',','.'));
+            if(!Number.isFinite(height)||height<0.1||height>30){alert('Visina ograde mora biti između 0.1 i 30 m.');updateInspector();return;}
+            snapshotCAD();
+            selectedObjectIds.forEach(id=>{const o=objects.find(x=>x.id===id);if(o&&o.type==='mesh_fence'&&!o.locked&&layerEditable(o))o.fenceHeight=height;});
+            updateInspector();draw();if(cad3dActive)scheduleCAD3DRefresh();
+        }
+        function updateMeshFenceCell(value){
+            const cell=Number(String(value).replace(',','.'));
+            if(!Number.isFinite(cell)||cell<.05||cell>2){alert('Otvor mreže mora biti između 0.05 i 2 m.');updateInspector();return;}
+            snapshotCAD();selectedObjectIds.forEach(id=>{const o=objects.find(x=>x.id===id);if(o&&o.type==='mesh_fence'&&!o.locked&&layerEditable(o))o.meshCell=cell;});
+            updateInspector();draw();if(cad3dActive)scheduleCAD3DRefresh();
+        }
+        function updateDockDoor(prop,value){
+            const n=Number(value);
+            if(!Number.isFinite(n))return;
+            snapshotCAD();
+            selectedObjectIds.forEach(id=>{
+                const o=objects.find(x=>x.id===id);
+                if(o&&o.type==='dock'&&!o.locked&&layerEditable(o))
+                    o[prop]=prop==='dockDoorHeight'?Math.max(1.5,Math.min(8,n)):Math.max(0,Math.min(100,n));
+            });
+            updateInspector();draw();if(cad3dActive)scheduleCAD3DRefresh();
+        }
+                function updateSlidingFenceHeight(value){
             const h=Number(String(value).replace(',','.'));
             if(!Number.isFinite(h)||h<.2||h>15){alert('Visina mora biti između 0.2 i 15 m.');updateInspector();return;}
             snapshotCAD();selectedObjectIds.forEach(id=>{const o=objects.find(x=>x.id===id);if(o&&o.type==='sliding_fence'&&!o.locked&&layerEditable(o))o.slidingFenceHeight=h;});
@@ -912,7 +937,7 @@
 
             switch (type) {
                 case 'column_cross':
-                    Object.assign(newObj,{w_m:0.45,h_m:0.45,color:'#14b8a6',strokeColor:'#2dd4bf',label:'',columnHeight:7});
+                    Object.assign(newObj,{w_m:0.5,h_m:0.5,color:'#14b8a6',strokeColor:'#2dd4bf',label:'',columnHeight:7});
                     break;
                 case 'circle':
                     newObj.solidHeight=1;newObj.floorHeight=0;
@@ -924,6 +949,8 @@
                     break;
                 case 'elevated_sign':
                     Object.assign(newObj,{w_m:2.4,h_m:.12,solidHeight:.7,floorHeight:5,color:'#facc15',strokeColor:'#111827',label:'PN-123456'});break;
+                case 'mesh_fence':
+                    Object.assign(newObj,{w_m:5,h_m:.08,fenceHeight:2,meshCell:.3,color:'#9ca3af',strokeColor:'#6b7280',label:''});break;
                 case 'sliding_fence':
                     Object.assign(newObj,{w_m:5,h_m:.24,slidingFenceHeight:2,color:'#94a3b8',strokeColor:'#cbd5e1',label:'Klizna ograda'});break;
                 case 'safety_fence':
@@ -1044,6 +1071,8 @@
                     newObj.color = '#9333ea';
                     newObj.strokeColor = '#c084fc';
                     newObj.label = 'Rampa #1';
+                    newObj.dockDoorHeight = 3.2;
+                    newObj.dockDoorOpen = 0;
                     break;
                 case 'truck':
                     newObj.w_m = 2.6;
@@ -1133,7 +1162,7 @@
             const sortedObjects = [...objects].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
             sortedObjects.forEach(obj => {
-                if (!layerVisible(obj)) return;
+                if (!layerVisible(obj) || obj.type !== 'road') return;
                 drawObject(obj, false, forExport);
             });
             // Jedinstvena geometrija spojeva: miter spoj zatvara spoljašnji i unutrašnji ugao.
@@ -1167,6 +1196,11 @@
                     CTX.setLineDash([10,8]);CTX.stroke();CTX.restore();
                 }
             }
+
+            // Zebra je uvek iznad asfalta i iznad geometrije spojeva puta.
+            sortedObjects.filter(o=>o.type==='crosswalk'&&layerVisible(o)).forEach(o=>drawObject(o,false,forExport));
+            // Zidovi, stubovi, regali i ostali objekti prekrivaju zebru; samo put ostaje ispod nje.
+            sortedObjects.filter(o=>o.type!=='road'&&o.type!=='crosswalk'&&layerVisible(o)).forEach(o=>drawObject(o,false,forExport));
 
             if(!forExport&&mode==='draw_road_path'&&roadDrawingPoints.length){
                 CTX.save();CTX.strokeStyle='#facc15';CTX.lineWidth=Math.max(2,roadDrawingWidth*PIXELS_PER_METER*zoom);CTX.globalAlpha=.28;CTX.lineJoin='round';CTX.lineCap='butt';CTX.beginPath();
@@ -1306,6 +1340,13 @@
                     break;
                 case 'elevated_sign': {
                     CTX.fillStyle=obj.color||'#facc15';CTX.fillRect(-w/2,-h/2,w,h);CTX.strokeStyle=obj.strokeColor||'#111827';CTX.lineWidth=2;CTX.strokeRect(-w/2,-h/2,w,h);CTX.fillStyle='#111827';CTX.textAlign='center';CTX.textBaseline='bottom';CTX.font=`bold ${Math.max(10,Math.min(15,w*.12))}px sans-serif`;CTX.fillText((obj.label||'PN').slice(0,32),0,-h/2-4);break;
+                }
+                case 'mesh_fence':{
+                    CTX.fillStyle=obj.color||'#9ca3af';CTX.globalAlpha*=.32;CTX.fillRect(-w/2,-h/2,w,h);CTX.globalAlpha=isPreview?.6:1;
+                    CTX.strokeStyle=obj.strokeColor||'#6b7280';CTX.lineWidth=Math.max(1,Math.min(3,h*.3));CTX.strokeRect(-w/2,-h/2,w,h);
+                    const count=Math.max(1,Math.min(150,Math.ceil(obj.w_m/Math.max(.05,obj.meshCell||.3))));
+                    for(let i=1;i<count;i++){const x=-w/2+w*i/count;CTX.beginPath();CTX.moveTo(x,-h/2);CTX.lineTo(x,h/2);CTX.stroke();}
+                    break;
                 }
                 case 'sliding_fence':{
                     CTX.fillStyle=obj.color||'#94a3b8';CTX.fillRect(-w/2,-h/2,w,h);
@@ -2459,12 +2500,20 @@
                 document.getElementById('prop-object-locked').checked=!!selected.locked;
                 document.getElementById('hydrant-wall-controls').classList.toggle('hidden',selected.type!=='hydrant');
                 if(selected.type==='hydrant')document.getElementById('hydrant-wall-height').value=selected.hydrantMountHeight??1.2;
+                const meshControls=document.getElementById('mesh-fence-controls');meshControls.classList.toggle('hidden',selected.type!=='mesh_fence');if(selected.type==='mesh_fence'){document.getElementById('mesh-fence-cell').value=selected.meshCell??.3;document.getElementById('mesh-fence-height').value=selected.fenceHeight??2;}
+                const dockControls=document.getElementById('dock-door-controls');
+                dockControls.classList.toggle('hidden',selected.type!=='dock');
+                if(selected.type==='dock'){
+                    document.getElementById('dock-door-height').value=selected.dockDoorHeight??3.2;
+                    document.getElementById('dock-door-open').value=selected.dockDoorOpen??0;
+                    document.getElementById('dock-door-open-value').textContent=(selected.dockDoorOpen??0)+'%';
+                }
                 const slidingControls=document.getElementById('sliding-fence-controls');slidingControls.classList.toggle('hidden',selected.type!=='sliding_fence');if(selected.type==='sliding_fence')document.getElementById('sliding-fence-height').value=selected.slidingFenceHeight??2;
                 const heightControls=document.getElementById('cad-3d-height-controls');
                 heightControls.classList.toggle('hidden', !['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception','column_cross'].includes(selected.type));
                 if(['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception','column_cross'].includes(selected.type)) {
                     document.getElementById('cad-3d-height').value=selected.type==='column_cross'?(selected.columnHeight??7):selected.type==='wall'?(selected.wallHeight??2.8):selected.type==='roller_door'?(selected.doorHeight??2.8):(['relax_house','driver_zone','paper_reception'].includes(selected.type)?(selected.roomHeight??2.8):(selected.fenceHeight??1.15));
-                    document.getElementById('cad-3d-height-label').textContent=selected.type==='column_cross'?'Visina stuba od poda (m)':selected.type==='safety_fence'?'Visina safety ograde (m)':(['relax_house','driver_zone','paper_reception'].includes(selected.type)?'Visina kućice / prostorije (m)':'Visina u 3D (m)');
+                    document.getElementById('cad-3d-height-label').textContent=selected.type==='column_cross'?'Visina stuba od poda (m)':selected.type==='mesh_fence'?'Visina mrežaste ograde (m)':selected.type==='safety_fence'?'Visina safety ograde (m)':(['relax_house','driver_zone','paper_reception'].includes(selected.type)?'Visina kućice / prostorije (m)':'Visina u 3D (m)');
                 }
 
                 document.getElementById('prop-label').value = selected.label || '';
@@ -2561,7 +2610,7 @@
                     if(o.type==='column_cross')o.columnHeight=height;
                     if(o.type==='wall')o.wallHeight=height;
                     if(o.type==='roller_door')o.doorHeight=height;
-                    if(o.type==='safety_fence')o.fenceHeight=height;
+                    if(o.type==='safety_fence'||o.type==='mesh_fence')o.fenceHeight=height;
                     if(['relax_house','driver_zone','paper_reception'].includes(o.type))o.roomHeight=height;
                 }
             });
@@ -2905,10 +2954,19 @@
             cad3dRefreshTimer=setTimeout(()=>{cad3dRefreshTimer=null;if(cad3dActive)buildCAD3D(true);},90);
         }
         let cad3dOrbit={yaw:.65,pitch:.75,dist:65,cx:0,cz:0};
+        let cad3dShowColumns=true;
+        function toggleCAD3DColumns(show){
+            cad3dShowColumns=!!show;
+            queueCAD3DRefresh();
+        }
         function switchCADView(active){
             cad3dActive=active;
             const host=document.getElementById('cad3d');host.classList.toggle('hidden',!active);
             document.getElementById('cad3d-help').classList.toggle('hidden',!active);
+            const columnsToggle=document.getElementById('cad3d-columns-toggle');
+            columnsToggle.classList.toggle('hidden',!active);
+            columnsToggle.classList.toggle('flex',active);
+            document.getElementById('cad3d-show-columns').checked=cad3dShowColumns;
             if(cad3dFrame){cancelAnimationFrame(cad3dFrame);cad3dFrame=null;}
             if(!active){clearTimeout(cad3dRefreshTimer);return;}
             if(!window.THREE){alert('3D zahteva Three.js i internet konekciju.');cad3dActive=false;host.classList.add('hidden');return;}
@@ -2946,21 +3004,56 @@
             }
             function detailedObject(o,x,z,w,d){
                 const cx=x+w/2,cz=z+d/2;
-                // Warehouse docking bay: elevated loading platform, ramp lip, dock bumper, portal and door panels.
+                // Docking bay is a flush floor marking and a thin leveler plate.
+                // The truck tunnel is already at a lower level: NO elevated concrete platform,
+                // NO vertical wall, raised portal or large door slab here.
                 if(o.type==='dock'){
-                    const platformH=.95,front=z+d*.18;
-                    detailBox(o,x,z,w,d*.72,platformH,'#64748b');
-                    detailBox(o,x,front,w,d*.07,.12,'#f59e0b',platformH-.08);
-                    detailBox(o,x+w*.06,z+d*.08,w*.88,d*.12,.10,'#334155',platformH);
-                    for(const xx of [x+w*.07,x+w*.91]){
-                        detailBox(o,xx,z+d*.72,w*.045,d*.13,.65,'#111827',.1);
-                        detailBox(o,xx,z+d*.76,w*.045,d*.04,2.7,'#475569',platformH);
+                    const group=new T.Group();
+                    group.position.set(cx,0,cz);
+                    group.rotation.y=-(Number(o.angle)||0)*Math.PI/180;
+                    const addPart=(px,py,pz,bw,bh,bd,color,metal=false)=>{
+                        const mesh=new T.Mesh(
+                            new T.BoxGeometry(Math.max(.012,bw),Math.max(.006,bh),Math.max(.012,bd)),
+                            new T.MeshStandardMaterial({color,roughness:metal?.48:.83,metalness:metal?.5:.03})
+                        );
+                        mesh.position.set(px,py,pz);
+                        mesh.userData.objectId=o.id;
+                        editableMeshes.push(mesh);
+                        group.add(mesh);
+                    };
+                    // Recessed docking footprint: thin dark surface flush with warehouse floor.
+                    addPart(0,.008,0,w,.016,d,'#334155');
+                    // Painted border indicates the usable docking area, not a raised curb.
+                    const stripe=Math.max(.035,Math.min(.075,w*.018));
+                    addPart(-w/2+stripe/2,.022,0,stripe,.012,d,'#facc15');
+                    addPart(w/2-stripe/2,.022,0,stripe,.012,d,'#facc15');
+                    addPart(0,.022,-d/2+stripe/2,w,.012,stripe,'#facc15');
+                    // Rolo vrata na kraju doking zone: vertikalna segmentna zavesa.
+                    // Otvorenost 0%=spustena, 100%=podignuta. Nema podnog rolera.
+                    const doorH=Math.max(1.5,Math.min(8,Number(o.dockDoorHeight??3.2)));
+                    const openPct=Math.max(0,Math.min(100,Number(o.dockDoorOpen??0)));
+                    const visibleH=doorH*(1-openPct/100);
+                    const doorZ=d/2-.035;
+                    const frame=.095;
+                    for(const side of [-1,1]){
+                        addPart(side*(w/2-frame/2),doorH/2,doorZ,frame,doorH,.17,'#64748b',true);
                     }
-                    detailBox(o,x+w*.06,z+d*.78,w*.88,d*.055,.16,'#475569',platformH+2.6);
-                    detailBox(o,x+w*.11,z+d*.785,w*.78,d*.04,2.35,'#94a3b8',platformH+.12);
-                    for(let i=1;i<5;i++)detailBox(o,x+w*.11,z+d*.755+i*.002,w*.78,d*.025,.028,'#475569',platformH+.12+i*.43);
-                    // Dock leveler plate bridging the gap to the truck.
-                    detailBox(o,x+w*.17,z+d*.04,w*.66,d*.23,.065,'#eab308',platformH-.03);
+                    addPart(0,doorH+.08,doorZ,w+.16,.16,.25,'#475569',true);
+                    // Segmenti rolo vrata skupljaju se prema gore pri otvaranju.
+                    const slatH=.26;
+                    const slats=Math.ceil(visibleH/slatH);
+                    for(let i=0;i<slats;i++){
+                        const lo=doorH-visibleH+i*slatH;
+                        const hi=Math.min(doorH,lo+slatH);
+                        if(hi<=lo)continue;
+                        addPart(0,(lo+hi)/2,doorZ,w-2*frame,hi-lo-.008,.075,i%2?'#a8b3c1':'#cbd5e1',true);
+                    }
+                    // Gumeni odbojnici su samo uz utovarni otvor.
+                    const bumperW=Math.max(.12,Math.min(.25,w*.085));
+                    for(const side of [-1,1]){
+                        addPart(side*(w/2-bumperW*.85),.17,d/2-.17,bumperW,.34,.22,'#111827');
+                    }
+                    cad3dScene.add(group);
                     return true;
                 }
                 if(o.type==='extinguisher'){
@@ -2999,6 +3092,18 @@
                     const tex=new T.CanvasTexture(canvas);
                     const sign=new T.Mesh(new T.PlaneGeometry(width*.42,height*.52),new T.MeshBasicMaterial({map:tex,transparent:true,side:T.DoubleSide,depthWrite:false}));
                     sign.position.set(-width*.09,mount+height*.53,front+.015);sign.userData.objectId=o.id;editableMeshes.push(sign);group.add(sign);
+                    cad3dScene.add(group);return true;
+                }
+                if(o.type==='mesh_fence'){
+                    const group=new T.Group();group.position.set(cx,0,cz);group.rotation.y=-(o.angle||0)*Math.PI/180;
+                    const length=Math.max(.1,w),height=Math.max(.1,Math.min(30,Number(o.fenceHeight)||2)),depth=Math.max(.025,Math.min(.2,d));
+                    const mat=new T.MeshStandardMaterial({color:o.color||'#9ca3af',metalness:.55,roughness:.5,side:T.DoubleSide});
+                    function bar(x,y,bw,bh,bd){const mesh=new T.Mesh(new T.BoxGeometry(bw,bh,bd),mat);mesh.position.set(x,y,0);mesh.userData.objectId=o.id;editableMeshes.push(mesh);group.add(mesh);}
+                    const cell=Math.max(.05,Math.min(2,Number(o.meshCell)||.3));
+                    const cols=Math.max(1,Math.min(200,Math.ceil(length/cell))),rows=Math.max(1,Math.min(100,Math.ceil(height/cell)));
+                    const wire=Math.min(.022,cell*.12),post=Math.max(.045,Math.min(.1,depth));
+                    for(let i=0;i<=cols;i++){const x=-length/2+length*i/cols;bar(x,height/2,i===0||i===cols?post:wire,height,depth);}
+                    for(let j=0;j<=rows;j++){const y=height*j/rows;bar(0,y,length,wire,depth);}
                     cad3dScene.add(group);return true;
                 }
                 if(o.type==='sliding_fence'){
@@ -3094,20 +3199,22 @@
                     return true;
                 }
                 if(o.type==='crosswalk'){
-                    // Ista zebra kao u 2D: pet ravnih belih traka, bez visine i bez postolja.
-                    // Položaj na nivou puta/staze (y=0.012) sprečava treperenje površina.
+                    // Zebra lezi preko puta, ne u njemu: zajednicki centar i lokalna rotacija.
+                    // Promena w_m siri iskljucivo poprecno, h_m produzava uzduzno.
+                    const zebra=new T.Group();
+                    zebra.position.set(x+w/2,.075,z+d/2);
+                    zebra.rotation.y=-(Number(o.angle)||0)*Math.PI/180;
+                    const stripeMaterial=new T.MeshBasicMaterial({color:o.color||'#f8fafc',side:T.DoubleSide,depthTest:true,depthWrite:false});
                     for(let i=0;i<5;i++){
-                        const stripe=new T.Mesh(
-                            new T.PlaneGeometry(Math.max(.01,w*.84),Math.max(.01,d*.10)),
-                            new T.MeshStandardMaterial({color:o.color||'#f8fafc',roughness:1,metalness:0,side:T.DoubleSide,depthWrite:false})
-                        );
-                        stripe.rotation.set(-Math.PI/2,0,-(o.angle||0)*Math.PI/180,'YXZ');
-                        // Rotacija celog prelaza oko centra, identična ostalim CAD objektima.
-                        const offset=-d*.43+i*d*.18+d*.05;
-                        const angle=(o.angle||0)*Math.PI/180;
-                        stripe.position.set(x+w/2+Math.sin(angle)*offset,.012,z+d/2+Math.cos(angle)*offset);
-                        stripe.renderOrder=3;stripe.userData.objectId=o.id;editableMeshes.push(stripe);cad3dScene.add(stripe);
+                        const stripe=new T.Mesh(new T.PlaneGeometry(Math.max(.01,w*.84),Math.max(.01,d*.10)),stripeMaterial);
+                        stripe.rotation.x=-Math.PI/2;
+                        stripe.position.set(0,0,-d*.43+i*d*.18+d*.05);
+                        stripe.renderOrder=1;
+                        stripe.userData.objectId=o.id;
+                        editableMeshes.push(stripe);
+                        zebra.add(stripe);
                     }
+                    cad3dScene.add(zebra);
                     return true;
                 }
                 if(o.type==='rack'){
@@ -3416,7 +3523,7 @@
                     block(x,z,w,d,height,o.color||'#64748b',angle,0,o);
                 }
             }
-            visible.forEach(o=>addObject(o));
+            visible.forEach(o=>{if(o.type==='column_cross' && !cad3dShowColumns)return;addObject(o);});
             cad3dCamera=new T.PerspectiveCamera(55,1,.1,10000);
             cad3dRenderer=new T.WebGLRenderer({antialias:true,alpha:false});cad3dRenderer.outputColorSpace=T.SRGBColorSpace;cad3dRenderer.toneMapping=T.ACESFilmicToneMapping;cad3dRenderer.toneMappingExposure=1.35;cad3dRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));host.appendChild(cad3dRenderer.domElement);
             const canvas=cad3dRenderer.domElement;canvas.style.cssText='width:100%;height:100%;display:block;cursor:grab;touch-action:none;';canvas.tabIndex=0;
@@ -3619,6 +3726,13 @@
                 const a=(o.angle||0)*Math.PI/180,cx=X(x)+w/2,cy=Y(y)+h/2;
                 const rotate=(px,py)=>[cx+px*Math.cos(a)-py*Math.sin(a),cy+px*Math.sin(a)+py*Math.cos(a)];
                 if(o.type==='text') { /* samo tekst */ }
+                else if(o.type==='mesh_fence'){
+                    const q=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([u,v])=>rotate(u,v));
+                    doc.setDrawColor(...rgb(o.strokeColor||'#6b7280'));doc.setLineWidth(.3);
+                    for(let i=0;i<4;i++)doc.line(...q[i],...q[(i+1)%4]);
+                    const cols=Math.max(1,Math.min(200,Math.ceil(Math.abs(o.w_m)/Math.max(.05,Number(o.meshCell)||.3))));
+                    for(let i=1;i<cols;i++){const px=-w/2+w*i/cols;doc.line(...rotate(px,-h/2),...rotate(px,h/2));}
+                }
                 else if(o.type==='sliding_fence'){
                     const q=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([u,v])=>rotate(u,v));
                     doc.setFillColor(148,163,184);doc.lines(q.slice(1).map((p,i)=>[p[0]-q[i][0],p[1]-q[i][1]]),q[0][0],q[0][1],[1,1],'FD',true);
@@ -3756,7 +3870,9 @@
                 // Tako se čuvaju i oznake ograda, sitnih simbola i korisnički tekst.
 
             }
-            objects.slice().sort((a,b)=>(a.zIndex||0)-(b.zIndex||0)).forEach(o=>render(o));
+            objects.filter(o=>o.type==='road').forEach(o=>render(o));
+            objects.filter(o=>o.type==='crosswalk').forEach(o=>render(o));
+            objects.slice().sort((a,b)=>(a.zIndex||0)-(b.zIndex||0)).filter(o=>o.type!=='road'&&o.type!=='crosswalk').forEach(o=>render(o));
             // CAD/PDF: isti princip natpisa kao na 2D platnu.
             // Natpis ostaje u svom objektu, bez automatskog razmeštanja,
             // velikih fontova, pozadinskih belih kutija i spojnih linija.
@@ -3765,7 +3881,7 @@
                     (o.children||[]).forEach(c=>renderLabel(c,ox+o.x_m,oy+o.y_m));
                     return;
                 }
-                if(!o.label || ['hydrant','extinguisher','pedestrian_path','wc_fixture'].includes(o.type))return;
+                if(!o.label || ['hydrant','extinguisher','pedestrian_path','wc_fixture','crosswalk'].includes(o.type))return;
                 const label=String(o.label);
                 const w=Math.abs(o.w_m)*scale,h=Math.abs(o.h_m)*scale;
                 if(w<.01||h<.01)return;
