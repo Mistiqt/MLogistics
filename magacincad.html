@@ -1299,6 +1299,18 @@
             ctx.fillStyle='#f8fafc';ctx.fillRect(-12,25,24,4);
             ctx.restore();
         }
+        // Jednake zebra trake (u metrima) u 2D, 3D i PDF, nezavisno od dužine prelaza.
+        function crosswalkStripes(lengthMeters){
+            const length=Math.max(0.01,Number(lengthMeters)||0.01);
+            const stripeWidth=0.40, gap=0.32, margin=0.25;
+            const usable=Math.max(0,length-2*margin);
+            const count=Math.max(1,Math.floor((usable+gap)/(stripeWidth+gap)));
+            const width=Math.min(stripeWidth,usable>0?usable: length);
+            const occupied=count*width+(count-1)*gap;
+            const first=-occupied/2;
+            return Array.from({length:count},(_,i)=>({start:first+i*(width+gap),width}));
+        }
+
         function drawObject(obj, isPreview = false, forExport = false) {
             if (!obj) return;
             if (obj.type === 'group') {
@@ -1385,7 +1397,10 @@
                 case 'crosswalk':
                     CTX.strokeStyle=strokeC;CTX.lineWidth=strokeW;CTX.strokeRect(-w/2,-h/2,w,h);
                     CTX.fillStyle=obj.color||'#f8fafc';
-                    for(let i=0;i<5;i++)CTX.fillRect(-w*.42,-h*.43+i*h*.18,w*.84,h*.10);
+                    // Stalna fizička širina trake i razmak; duži prelaz dobija više traka.
+                    for(const stripe of crosswalkStripes(obj.h_m)){
+                        CTX.fillRect(-w*.42,stripe.start*PIXELS_PER_METER*zoom,w*.84,stripe.width*PIXELS_PER_METER*zoom);
+                    }
                     break;
                 case 'direction_arrow':
                     CTX.fillStyle=forExport?'#15803d':(obj.color||'#22c55e');CTX.beginPath();
@@ -3207,10 +3222,10 @@
                     zebra.position.set(x+w/2,.075,z+d/2);
                     zebra.rotation.y=-(Number(o.angle)||0)*Math.PI/180;
                     const stripeMaterial=new T.MeshBasicMaterial({color:o.color||'#f8fafc',side:T.DoubleSide,depthTest:true,depthWrite:false});
-                    for(let i=0;i<5;i++){
-                        const stripe=new T.Mesh(new T.PlaneGeometry(Math.max(.01,w*.84),Math.max(.01,d*.10)),stripeMaterial);
+                    for(const band of crosswalkStripes(o.h_m)){
+                        const stripe=new T.Mesh(new T.PlaneGeometry(Math.max(.01,w*.84),Math.max(.01,band.width)),stripeMaterial);
                         stripe.rotation.x=-Math.PI/2;
-                        stripe.position.set(0,0,-d*.43+i*d*.18+d*.05);
+                        stripe.position.set(0,0,band.start+band.width/2);
                         stripe.renderOrder=1;
                         stripe.userData.objectId=o.id;
                         editableMeshes.push(stripe);
@@ -3433,20 +3448,53 @@
                     return true;
                 }
                 if(o.type==='truck'){
-                    // Longitudinal axis is Z, trailer at back, cabin at front.
-                    const trailerD=d*.74,cabD=d-trailerD;
-                    detailBox(o,x,z,w,trailerD,2.65,'#e2e8f0',.8);
-                    detailBox(o,x+.06*w,z+.05,w*.88,trailerD*.96,.08,'#94a3b8',3.46);
-                    detailBox(o,x+w*.09,z+trailerD+.08,w*.82,cabD*.84,2.25,'#2563eb',.55);
-                    detailBox(o,x+w*.15,z+trailerD+cabD*.55,w*.70,cabD*.16,.85,'#7dd3fc',1.65);
-                    detailBox(o,x+w*.2,z+d*.96,w*.60,.06,.22,'#f8fafc',.70);
-                    for(const zz of [z+trailerD*.17,z+trailerD*.76,z+trailerD*.89,z+trailerD+cabD*.67]){
-                        for(const xx of [x-.09,x+w+.09]){
-                            const wheel=detailCylinder(o,xx,zz,.34,.20,'#111827',.19,Math.PI/2);
-                            wheel.rotation.z=Math.PI/2;
-                            detailCylinder(o,xx,zz,.15,.205,'#94a3b8',.19,Math.PI/2).rotation.z=Math.PI/2;
-                        }
+                    // Jedna lokalna grupa: svi delovi kamiona rotiraju se oko ISTOG
+                    // centra, kao 2D silueta (prikolica pozadi, kabina napred).
+                    const truck=new T.Group();
+                    truck.position.set(cx,0,cz);
+                    truck.rotation.y=-(Number(o.angle)||0)*Math.PI/180;
+                    const part=(lx,lz,bw,bd,bh,color,bottom=0)=>{
+                        const mesh=new T.Mesh(
+                            new T.BoxGeometry(Math.max(.02,bw),Math.max(.02,bh),Math.max(.02,bd)),
+                            new T.MeshStandardMaterial({color,roughness:.72,metalness:.08})
+                        );
+                        mesh.position.set(lx,bottom+bh/2,lz);
+                        mesh.userData.objectId=o.id;editableMeshes.push(mesh);truck.add(mesh);
+                        return mesh;
+                    };
+                    const trailerD=d*.75,cabD=d*.22;
+                    const trailerCenter=-d/2+trailerD/2;
+                    const cabCenter=-d/2+trailerD+cabD/2;
+                    part(0,trailerCenter,w*.94,trailerD,2.65,'#64748b',.72);
+                    part(0,trailerCenter,w*.81,trailerD*.92,.075,'#94a3b8',3.37);
+                    // Obrub krova prikolice odgovara 2D pravougaoniku.
+                    const edge=.045;
+                    for(const side of [-1,1])part(side*w*.465,trailerCenter,edge,trailerD,.08,'#cbd5e1',3.39);
+                    for(const zz of [-d/2+edge/2,-d/2+trailerD-edge/2])part(0,zz,w*.94,edge,.08,'#cbd5e1',3.39);
+                    part(0,cabCenter,w*.88,cabD,2.25,'#1d4ed8',.50);
+                    // Prednje vetrobransko staklo je na VERTIKALNOJ prednjoj strani
+                    // kabine, a ne na krovu. Cela kabina ostaje u istoj 3D grupi.
+                    const cabFront=cabCenter+cabD/2;
+                    const glassW=w*.69,glassH=Math.min(.90,Math.max(.44,cabD*.45));
+                    part(0,cabFront+.017,glassW+.09,.035,glassH+.09,'#1e3a8a',1.64);
+                    part(0,cabFront+.040,glassW,.018,glassH,'#93c5fd',1.685);
+                    // Razdelnik vetrobrana i bočna stakla na obe strane.
+                    part(0,cabFront+.055,.035,.024,glassH,'#1e40af',1.685);
+                    for(const side of [-1,1]){
+                        const sideWindow=part(side*w*.445,cabCenter+cabD*.07,.022,cabD*.48,.57,'#93c5fd',1.91);
+                        sideWindow.material.roughness=.18;
                     }
+                    part(0,cabFront+.065,w*.60,.06,.20,'#f8fafc',.66);
+                    for(const side of [-1,1]){
+                        for(const zz of [-d*.35,d*.13]){
+                            const wheel=new T.Mesh(new T.CylinderGeometry(.32,.32,.18,16),new T.MeshStandardMaterial({color:'#111827'}));
+                            wheel.rotation.z=Math.PI/2;
+                            wheel.position.set(side*(w*.5+.04),.37,zz);
+                            wheel.userData.objectId=o.id;editableMeshes.push(wheel);truck.add(wheel);
+                        }
+                        part(side*w*.32,d*.465,w*.14,.08,.12,'#fef08a',.78);
+                    }
+                    cad3dScene.add(truck);
                     return true;
                 }
                 if(o.type==='forklift'){
@@ -3801,7 +3849,15 @@
                 }
                 else if(o.type==='crosswalk'){
                     const q=[[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([u,v])=>rotate(u,v));for(let i=0;i<4;i++)doc.line(...q[i],...q[(i+1)%4]);
-                    for(let i=0;i<5;i++){let yy=-h*.43+i*h*.18;const a=rotate(-w*.42,yy),b=rotate(w*.42,yy);doc.setLineWidth(Math.max(.8,h*.09));doc.line(...a,...b)}
+                    doc.setFillColor(248,250,252);
+                    for(const band of crosswalkStripes(o.h_m)){
+                        const top=band.start*scale, bottom=(band.start+band.width)*scale;
+                        const pts=[rotate(-w*.42,top),rotate(w*.42,top),rotate(w*.42,bottom),rotate(-w*.42,bottom)];
+                        // Ista fizička širina i razmak kao u 2D i 3D.
+                        doc.setLineWidth(.1);
+                        const v=pts.map(p=>[p[0],p[1]]);
+                        doc.lines([[v[1][0]-v[0][0],v[1][1]-v[0][1]],[v[2][0]-v[1][0],v[2][1]-v[1][1]],[v[3][0]-v[2][0],v[3][1]-v[2][1]]],v[0][0],v[0][1],[1,1],'F',true);
+                    }
                 }
                 else if(o.type==='direction_arrow'){
                     const q=[[-w/2,-h*.18],[w*.15,-h*.18],[w*.15,-h*.43],[w/2,0],[w*.15,h*.43],[w*.15,h*.18],[-w/2,h*.18]].map(([u,v])=>rotate(u,v));for(let i=0;i<q.length;i++)doc.line(...q[i],...q[(i+1)%q.length]);
