@@ -1686,6 +1686,8 @@
                 }
 
                 CTX.save();
+                // Tekst ostaje uspravan pri rotaciji zone; geometrija se i dalje rotira.
+                if (obj.type !== 'rack') CTX.rotate(-(Number(obj.angle)||0)*Math.PI/180);
                 const isRack = obj.type === 'rack';
                 // Regal: natpis ide duz duze ose regala i rotira se zajedno sa njim.
                 const rackVertical = isRack && h > w;
@@ -3314,6 +3316,7 @@
                     return true;
                 }
                 if(['relax_house','driver_zone','paper_reception'].includes(o.type)){
+                    const roomMeshStart=cad3dScene.children.length;
                     // Montažna kućica / funkcionalna prostorija sa realnim dimenzijama.
                     const H=Math.max(1.8,Math.min(8,Number(o.roomHeight)||2.8));
                     const thick=Math.min(.12,w*.05,d*.05);
@@ -3356,6 +3359,23 @@
                         detailBox(o,x+w*.15,z+d*.46,w*.70,d*.15,.08,'#cbd5e1',1.05);
                         detailBox(o,x+w*.37,z+d*.68,w*.25,d*.14,.06,'#a16207',.73);
                         detailBox(o,x+w*.45,z+d*.69,w*.11,.06,.32,'#1e293b',.8);
+                    }
+                    // Rotacija kompletne kućice oko njenog centra, uključujući ulaz i nameštaj.
+                    // Pojedinačni detailBox elementi se ne rotiraju nezavisno oko svojih centara.
+                    const roomAngle=-(Number(o.angle)||0)*Math.PI/180;
+                    if(roomAngle){
+                        const roomGroup=new T.Group();
+                        roomGroup.position.set(x+w/2,0,z+d/2);
+                        cad3dScene.add(roomGroup);
+                        const roomParts=cad3dScene.children.slice(roomMeshStart).filter(m=>m!==roomGroup);
+                        for(const part of roomParts){
+                            cad3dScene.remove(part);
+                            part.position.x-=x+w/2;
+                            part.position.z-=z+d/2;
+                            part.rotation.y=0;
+                            roomGroup.add(part);
+                        }
+                        roomGroup.rotation.y=roomAngle;
                     }
                     return true;
                 }
@@ -3904,14 +3924,14 @@
                 doc.setFontSize(pt);
                 const [r,g,b]=rgb(o.type==='text'?(o.strokeColor||'#e879f9'):'#0f172a');
                 doc.setTextColor(r,g,b);
-                const angle=(o.angle||0)+(rackVertical?-90:0);
+                const angle=rackVertical?-90:0;
                 const bottom=['office','toilet'].includes(o.type);
                 const yOffset=bottom?Math.max(0,h/2-pt*25.4/72*.9):0;
                 const lineMm=pt*25.4/72*1.18;
                 textLines.forEach((t,i)=>{
                     const yy=yOffset+(i-(textLines.length-1)/2)*lineMm;
                     // Pozicija rotiranog teksta ostaje u koordinatama objekta.
-                    const a=(o.angle||0)*Math.PI/180;
+                    const a=0;
                     const px=cx-yy*Math.sin(a),py=cy+yy*Math.cos(a);
                     doc.text(t,px,py,{align:'center',baseline:'middle',angle:-angle});
                 });
