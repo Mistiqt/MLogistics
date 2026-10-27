@@ -226,13 +226,13 @@
                 </div></details>
                 <details class="cad-accordion"><summary>▦ Kutije i kapacitet</summary><div class="p-2 space-y-2">
                     <b class="text-emerald-300">KUTIJE I KAPACITET</b>
-                     <label class="block mt-1">Materijal<select id="box-material" class="w-full bg-slate-900 rounded p-1"><option value="cardboard">Karton — braon</option><option value="metal">Metal — bordo</option></select></label>
-                     <label class="block mt-1">Maksimalno slaganje (stackable)<input id="box-stack" type="number" min="1" max="100" step="1" value="3" class="w-full bg-slate-900 rounded p-1"></label>
+                     <label class="block mt-1">Materijal<select id="box-material" class="w-full bg-slate-900 rounded p-1"><option value="cardboard">Karton</option><option value="metal">Metal</option><option value="plastic">Plastika</option></select></label>
+                     <label class="block mt-1">Boja kutije <input id="box-color" type="color" value="#92400e" class="w-full h-8 bg-slate-900 rounded" /></label><label class="block mt-1">Maksimalno slaganje (stackable)<input id="box-stack" type="number" min="1" max="100" step="1" value="3" class="w-full bg-slate-900 rounded p-1"></label>
                     <div class="grid grid-cols-2 gap-1"><label>Širina (m)<input id="box-w" type="number" min="0.001" step="0.001" value="0.6" class="w-full bg-slate-900 rounded p-1"></label><label>Dužina (m)<input id="box-h" type="number" min="0.001" step="0.001" value="0.4" class="w-full bg-slate-900 rounded p-1"></label></div>
                     <div class="grid grid-cols-2 gap-1"><label>Razmak (m)<input id="box-gap" type="number" min="0" step="0.001" value="0" class="w-full bg-slate-900 rounded p-1"></label><label>Visina kutije (m)<input id="box-z" type="number" min="0.001" step="0.001" value="0.3" class="w-full bg-slate-900 rounded p-1"></label></div>
                     <div class="grid grid-cols-2 gap-1"><label>Visina prostora (m)<input id="space-z" type="number" min="0.001" step="0.001" value="3" class="w-full bg-slate-900 rounded p-1"></label><label>Max komada<input id="box-limit" type="number" min="1" max="10000" step="1" value="2000" class="w-full bg-slate-900 rounded p-1"></label></div>
                     <button onclick="createCADBox()" class="w-full bg-blue-700 rounded p-1.5">Dodaj jednu kutiju u aktivni layer</button>
-                    <button onclick="calculateBoxCapacity()" class="w-full bg-emerald-700 rounded p-1.5">Popuni izabranu pravougaonu zonu</button>
+                    <button onclick="transferCADBoxesToPlan()" class="w-full bg-indigo-700 rounded p-1.5">Prenesi izabrane kutije u tlocrt (kopija)</button><button onclick="calculateBoxCapacity()" class="w-full bg-emerald-700 rounded p-1.5">Popuni izabranu pravougaonu zonu</button>
                     <div id="box-capacity-result" class="text-slate-300 whitespace-pre-line"></div>
                     <p class="text-slate-400 text-[10px]">Izaberi pravougaoni objekat kao zonu. Raspored je pravougaona mreža; ne uzima u obzir prolaze, nosivost i prepreke. Broj po visini je teorijski.</p>
                 </div></details>
@@ -2941,7 +2941,24 @@
             objects.forEach(o=>{if((o.layerId||'base')===source.id)o.layerId=activeLayerId;});
             cadLayers=cadLayers.filter(l=>l.id!==source.id);renderCADLayers();draw();}
         function readBoxNumber(id,allowZero=false){const v=Number(document.getElementById(id).value);if(!Number.isFinite(v)||(allowZero?v<0:v<=0))throw Error('Neispravna vrednost: '+id);return v;}
-        function boxSettings(){const material=document.getElementById("box-material").value;const stack=readBoxNumber("box-stack");if(!Number.isInteger(stack)||stack>100)throw Error("Stackable mora biti ceo broj od 1 do 100.");return {material,stack,color:material==="metal"?"#881337":"#92400e"};}
+        function boxSettings(){const material=document.getElementById("box-material").value;const stack=readBoxNumber("box-stack");if(!Number.isInteger(stack)||stack>100)throw Error("Stackable mora biti ceo broj od 1 do 100.");return {material,stack,color:document.getElementById('box-color').value};}
+        document.getElementById('box-material').addEventListener('change',e=>{document.getElementById('box-color').value=({metal:'#881337',cardboard:'#92400e',plastic:'#0284c7'})[e.target.value]||'#64748b';});
+        function transferCADBoxesToPlan(){
+            const selected=objects.filter(o=>selectedObjectIds.includes(o.id)&&['metal','cardboard','plastic'].includes(o.material));
+            if(!selected.length){alert('Selektuj jednu ili više kutija iz sloja Kutije.');return;}
+            const target=cadLayers.find(l=>l.id==='base')||cadLayers.find(l=>/tlocrt/i.test(l.name));
+            if(!target){alert('Sloj Tlocrt nije pronađen.');return;}
+            if(target.locked){alert('Sloj Tlocrt je zaključan.');return;}
+            const x=prompt('Pomeraj kopije po X osi (m):','0');if(x===null)return;
+            const y=prompt('Pomeraj kopije po Y osi (m):','0');if(y===null)return;
+            const dx=Number(x.replace(',','.')),dy=Number(y.replace(',','.'));
+            if(!Number.isFinite(dx)||!Number.isFinite(dy)){alert('Neispravan pomeraj.');return;}
+            snapshotCAD();const ids=[];
+            for(const o of selected){const copy={...o,id:generateId(),layerId:target.id,x_m:o.x_m+dx,y_m:o.y_m+dy,zIndex:objects.length};delete copy.stackParent;delete copy.boxSignature;objects.push(copy);ids.push(copy.id);}
+            target.visible=true;selectedObjectIds=ids;activeLayerId=target.id;
+            renderCADLayers();updateInspector();updateStats();draw();if(cad3dActive)queueCAD3DRefresh();
+            alert('Preneto '+ids.length+' kutija u Tlocrt. Originali ostaju u izvornom sloju.');
+        }
         // 2D dugme: jedan klik = jedna fizicka kutija. Nakon limita novi stub.
         let cadBox2DLastRoot=null;
         function createCADBox(){
@@ -2949,7 +2966,7 @@
                 const l=cadLayers.find(x=>x.id===activeLayerId);
                 if(!l||l.locked||!l.visible)throw Error('Aktivni sloj mora biti vidljiv i otključan.');
                 const w=readBoxNumber('box-w'),h=readBoxNumber('box-h'),settings=boxSettings(),z=readBoxNumber('box-z');
-                const signature=[w,h,z,settings.material,settings.stack,activeLayerId].join('|');
+                const signature=[w,h,z,settings.material,settings.stack,settings.color,activeLayerId].join('|');
                 const root=objects.find(o=>o.id===cadBox2DLastRoot && o.boxSignature===signature);
                 if(root){
                     stackCADBox3D(root,false);
@@ -2958,7 +2975,7 @@
                 snapshotCAD();
                 const pt=screenToWorld(CANVAS.width/2,CANVAS.height/2);
                 const o={id:generateId(),type:'rect',x_m:pt.x-w/2,y_m:pt.y-h/2,w_m:w,h_m:h,angle:0,
-                    label:settings.material==='metal'?'Metal':'Karton',material:settings.material,stackable:settings.stack,
+                    label:({metal:'Metal',cardboard:'Karton',plastic:'Plastika'})[settings.material],material:settings.material,stackable:settings.stack,
                     stackLevels:1,color:settings.color,strokeColor:'#f8fafc',strokeWidth:1,fillOpacity:65,
                     layerId:activeLayerId,zIndex:objects.length,boxHeight:z,boxSignature:signature};
                 objects.push(o);cadBox2DLastRoot=o.id;selectedObjectIds=[o.id];updateInspector();updateStats();draw();
@@ -2994,7 +3011,7 @@
         // Svaki klik dodaje JEDNU fizičku kutiju: popuni stub do limita,
         // pa započni sledeći stub u istom redu, čak i ako korisnik klikće stari stub.
         function stackCADBox3D(clicked,rebuild=true){
-            if(!clicked || !['metal','cardboard'].includes(clicked.material) || !layerEditable(clicked))return;
+            if(!clicked || !['metal','cardboard','plastic'].includes(clicked.material) || !layerEditable(clicked))return;
             const root=objects.find(q=>q.id===(clicked.stackParent||clicked.id))||clicked;
             const max=Math.max(1,Math.floor(Number(root.stackable)||1));
             const family=objects.filter(q=>q.id===root.id||q.stackParent===root.id);
@@ -3678,14 +3695,14 @@
                 }
                 if(detailedObject(o,x,z,w,d)){
                     // Rendered as a composed recognizable model.
-                }else if(o.material==='metal'||o.material==='cardboard'){
+                }else if(['metal','cardboard','plastic'].includes(o.material)){
                     // A stackLevel of 0 is an empty placement; show one base box so it can be clicked.
                     const levels=Math.max(1,Math.min(Math.max(1,Number(o.stackable)||1),Number(o.stackLevels)||1));
                     const height=Math.max(.01,Number(o.boxHeight)||.3);
                     for(let k=0;k<levels;k++){
-                        const mesh=block(x,z,w,d,height,o.material==='metal'?'#881337':'#92400e',angle,k*height,o);
+                        const mesh=block(x,z,w,d,height,o.color||'#92400e',angle,k*height,o);
                         // Separate outline for EVERY stacked level, not a single solid block.
-                        const edges=new T.LineSegments(new T.EdgesGeometry(mesh.geometry),new T.LineBasicMaterial({color:o.material==='metal'?0xfda4af:0xfed7aa}));
+                        const edges=new T.LineSegments(new T.EdgesGeometry(mesh.geometry),new T.LineBasicMaterial({color:0xe2e8f0}));
                         mesh.add(edges);
                     }
                 }else{
@@ -3745,7 +3762,7 @@
             canvas.addEventListener('pointerup',e=>{
                 if(!state||e.pointerId!==state.id)return;
                 const done=state;state=null;canvas.style.cursor='grab';
-                if(!done.moved&&done.obj&&(done.obj.material==='metal'||done.obj.material==='cardboard'))stackCADBox3D(done.obj);
+                if(!done.moved&&done.obj&&(['metal','cardboard','plastic'].includes(done.obj.material)))stackCADBox3D(done.obj);
                 if(done.kind==='object'&&done.obj){
                     if(!done.moved){}
                     else {updateInspector();updateStats();draw();}
