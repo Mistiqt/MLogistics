@@ -518,7 +518,14 @@
                     <input id="hydrant-wall-height" type="number" min="0" max="30" step="0.05" onchange="updateHydrantWallHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2" />
                     <p class="text-slate-400 text-[10px]">Donja ivica zidnog hidrantskog ormarića iznad poda. U 3D prikazu je pravougaoni crveni ormarić, a ne podni hidrant.</p>
                 </div>
-                <!-- RACK SPECIFIC PROPERTIES -->
+                <div id="room-door-controls" class="hidden border-t border-slate-700 pt-3 space-y-2">
+<h5 class="font-bold text-sky-300">Vrata i ulaz prostorije</h5>
+<label class="block">Strana ulaza / pozicija vrata<select id="room-door-side" onchange="updateSelectedProp('doorSide',this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"><option value="front">Prednja (dole u 2D)</option><option value="back">Zadnja (gore u 2D)</option><option value="left">Leva</option><option value="right">Desna</option></select></label>
+<label class="block">Širina vrata (m)<input id="room-door-width" type="number" min="0.55" max="2" step="0.05" onchange="updateSelectedProp('doorWidth',Math.max(.55,Number(this.value)||.9))" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label>
+<label class="block">Visina vrata (m)<input id="room-door-height" type="number" min="1.5" max="3" step="0.05" onchange="updateSelectedProp('roomDoorHeight',Math.max(1.5,Number(this.value)||2.1))" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label>
+<label class="flex items-center gap-2"><input id="room-door-enabled" type="checkbox" onchange="updateSelectedProp('hasDoor',this.checked)"> Prikaži vrata</label>
+<p class="text-slate-400 text-[10px]">Vrata se automatski premeštaju na izabrani zid u 2D i 3D.</p></div>
+<!-- RACK SPECIFIC PROPERTIES -->
                 <div id="cad-3d-height-controls" class="hidden border-t border-slate-700 pt-3 space-y-2">
                 <label id="cad-3d-height-label" class="block text-sky-300 font-semibold">Visina u 3D (m)</label>
                 <input id="cad-3d-height" type="number" min="0.1" max="30" step="0.05" onchange="updateCAD3DHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2" />
@@ -966,17 +973,18 @@
                 case 'standalone_chair':
                     Object.assign(newObj,{w_m:.55,h_m:.55,color:'#2563eb',strokeColor:'#93c5fd',label:'Stolica'});break;
                 case 'relax_house':
-                    Object.assign(newObj,{w_m:5,h_m:4,roomHeight:2.8,color:'#059669',strokeColor:'#6ee7b7',label:'RELAX ZONA'});break;
+                    Object.assign(newObj,{w_m:5,h_m:4,roomHeight:2.8,doorSide:'front',doorWidth:.9,roomDoorHeight:2.1,hasDoor:true,color:'#059669',strokeColor:'#6ee7b7',label:'RELAX ZONA'});break;
                 case 'driver_zone':
-                    Object.assign(newObj,{w_m:6,h_m:4,roomHeight:2.8,color:'#c2410c',strokeColor:'#fdba74',label:'ZONA ZA VOZAČE'});break;
+                    Object.assign(newObj,{w_m:6,h_m:4,roomHeight:2.8,doorSide:'front',doorWidth:.9,roomDoorHeight:2.1,hasDoor:true,color:'#c2410c',strokeColor:'#fdba74',label:'ZONA ZA VOZAČE'});break;
                 case 'paper_reception':
-                    Object.assign(newObj,{w_m:4,h_m:3,roomHeight:2.8,color:'#0369a1',strokeColor:'#7dd3fc',label:'PRIJEM DOKUMENTACIJE'});break;
+                    Object.assign(newObj,{w_m:4,h_m:3,roomHeight:2.8,doorSide:'front',doorWidth:.9,roomDoorHeight:2.1,hasDoor:true,color:'#0369a1',strokeColor:'#7dd3fc',label:'PRIJEM DOKUMENTACIJE'});break;
                 case 'office':
                     newObj.w_m = 6.0;
                     newObj.h_m = 4.0;
                     newObj.color = '#0284c7';
                     newObj.strokeColor = '#38bdf8';
                     newObj.label = 'Kancelarija';
+                    newObj.roomHeight = 2.8; newObj.doorSide='front';newObj.doorWidth=.9;newObj.roomDoorHeight=2.1;newObj.hasDoor=true;
                     break;
                 case 'wc_fixture':
                     Object.assign(newObj,{w_m:0.7,h_m:1.1,color:'#e2e8f0',strokeColor:'#e2e8f0',label:''});
@@ -987,6 +995,7 @@
                     newObj.color = '#0891b2';
                     newObj.strokeColor = '#22d3ee';
                     newObj.label = 'Toalet (WC)';
+                    newObj.roomHeight = 2.8; newObj.doorSide='front';newObj.doorWidth=.9;newObj.roomDoorHeight=2.1;newObj.hasDoor=true;
                     break;
                 case 'robot_comau':
                     newObj.w_m = 2.5;
@@ -1311,6 +1320,16 @@
             return Array.from({length:count},(_,i)=>({start:first+i*(width+gap),width}));
         }
 
+        function drawRoomDoor2D(o,w,h,forExport){
+            if(o.hasDoor===false)return;
+            const side=o.doorSide||'front',horizontal=side==='front'||side==='back';
+            const dw=Math.min((horizontal?w:h)*.65,Math.max(8,(Number(o.doorWidth)||.9)*((horizontal?w: h)/Math.max(.01,horizontal?o.w_m:o.h_m))));
+            CTX.save();CTX.strokeStyle=forExport?'#1e293b':'#facc15';CTX.lineWidth=2.5;
+            const px=horizontal?0:(side==='left'?-w/2:w/2),py=horizontal?(side==='front'?-h/2:h/2):0;
+            CTX.beginPath();if(horizontal){CTX.moveTo(px-dw/2,py);CTX.lineTo(px-dw/2,py+(side==='front'?dw: -dw));CTX.arc(px-dw/2,py,dw,side==='front'?0:0,side==='front'?Math.PI/2:-Math.PI/2,side==='back');}
+            else {CTX.moveTo(px,py-dw/2);CTX.lineTo(px+(side==='left'?dw:-dw),py-dw/2);CTX.arc(px,py-dw/2,dw,side==='left'?0:Math.PI,side==='left'?Math.PI/2:Math.PI/2,side==='right');}
+            CTX.stroke();CTX.restore();
+        }
         function drawObject(obj, isPreview = false, forExport = false) {
             if (!obj) return;
             if (obj.type === 'group') {
@@ -1528,7 +1547,7 @@
                         CTX.strokeRect(-u*.8,-u*1.2,u*1.6,u*2.4);
                         for(let i=-1;i<=1;i++){CTX.beginPath();CTX.moveTo(-u*.5,i*u*.5);CTX.lineTo(u*.5,i*u*.5);CTX.stroke();}
                     }
-                    CTX.restore();break;
+                    CTX.restore();drawRoomDoor2D(obj,w,h,forExport);break;
                 }
                 case 'office': {
                     CTX.fillStyle=obj.color||'#0284c7';CTX.globalAlpha*=((obj.fillOpacity ?? 40)/100);
@@ -1540,12 +1559,23 @@
                     CTX.strokeStyle=forExport?'#334155':'#e2e8f0';CTX.lineWidth=2.2;
                     CTX.strokeRect(-18,-15,36,19);CTX.beginPath();CTX.moveTo(-14,4);CTX.lineTo(-14,10);CTX.moveTo(14,4);CTX.lineTo(14,10);CTX.stroke();
                     CTX.strokeRect(-10,17,20,11);CTX.beginPath();CTX.moveTo(-13,15);CTX.lineTo(-13,29);CTX.moveTo(13,15);CTX.lineTo(13,29);CTX.stroke();
-                    CTX.restore();break;
+                    CTX.restore();drawRoomDoor2D(obj,w,h,forExport);break;
                 }
                 case 'toilet': {
                     CTX.fillStyle=obj.color||'#0891b2';CTX.globalAlpha*=((obj.fillOpacity ?? 40)/100);
                     CTX.fillRect(-w/2,-h/2,w,h);CTX.globalAlpha=1;
                     CTX.strokeStyle=forExport?'#334155':strokeC;CTX.lineWidth=strokeW;CTX.strokeRect(-w/2,-h/2,w,h);
+                    // AutoCAD stil: WC šolja, vodokotlić, lavabo i slavina, nezavisno od dimenzija prostorije.
+                    CTX.save();CTX.strokeStyle=forExport?'#334155':'#e2e8f0';CTX.lineWidth=2;
+                    const u=Math.min(w,h)*.17;
+                    CTX.strokeRect(-w*.28,-h*.30,u*.95,u*.38);
+                    CTX.strokeRect(w*.03,-h*.30,u*.95,u*.38);CTX.beginPath();CTX.ellipse(w*.03+u*.48,-h*.30+u*.88,u*.48,u*.55,0,0,Math.PI*2);CTX.stroke();
+                    CTX.beginPath();CTX.ellipse(-w*.28+u*.48,-h*.30+u*.88,u*.48,u*.55,0,0,Math.PI*2);CTX.stroke();
+                    const sinkLeft=(obj.doorSide||'front')!=='left';
+                    const sx=sinkLeft?-w/2+u*.65:w/2-u*.65, sy=h*.06;
+                    CTX.beginPath();CTX.ellipse(sx,sy,u*.42,u*.56,0,0,Math.PI*2);CTX.stroke();
+                    CTX.beginPath();CTX.arc(sx,sy,u*.10,0,Math.PI*2);CTX.moveTo(sx,sy-u*.10);CTX.lineTo(sx,sy-u*.30);CTX.stroke();
+                    CTX.restore();drawRoomDoor2D(obj,w,h,forExport);
                     break;
                 }
                 case 'wc_fixture': {
@@ -2526,11 +2556,15 @@
                     document.getElementById('dock-door-open-value').textContent=(selected.dockDoorOpen??0)+'%';
                 }
                 const slidingControls=document.getElementById('sliding-fence-controls');slidingControls.classList.toggle('hidden',selected.type!=='sliding_fence');if(selected.type==='sliding_fence')document.getElementById('sliding-fence-height').value=selected.slidingFenceHeight??2;
+                const roomControls=document.getElementById('room-door-controls');
+                const isRoom=['relax_house','driver_zone','paper_reception','office','toilet'].includes(selected.type);
+                roomControls.classList.toggle('hidden',!isRoom);
+                if(isRoom){document.getElementById('room-door-side').value=selected.doorSide||'front';document.getElementById('room-door-width').value=selected.doorWidth??.9;document.getElementById('room-door-height').value=selected.roomDoorHeight??2.1;document.getElementById('room-door-enabled').checked=selected.hasDoor!==false;}
                 const heightControls=document.getElementById('cad-3d-height-controls');
-                heightControls.classList.toggle('hidden', !['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception','column_cross'].includes(selected.type));
-                if(['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception','column_cross'].includes(selected.type)) {
-                    document.getElementById('cad-3d-height').value=selected.type==='column_cross'?(selected.columnHeight??7):selected.type==='wall'?(selected.wallHeight??2.8):selected.type==='roller_door'?(selected.doorHeight??2.8):(['relax_house','driver_zone','paper_reception'].includes(selected.type)?(selected.roomHeight??2.8):(selected.fenceHeight??1.15));
-                    document.getElementById('cad-3d-height-label').textContent=selected.type==='column_cross'?'Visina stuba od poda (m)':selected.type==='mesh_fence'?'Visina mrežaste ograde (m)':selected.type==='safety_fence'?'Visina safety ograde (m)':(['relax_house','driver_zone','paper_reception'].includes(selected.type)?'Visina kućice / prostorije (m)':'Visina u 3D (m)');
+                heightControls.classList.toggle('hidden', !['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception','office','toilet','column_cross'].includes(selected.type));
+                if(['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception','office','toilet','column_cross'].includes(selected.type)) {
+                    document.getElementById('cad-3d-height').value=selected.type==='column_cross'?(selected.columnHeight??7):selected.type==='wall'?(selected.wallHeight??2.8):selected.type==='roller_door'?(selected.doorHeight??2.8):(['relax_house','driver_zone','paper_reception','office','toilet'].includes(selected.type)?(selected.roomHeight??2.8):(selected.fenceHeight??1.15));
+                    document.getElementById('cad-3d-height-label').textContent=selected.type==='column_cross'?'Visina stuba od poda (m)':selected.type==='mesh_fence'?'Visina mrežaste ograde (m)':selected.type==='safety_fence'?'Visina safety ograde (m)':(['relax_house','driver_zone','paper_reception','office','toilet'].includes(selected.type)?'Visina kućice / prostorije (m)':'Visina u 3D (m)');
                 }
 
                 document.getElementById('prop-label').value = selected.label || '';
@@ -2628,11 +2662,11 @@
                     if(o.type==='wall')o.wallHeight=height;
                     if(o.type==='roller_door')o.doorHeight=height;
                     if(o.type==='safety_fence'||o.type==='mesh_fence')o.fenceHeight=height;
-                    if(['relax_house','driver_zone','paper_reception'].includes(o.type))o.roomHeight=height;
+                    if(['relax_house','driver_zone','paper_reception','office','toilet'].includes(o.type))o.roomHeight=height;
                 }
             });
             draw();updateInspector();
-            if(cad3dActive) scheduleCAD3DRefresh();
+            if(cad3dActive) queueCAD3DRefresh();
         }
 
         // Dimenzija jednog nivoa je izvor istine. Stari projekti sa samo rackHeight
@@ -2747,7 +2781,7 @@
             if (!['color','strokeColor','fillOpacity'].includes(prop)) updateInspector();
             updateStats();
             requestAnimationFrame(() => draw());
-            if (['levels','rackDoubles','rackBackGap','hydrantMountHeight'].includes(prop) && cad3dActive) queueCAD3DRefresh();
+            if (cad3dActive) queueCAD3DRefresh();
         }
 
         let cadClipboard = [];
@@ -3330,27 +3364,50 @@
                     cad3dScene.add(furniture);
                     return true;
                 }
-                if(['relax_house','driver_zone','paper_reception'].includes(o.type)){
+                if(['relax_house','driver_zone','paper_reception','office','toilet'].includes(o.type)){
                     const roomMeshStart=cad3dScene.children.length;
-                    // Montažna kućica / funkcionalna prostorija sa realnim dimenzijama.
-                    const H=Math.max(1.8,Math.min(8,Number(o.roomHeight)||2.8));
+                    const H=Math.max(2.2,Math.min(30,Number(o.roomHeight) || 2.8));
                     const thick=Math.min(.12,w*.05,d*.05);
-                    detailBox(o,x,z,w,d,.12,'#94a3b8');
-                    const wallColor=o.type==='relax_house'?'#d1fae5':o.type==='driver_zone'?'#ffedd5':'#dbeafe';
-                    // Prednji zid sa otvorom za vrata; ostali zidovi su poluprovidni.
-                    const doorW=Math.min(1.05,w*.3),left=(w-doorW)/2;
-                    detailBox(o,x,z,left,thick,H,wallColor);
-                    detailBox(o,x+left+doorW,z,w-left-doorW,thick,H,wallColor);
-                    detailBox(o,x+left,z,doorW,thick,Math.max(.1,H-2.12),wallColor,2.12);
-                    detailBox(o,x,z+d-thick,w,thick,H,wallColor);
-                    detailBox(o,x,z,thick,d,H,wallColor);
-                    detailBox(o,x+w-thick,z,thick,d,H,wallColor);
-                    // Krov tanak i proziran: unutrašnjost je vidljiva odozgo.
-                    const roof=detailBox(o,x,z,w,d,.09,'#64748b',H);
-                    roof.material.transparent=true;roof.material.opacity=.23;roof.material.depthWrite=false;
-                    // Prozori na bočnim zidovima.
+                    const wallColor=o.type==='relax_house'?'#d1fae5':o.type==='driver_zone'?'#ffedd5':o.type==='paper_reception'?'#dbeafe':'#b6c5d3';
+                    detailBox(o,x,z,w,d,.10,'#94a3b8');
+                    // Otvor i vrata na odabranoj strani, u lokalnim koordinatama prostorije.
+                    const side=o.doorSide||'front',hasDoor=o.hasDoor!==false;
+                    const alongX=side==='front'||side==='back';
+                    const span=alongX?w:d;
+                    const doorW=hasDoor?Math.min(span*.75,Math.max(.55,Number(o.doorWidth)||.9)):0;
+                    const doorH=Math.min(H-.08,Math.max(1.5,Number(o.roomDoorHeight)||2.1));
+                    function wallX(atZ,opening){
+                        if(!opening){detailBox(o,x,atZ,w,thick,H,wallColor);return;}
+                        const a=(w-doorW)/2;
+                        if(a>0)detailBox(o,x,atZ,a,thick,H,wallColor);
+                        if(a>0)detailBox(o,x+a+doorW,atZ,a,thick,H,wallColor);
+                        detailBox(o,x+a,atZ,doorW,thick,H-doorH,wallColor,doorH);
+                    }
+                    function wallZ(atX,opening){
+                        if(!opening){detailBox(o,atX,z,thick,d,H,wallColor);return;}
+                        const a=(d-doorW)/2;
+                        if(a>0)detailBox(o,atX,z,thick,a,H,wallColor);
+                        if(a>0)detailBox(o,atX,z+a+doorW,thick,a,H,wallColor);
+                        detailBox(o,atX,z+a,thick,doorW,H-doorH,wallColor,doorH);
+                    }
+                    wallX(z,hasDoor&&side==='front');wallX(z+d-thick,hasDoor&&side==='back');
+                    wallZ(x,hasDoor&&side==='left');wallZ(x+w-thick,hasDoor&&side==='right');
+                    if(hasDoor){
+                        const leaf=new T.Group(), panelW=Math.max(.3,doorW-.035);
+                        if(alongX)leaf.position.set(x+(w-doorW)/2,0,side==='front'?z+thick/2:z+d-thick/2);
+                        else leaf.position.set(side==='left'?x+thick/2:x+w-thick/2,0,z+(d-doorW)/2);
+                        const panel=new T.Mesh(new T.BoxGeometry(panelW,doorH-.06,.055),new T.MeshStandardMaterial({color:0x96704b,side:T.DoubleSide}));
+                        panel.position.set(panelW/2,doorH/2,0);panel.userData.objectId=o.id;editableMeshes.push(panel);leaf.add(panel);
+                        const handle=new T.Mesh(new T.SphereGeometry(.045,10,8),new T.MeshStandardMaterial({color:0xfacc15}));
+                        handle.position.set(Math.max(.12,panelW-.14),Math.min(1.02,doorH*.55),.055);handle.userData.objectId=o.id;editableMeshes.push(handle);leaf.add(handle);
+                        leaf.rotation.y=(alongX?(side==='front'?-1:1):side==='left'?-1:1)*Math.PI*.36+(alongX?0:Math.PI/2);
+                        cad3dScene.add(leaf);
+                    }
+                    // Providan krov ostavlja nameštaj vidljivim.
+                    const roof=detailBox(o,x,z,w,d,.07,'#64748b',H);
+                    roof.material.transparent=true;roof.material.opacity=.17;roof.material.depthWrite=false;
                     for(const sideX of [x+.015,x+w-.055]){
-                        const win=detailBox(o,sideX,z+d*.35,.04,d*.30,.75,'#7dd3fc',1.05);
+                        const win=detailBox(o,sideX,z+d*.35,.04,d*.30,.75,'#7dd3fc',Math.min(1.05,H-.9));
                         win.material.transparent=true;win.material.opacity=.6;
                     }
                     if(o.type==='relax_house'){
@@ -3368,52 +3425,55 @@
                         }
                         detailBox(o,x+w*.39,z+d*.32,w*.22,d*.18,.07,'#a16207',.68);
                         detailBox(o,x+w*.43,z+d*.35,.06,.06,.66,'#475569');
-                    }else{
+                    }else if(o.type==='paper_reception'){
                         // Šalter sa pultom i prostorom za predaju papira.
                         detailBox(o,x+w*.15,z+d*.46,w*.70,d*.15,1.05,'#475569');
                         detailBox(o,x+w*.15,z+d*.46,w*.70,d*.15,.08,'#cbd5e1',1.05);
                         detailBox(o,x+w*.37,z+d*.68,w*.25,d*.14,.06,'#a16207',.73);
                         detailBox(o,x+w*.45,z+d*.69,w*.11,.06,.32,'#1e293b',.8);
                     }
-                    // Rotacija kompletne kućice oko njenog centra, uključujući ulaz i nameštaj.
-                    // Pojedinačni detailBox elementi se ne rotiraju nezavisno oko svojih centara.
+                    if(o.type==='office'){
+                        // Sto i jedna stolica standardnih dimenzija; nikad se ne razvlače sa sobom.
+                        const deskW=Math.min(1.35,Math.max(.65,w*.36)),deskD=Math.min(.72,Math.max(.4,d*.22));
+                        const deskX=cx,deskZ=cz-d*.08;
+                        detailBox(o,deskX-deskW/2,deskZ-deskD/2,deskW,deskD,.07,'#b77942',.74);
+                        for(const dx of [-deskW*.42,deskW*.42])for(const dz of [-deskD*.38,deskD*.38])
+                            detailBox(o,deskX+dx-.025,deskZ+dz-.025,.05,.05,.72,'#475569');
+                        const chairZ=Math.min(z+d-.38,deskZ+deskD/2+.38);
+                        detailBox(o,deskX-.23,chairZ-.21,.46,.42,.08,'#2563eb',.43);
+                        detailBox(o,deskX-.23,chairZ+.13,.46,.08,.46,'#1e40af',.47);
+                        for(const dx of [-.17,.17])for(const dz of [-.13,.13])
+                            detailBox(o,deskX+dx-.025,chairZ+dz-.025,.05,.05,.43,'#475569');
+                    }else if(o.type==='toilet'){
+                        // Dve WC šolje sa vodokotlićima + jedan lavabo sa slavinom. Bez stola.
+                        const bowlR=Math.min(.25,Math.max(.14,w*.09),Math.max(.14,d*.11));
+                        const bowlZ=z+Math.min(.88,d*.34);
+                        for(const bx of [x+w*.28,x+w*.66]){
+                            detailBox(o,bx-bowlR,bowlZ-bowlR*1.9,bowlR*2,bowlR*.82,.72,'#f8fafc');
+                            detailCylinder(o,bx,bowlZ,bowlR,.42,'#f8fafc',.10);
+                            detailTorus(o,bx,bowlZ,bowlR*.78,.037,'#cbd5e1',.55);
+                        }
+                        // Lavabo se montira uz bočni zid, dalje od ulaza i putanje otvaranja vrata.
+                        // Biramo bočni zid bez vrata; za ulaz levo/desno koristimo suprotni zid.
+                        const sinkOnLeft = side==='right' || side==='front' || side==='back';
+                        const sinkW=Math.min(.52,Math.max(.32,w*.19));
+                        const sinkD=Math.min(.38,Math.max(.25,d*.12));
+                        const sinkX=sinkOnLeft?x+thick+.025:x+w-thick-sinkD-.025;
+                        const sinkZ=z+d*.56;
+                        // Posuda, udubljenje i slavina su jedan kompaktan zidni sklop.
+                        detailBox(o,sinkX,sinkZ-sinkW/2,sinkD,sinkW,.12,'#f8fafc',.79);
+                        detailCylinder(o,sinkX+sinkD*.52,sinkZ,.12,.025,'#dbeafe',.925);
+                        const tapX=sinkOnLeft?sinkX+.065:sinkX+sinkD-.065;
+                        detailCylinder(o,tapX,sinkZ,.025,.15,'#94a3b8',.95);
+                        detailBox(o,Math.min(tapX,sinkX+sinkD*.52),sinkZ-.02,Math.abs(tapX-(sinkX+sinkD*.52))+.025,.04,.035,'#94a3b8',1.09);
+                    }
+                    // Svi delovi, uključujući vrata, rotiraju se oko istog centra.
                     const roomAngle=-(Number(o.angle)||0)*Math.PI/180;
                     if(roomAngle){
-                        const roomGroup=new T.Group();
-                        roomGroup.position.set(x+w/2,0,z+d/2);
-                        cad3dScene.add(roomGroup);
-                        const roomParts=cad3dScene.children.slice(roomMeshStart).filter(m=>m!==roomGroup);
-                        for(const part of roomParts){
-                            cad3dScene.remove(part);
-                            part.position.x-=x+w/2;
-                            part.position.z-=z+d/2;
-                            part.rotation.y=0;
-                            roomGroup.add(part);
-                        }
+                        const roomGroup=new T.Group();roomGroup.position.set(x+w/2,0,z+d/2);cad3dScene.add(roomGroup);
+                        const parts=cad3dScene.children.slice(roomMeshStart).filter(m=>m!==roomGroup);
+                        for(const part of parts){cad3dScene.remove(part);part.position.x-=x+w/2;part.position.z-=z+d/2;roomGroup.add(part);}
                         roomGroup.rotation.y=roomAngle;
-                    }
-                    return true;
-                }
-                if(o.type==='office'||o.type==='toilet'){
-                    // Room with low transparent walls: furniture remains visible from above.
-                    detailBox(o,x,z,w,d,.10,'#b6c5d3');
-                    const wall='#9eb4c8',th=.09,wh=1.8;
-                    detailBox(o,x,z,w,th,wh,wall);detailBox(o,x,z+d-th,w,th,wh,wall);
-                    detailBox(o,x,z,th,d,wh,wall);detailBox(o,x+w-th,z,th,d,wh,wall);
-                    if(o.type==='office'){
-                        const deskW=Math.min(1.6,w*.42),deskD=Math.min(.78,d*.27);
-                        detailBox(o,cx-deskW/2,cz-deskD/2,deskW,deskD,.075,'#a46b3c',.74);
-                        for(const dx of [-deskW*.42,deskW*.42])for(const dz of [-deskD*.37,deskD*.37])detailBox(o,cx+dx-.035,cz+dz-.035,.07,.07,.72,'#4b5563');
-                        const chairZ=cz+deskD/2+Math.min(.48,d*.12);
-                        detailBox(o,cx-.24,chairZ-.22,.48,.44,.10,'#1e40af',.43);
-                        detailBox(o,cx-.24,chairZ+.15,.48,.09,.48,'#1d4ed8',.48);
-                        for(const dx of [-.17,.17])for(const dz of [-.13,.13])detailBox(o,cx+dx-.025,chairZ+dz-.025,.05,.05,.43,'#374151');
-                        if(w>3.5){detailBox(o,x+.35,z+.4,.9,.35,.78,'#64748b');detailBox(o,x+.37,z+.42,.86,.31,.04,'#cbd5e1',.78);}
-                    }else{
-                        const bowlX=cx,bowlZ=cz;
-                        detailBox(o,bowlX-.25,bowlZ-.42,.5,.22,.76,'#f8fafc');
-                        detailCylinder(o,bowlX,bowlZ+.14,.30,.40,'#f8fafc',.12);
-                        detailTorus(o,bowlX,bowlZ+.14,.245,.052,'#e2e8f0',.55);
                     }
                     return true;
                 }
@@ -3498,12 +3558,36 @@
                     return true;
                 }
                 if(o.type==='forklift'){
-                    detailBox(o,x+w*.12,z+d*.20,w*.76,d*.56,.55,'#f59e0b',.35);
-                    detailBox(o,x+w*.16,z+d*.40,w*.68,d*.22,1.10,'#fbbf24',.75);
-                    for(const xx of [x+w*.15,x+w*.85])for(const zz of [z+d*.28,z+d*.75])detailCylinder(o,xx,zz,.16,.20,'#111827',.12);
-                    for(const xx of [x+w*.28,x+w*.72])detailBox(o,xx,z+d*.08,.06,.06,2.25,'#334155');
-                    detailBox(o,x+w*.28,z+d*.08,w*.44,.08,.10,'#334155',2.15);
-                    for(const xx of [x+w*.25,x+w*.70])detailBox(o,xx,z-.55,.10,.8,.09,'#94a3b8',.09);
+                    // Jedinstvena lokalna grupa: sasija, tockovi, zastitni ram,
+                    // teleskop i vile dele isti centar i istu rotaciju kao 2D objekat.
+                    const forklift=new T.Group();
+                    forklift.position.set(cx,0,cz);
+                    forklift.rotation.y=-(Number(o.angle)||0)*Math.PI/180;
+                    const mat=color=>new T.MeshStandardMaterial({color,roughness:.7,metalness:.12});
+                    const part=(px,pz,pw,pd,ph,color,bottom=0)=>{
+                        const mesh=new T.Mesh(new T.BoxGeometry(Math.max(.015,pw),Math.max(.015,ph),Math.max(.015,pd)),mat(color));
+                        mesh.position.set(px,bottom+ph/2,pz);
+                        mesh.userData.objectId=o.id;editableMeshes.push(mesh);forklift.add(mesh);
+                        return mesh;
+                    };
+                    const wheel=(px,pz)=>{
+                        const mesh=new T.Mesh(new T.CylinderGeometry(.16,.16,.16,16),mat('#111827'));
+                        mesh.rotation.z=Math.PI/2;
+                        mesh.position.set(px,.23,pz);
+                        mesh.userData.objectId=o.id;editableMeshes.push(mesh);forklift.add(mesh);
+                    };
+                    // Prednji deo je prema lokalnom -Z, kao na 2D silueti.
+                    part(0,d*.04,w*.76,d*.56,.55,'#f59e0b',.35);
+                    part(0,d*.25,w*.68,d*.22,1.10,'#fbbf24',.75);
+                    for(const xx of [-w*.35,w*.35])for(const zz of [-d*.22,d*.25])wheel(xx,zz);
+                    // Zastitni ram i teleskop povezani sa sasijom.
+                    for(const xx of [-w*.22,w*.22])part(xx,-d*.30,.06,.06,2.25,'#334155');
+                    part(0,-d*.30,w*.44,.08,.10,'#334155',2.15);
+                    for(const xx of [-w*.25,w*.25])part(xx,-d*.43,.07,.09,1.95,'#475569',.12);
+                    part(0,-d*.43,w*.63,.10,.16,'#475569',.18);
+                    // Vile ostaju fizicki spojene sa nosacem i rotiraju se zajedno.
+                    for(const xx of [-w*.25,w*.25])part(xx,-d*.65,.10,d*.47,.09,'#94a3b8',.09);
+                    cad3dScene.add(forklift);
                     return true;
                 }
                 return false;
