@@ -148,6 +148,12 @@
                     <i class="fa-solid fa-object-ungroup"></i> Razgrupiši
                 </button>
             </div>
+            <div class="flex items-center gap-1 flex-wrap" aria-label="Redosled prikaza objekata">
+                <button onclick="changeCADStack('front')" title="Postavi selektovano ispred svih (Ctrl+Shift+])" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs px-2 py-1.5 rounded">Na vrh</button>
+                <button onclick="changeCADStack('forward')" title="Pomeri jedan nivo napred" class="bg-slate-700 hover:bg-slate-600 text-xs px-2 py-1.5 rounded">Napred +1</button>
+                <button onclick="changeCADStack('backward')" title="Pomeri jedan nivo nazad" class="bg-slate-700 hover:bg-slate-600 text-xs px-2 py-1.5 rounded">Nazad −1</button>
+                <button onclick="changeCADStack('back')" title="Postavi selektovano iza svih (Ctrl+Shift+[)" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs px-2 py-1.5 rounded">Na dno</button>
+            </div>
             <button onclick="duplicateSelected()" title="Dupliraj selektovane objekte uz precizan razmak" class="bg-blue-700 hover:bg-blue-600 text-white text-xs px-2 py-1.5 rounded-lg">Kopiraj / Razmak</button>
 
             <div class="flex items-center bg-slate-900 rounded-lg border border-slate-700 px-2 py-1 text-xs space-x-2">
@@ -613,6 +619,31 @@
             gridMinorSpacing = minor;
             gridMajorSpacing = major;
             draw();
+        }
+        // Redosled 2D crtanja: veći zIndex se prikazuje preko manjeg.
+        // Operacije rade i za linije, poligone, grupe i višestruku selekciju.
+        function cadOrderedObjects() {
+            return [...objects].sort((a,b)=>(Number(a.zIndex)||0)-(Number(b.zIndex)||0));
+        }
+        function changeCADStack(direction) {
+            const ordered=cadOrderedObjects();
+            const ids=new Set(selectedObjectIds);
+            if(!ordered.some(o=>ids.has(o.id)&&layerEditable(o)&&!o.locked)) return;
+            const movable=o=>ids.has(o.id)&&layerEditable(o)&&!o.locked;
+            snapshotCAD();
+            let result;
+            if(direction==='front') result=[...ordered.filter(o=>!movable(o)),...ordered.filter(movable)];
+            else if(direction==='back') result=[...ordered.filter(movable),...ordered.filter(o=>!movable(o))];
+            else {
+                result=[...ordered];
+                if(direction==='forward') {
+                    for(let i=result.length-2;i>=0;i--) if(movable(result[i])&&!movable(result[i+1])) [result[i],result[i+1]]=[result[i+1],result[i]];
+                } else if(direction==='backward') {
+                    for(let i=1;i<result.length;i++) if(movable(result[i])&&!movable(result[i-1])) [result[i],result[i-1]]=[result[i-1],result[i]];
+                }
+            }
+            result.forEach((o,i)=>o.zIndex=i);
+            draw(); queueCAD3DRefresh();
         }
         function selectAllCAD() {
             setMode('select');
@@ -1170,46 +1201,11 @@
 
             const sortedObjects = [...objects].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
+            // Jedinstveni redosled svih objekata, bez prinudnog stavljanja
+            // puteva ili pešačkih prelaza iznad/ispod ručno izabranih elemenata.
             sortedObjects.forEach(obj => {
-                if (!layerVisible(obj) || obj.type !== 'road') return;
-                drawObject(obj, false, forExport);
+                if(layerVisible(obj)) drawObject(obj, false, forExport);
             });
-            // Jedinstvena geometrija spojeva: miter spoj zatvara spoljašnji i unutrašnji ugao.
-            // Segmenti ostaju pojedinačno selektabilni, ali se asfalt crta kao jedna celina.
-            const roadGroups=new Map();
-            sortedObjects.forEach(o=>{
-                if(o.type!=='road'||!o.roadGroupId||!o.roadStart||!o.roadEnd||!layerVisible(o))return;
-                if(!roadGroups.has(o.roadGroupId))roadGroups.set(o.roadGroupId,[]);
-                roadGroups.get(o.roadGroupId).push(o);
-            });
-            for(const segments of roadGroups.values()){
-                if(segments.length<2)continue;
-                // Spoj se izračunava iz zajedničke tačke; nema praznog trougla u krivini.
-                for(let i=0;i<segments.length-1;i++){
-                    const a=segments[i],b=segments[i+1];
-                    const p=a.roadStart,j=a.roadEnd,n=b.roadEnd;
-                    if(Math.hypot(j.x-b.roadStart.x,j.y-b.roadStart.y)>.02)continue;
-                    const u={x:j.x-p.x,y:j.y-p.y},v={x:n.x-j.x,y:n.y-j.y};
-                    const lu=Math.hypot(u.x,u.y),lv=Math.hypot(v.x,v.y);
-                    if(lu<.001||lv<.001)continue;
-                    const dist=Math.min(.35,lu*.45,lv*.45,Math.max(.06,a.w_m*.12));
-                    const q1=worldToScreen(j.x-u.x/lu*dist,j.y-u.y/lu*dist);
-                    const q2=worldToScreen(j.x,j.y);
-                    const q3=worldToScreen(j.x+v.x/lv*dist,j.y+v.y/lv*dist);
-                    CTX.save();CTX.beginPath();CTX.moveTo(q1.x,q1.y);CTX.lineTo(q2.x,q2.y);CTX.lineTo(q3.x,q3.y);
-                    CTX.lineWidth=a.w_m*PIXELS_PER_METER*zoom;CTX.lineJoin='miter';CTX.miterLimit=12;CTX.lineCap='butt';
-                    CTX.strokeStyle=a.color||'#334155';CTX.stroke();CTX.restore();
-                    // Iscrtavanje središnje isprekidane linije preko spojenog asfalta.
-                    CTX.save();CTX.beginPath();CTX.moveTo(q1.x,q1.y);CTX.lineTo(q2.x,q2.y);CTX.lineTo(q3.x,q3.y);
-                    CTX.strokeStyle=a.strokeColor||'#eab308';CTX.lineWidth=Math.max(1,(a.strokeWidth||2));
-                    CTX.setLineDash([10,8]);CTX.stroke();CTX.restore();
-                }
-            }
-
-            // Zebra je uvek iznad asfalta i iznad geometrije spojeva puta.
-            sortedObjects.filter(o=>o.type==='crosswalk'&&layerVisible(o)).forEach(o=>drawObject(o,false,forExport));
-            // Zidovi, stubovi, regali i ostali objekti prekrivaju zebru; samo put ostaje ispod nje.
-            sortedObjects.filter(o=>o.type!=='road'&&o.type!=='crosswalk'&&layerVisible(o)).forEach(o=>drawObject(o,false,forExport));
 
             if(!forExport&&mode==='draw_road_path'&&roadDrawingPoints.length){
                 CTX.save();CTX.strokeStyle='#facc15';CTX.lineWidth=Math.max(2,roadDrawingWidth*PIXELS_PER_METER*zoom);CTX.globalAlpha=.28;CTX.lineJoin='round';CTX.lineCap='butt';CTX.beginPath();
