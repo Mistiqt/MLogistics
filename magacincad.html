@@ -203,6 +203,20 @@
                 <i class="fa-solid fa-folder-open"></i> Učitaj PDF
                 <input type="file" id="file-input" accept=".pdf" onchange="openProject(event)" class="hidden">
             </label>
+            <!-- HELP: prečice su skrivene dok korisnik ne otvori meni -->
+            <details id="cad-shortcuts-help" class="relative ml-auto text-[11px] text-slate-200 shrink-0" style="z-index:50">
+                <summary class="cursor-pointer list-none bg-slate-800/95 hover:bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 shadow-xl font-semibold flex items-center gap-2" title="Prikaži ili sakrij prečice"><i class="fa-solid fa-circle-question text-sky-400"></i> Prečice <i class="fa-solid fa-chevron-down text-[9px]"></i></summary>
+                <div id="cad-shortcuts-popup" class="fixed right-3 mt-1 bg-slate-800/95 backdrop-blur border border-slate-600 rounded-lg px-3 py-2 text-slate-300 shadow-xl max-h-[65vh] overflow-y-auto">
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+Z</kbd> Undo</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Delete</kbd> Obriši</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Shift + Drag</kbd> Box Selekcija</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+G / Ctrl+Shift+G</kbd> Grupa</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">F1/F2/F3/F4</kbd> Linija / Grid / Polilinija / Poligon</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Enter / Esc</kbd> Završi Poliliniju</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">R</kbd> Rotiraj za 45°</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+C / Ctrl+V</kbd> Kopiraj / nalepi sa razmakom</div>
+                </div>
+            </details>
         </div>
     </header>
 
@@ -397,18 +411,7 @@
                 <span id="hud-scale" class="font-mono text-slate-400">1m = 20px</span>
             </div>
 
-            <!-- KEYBOARD SHORTCUTS HELP BOX -->
-            <div class="absolute top-4 right-4 bg-slate-800/80 backdrop-blur border border-slate-700 rounded-lg px-3 py-2 text-[11px] text-slate-400 shadow-xl pointer-events-none">
-                <div class="font-semibold text-slate-300 mb-1">Prečice:</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+Z</kbd> Undo</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Delete</kbd> Obriši</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Shift + Drag</kbd> Box Selekcija</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+G / Ctrl+Shift+G</kbd> Grupa</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">F1/F2/F3/F4</kbd> Linija / Grid / Polilinija / Poligon</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Enter / Esc</kbd> Završi Poliliniju</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">R</kbd> Rotiraj za 45°</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+C / Ctrl+V</kbd> Kopiraj / nalepi sa razmakom</div>
-            </div>
+
         </main>
 
         <!-- RIGHT SIDEBAR: PROPERTIES / INSPECTOR PANEL -->
@@ -4223,5 +4226,18 @@
             loadTemplate('standard');
         };
     </script>
+<script>
+// Pomoć ostaje u desnom delu trake; padajući meni se pozicionira ispod dugmeta.
+(function(){
+  const help=document.getElementById('cad-shortcuts-help');
+  const popup=document.getElementById('cad-shortcuts-popup');
+  if(!help||!popup)return;
+  function place(){const r=help.querySelector('summary').getBoundingClientRect();popup.style.top=Math.round(r.bottom+4)+'px';popup.style.right=Math.max(8,Math.round(innerWidth-r.right))+'px';}
+  help.addEventListener('toggle',()=>{if(help.open)place();});
+  window.addEventListener('resize',()=>{if(help.open)place();});
+  document.addEventListener('pointerdown',e=>{if(help.open&&!help.contains(e.target))help.open=false;});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&help.open)help.open=false;});
+})();
+</script>
 </body>
 </html>
