@@ -730,7 +730,43 @@
         });
     </script>
     <!-- ============================================================
-     CHAT WIDGET - nalepiti odmah ISPRED </body> taga (posle postojećeg <script> bloka).
+     CHAT WIDGET - nalepiti odmah ISPRED 
+<style>
+#assistantDock { position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:12px; z-index:1200; align-items:center; }
+#assistantDock #chatFab, #assistantDock #botFab { position:relative; right:auto; bottom:auto; width:56px; height:56px; border-radius:50%; align-items:center; justify-content:center; font-size:25px; cursor:pointer; box-shadow:var(--shadow); color:#fff; }
+#assistantDock #botFab { display:none; background:#24574f; border:1px solid #398579; }
+#assistantDock #chatFab { display:none; }
+#botBox { display:none; position:fixed; right:92px; bottom:22px; width:min(360px,calc(100vw - 110px)); height:440px; max-height:calc(100vh - 44px); background:var(--panel); border:1px solid var(--border); border-radius:14px; overflow:hidden; z-index:1201; flex-direction:column; box-shadow:var(--shadow); }
+#botBox.open { display:flex; }
+#botBox .chat-head { background:#24574f; }
+.bot-body { flex:1; padding:16px; background:var(--bg); overflow-y:auto; }
+.bot-bubble { background:var(--panel-3); padding:12px; border-radius:12px; color:var(--text); font-size:13px; line-height:1.5; }
+#botReply { margin-top:12px; color:var(--text-dim); font-size:13px; }
+#chatBox { right:92px; bottom:22px; }
+@media(max-width:768px) { #assistantDock { right:14px; bottom:14px; } #chatBox,#botBox { right:0; bottom:0; width:100%; height:100%; max-height:100%; border-radius:0; } }
+</style>
+<script>
+function botToggle() {
+ const box=document.getElementById('botBox'); const open=!box.classList.contains('open');
+ if (document.getElementById('chatBox').classList.contains('open')) chatToggle();
+ box.classList.toggle('open',open);
+ if(open) document.getElementById('botInput').focus();
+}
+document.getElementById('botForm').addEventListener('submit',function(e){
+ e.preventDefault();
+ const input=document.getElementById('botInput');
+ if(!input.value.trim())return;
+ const reply=document.getElementById('botReply');
+ reply.textContent='Pretražujem bazu znanja...';
+ const question=input.value.trim();
+ fetch(GOOGLE_SCRIPT_URL+'?akcija=botPitaj&pitanje='+encodeURIComponent(question)+'&sifra='+encodeURIComponent(loggedUser),{cache:'no-store'})
+ .then(r=>{if(!r.ok)throw Error('Server nije dostupan');return r.json()})
+ .then(data=>{reply.textContent=data.odgovor || 'Za ovo pitanje još nema potvrđenog odgovora u bazi znanja.';})
+ .catch(()=>{reply.textContent='Baza znanja još nije povezana. Potrebno je dodati akciju botPitaj u Google Apps Script.';});
+ input.value='';
+});
+</script>
+</body> taga (posle postojećeg <script> bloka).
      Ništa drugo u fajlu se ne menja.
      ============================================================ -->
 <style>
@@ -769,7 +805,43 @@
 
 
 <!-- ============================================================
-     CHAT WIDGET v2 (oznake @ime + slike) - nalepiti ISPRED </body> taga.
+     CHAT WIDGET v2 (oznake @ime + slike) - nalepiti ISPRED 
+<style>
+#assistantDock { position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:12px; z-index:1200; align-items:center; }
+#assistantDock #chatFab, #assistantDock #botFab { position:relative; right:auto; bottom:auto; width:56px; height:56px; border-radius:50%; align-items:center; justify-content:center; font-size:25px; cursor:pointer; box-shadow:var(--shadow); color:#fff; }
+#assistantDock #botFab { display:none; background:#24574f; border:1px solid #398579; }
+#assistantDock #chatFab { display:none; }
+#botBox { display:none; position:fixed; right:92px; bottom:22px; width:min(360px,calc(100vw - 110px)); height:440px; max-height:calc(100vh - 44px); background:var(--panel); border:1px solid var(--border); border-radius:14px; overflow:hidden; z-index:1201; flex-direction:column; box-shadow:var(--shadow); }
+#botBox.open { display:flex; }
+#botBox .chat-head { background:#24574f; }
+.bot-body { flex:1; padding:16px; background:var(--bg); overflow-y:auto; }
+.bot-bubble { background:var(--panel-3); padding:12px; border-radius:12px; color:var(--text); font-size:13px; line-height:1.5; }
+#botReply { margin-top:12px; color:var(--text-dim); font-size:13px; }
+#chatBox { right:92px; bottom:22px; }
+@media(max-width:768px) { #assistantDock { right:14px; bottom:14px; } #chatBox,#botBox { right:0; bottom:0; width:100%; height:100%; max-height:100%; border-radius:0; } }
+</style>
+<script>
+function botToggle() {
+ const box=document.getElementById('botBox'); const open=!box.classList.contains('open');
+ if (document.getElementById('chatBox').classList.contains('open')) chatToggle();
+ box.classList.toggle('open',open);
+ if(open) document.getElementById('botInput').focus();
+}
+document.getElementById('botForm').addEventListener('submit',function(e){
+ e.preventDefault();
+ const input=document.getElementById('botInput');
+ if(!input.value.trim())return;
+ const reply=document.getElementById('botReply');
+ reply.textContent='Pretražujem bazu znanja...';
+ const question=input.value.trim();
+ fetch(GOOGLE_SCRIPT_URL+'?akcija=botPitaj&pitanje='+encodeURIComponent(question)+'&sifra='+encodeURIComponent(loggedUser),{cache:'no-store'})
+ .then(r=>{if(!r.ok)throw Error('Server nije dostupan');return r.json()})
+ .then(data=>{reply.textContent=data.odgovor || 'Za ovo pitanje još nema potvrđenog odgovora u bazi znanja.';})
+ .catch(()=>{reply.textContent='Baza znanja još nije povezana. Potrebno je dodati akciju botPitaj u Google Apps Script.';});
+ input.value='';
+});
+</script>
+</body> taga.
      Zameni prethodnu verziju celu. Ostatak fajla se ne menja.
      Koristi postojeće globalne: loggedUser, GOOGLE_SCRIPT_URL, resizeImage, zoomImage.
      ============================================================ -->
@@ -829,10 +901,11 @@
     }
 </style>
 
-<button id="chatFab" onclick="chatToggle()" aria-label="Chat">💬<span id="chatBadge">0</span></button>
+<div id="assistantDock"><button id="botFab" onclick="botToggle()" aria-label="Pitaj bota" title="Pitaj bota">🤖</button><button id="chatFab" onclick="chatToggle()" aria-label="Team Chat" title="Team Chat">💬<span id="chatBadge">0</span></button></div>
+<div id="botBox" role="dialog" aria-label="Pitaj bota"><div class="chat-head"><span>🤖 PITAJ BOTA</span><button onclick="botToggle()" aria-label="Zatvori">×</button></div><div class="bot-body"><div class="bot-bubble">Zdravo! Ovde ćeš moći da pitaš o poslovnim procedurama i internim pravilima. Baza znanja još nije podešena.</div><div id="botReply" aria-live="polite"></div></div><form id="botForm" class="chat-input-row"><input id="botInput" type="text" maxlength="500" placeholder="Postavi pitanje..." required><button class="chat-send" type="submit">Pitaj</button></form></div>
 
 <div id="chatBox">
-    <div class="chat-head"><span>TEAM CHAT</span><button onclick="chatToggle()" aria-label="Zatvori">×</button></div>
+    <div class="chat-head"><span>TEAM CHAT <small id="chatIdentity" style="font-weight:400;text-transform:none"></small></span><button onclick="chatToggle()" aria-label="Zatvori">×</button></div>
 
     <div id="chatNameSetup" class="chat-name-setup" style="display:none;">
         <p>Unesite ime koje će drugi videti u čatu (prvo ime se koristi za oznake, npr. @Dusan):</p>
@@ -857,6 +930,7 @@
     const CHAT_IMG_MAX = 30000; // max dužina base64 slike u čatu (znakova)
     let chatOpen = false;
     let lastId = 0;
+    let chatHistoryInitialized = false;
     let unread = 0;
     let unreadMention = false;
     let started = false;
@@ -870,7 +944,41 @@
     const $ = (id) => document.getElementById(id);
     let clientId = localStorage.getItem('chatClientId');
     if (!clientId) { clientId = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('chatClientId', clientId); }
-    let chatName = localStorage.getItem('chatName') || '';
+    let chatName = '';
+    let nameStorageKey = '';
+    let soundReady = false;
+    let audioContext = null;
+    function userKey(value) { // ne čuvati lozinku kao tekst u ključu
+        let h = 2166136261;
+        for (const c of String(value)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+        return (h >>> 0).toString(36);
+    }
+    function notifySound() {
+        if (!soundReady) return; // browser zahteva prethodnu interakciju
+        try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            if (!audioContext) audioContext = new AC();
+            if (audioContext.state === 'suspended') { audioContext.resume().then(() => notifySound()).catch(()=>{}); return; }
+            const t = audioContext.currentTime;
+            const osc = audioContext.createOscillator(), gain = audioContext.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(660,t); osc.frequency.setValueAtTime(880,t+0.10);
+            gain.gain.setValueAtTime(0.0001,t); gain.gain.exponentialRampToValueAtTime(0.09,t+0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001,t+0.22);
+            osc.connect(gain); gain.connect(audioContext.destination); osc.start(t); osc.stop(t+0.23);
+        } catch(e) { console.debug('Audio unavailable', e); }
+    }
+    // Audio mora biti otkljucan u korisnickoj interakciji (browser autoplay pravila).
+    function unlockChatAudio() {
+        soundReady = true;
+        try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (AC && !audioContext) audioContext = new AC();
+            if (audioContext && audioContext.state === 'suspended') audioContext.resume().catch(()=>{});
+        } catch(e) {}
+    }
+    document.addEventListener('pointerdown', unlockChatAudio, {passive:true});
+    document.addEventListener('keydown', unlockChatAudio);
 
     function esc(s) {
         const d = document.createElement('div');
@@ -913,6 +1021,10 @@
         if (typeof loggedUser !== 'undefined' && loggedUser) {
             clearInterval(waitLogin);
             $('chatFab').style.display = 'flex';
+            $('botFab').style.display = 'flex';
+            nameStorageKey = 'stellantisChatName_' + userKey(loggedUser);
+            chatName = localStorage.getItem(nameStorageKey) || '';
+            $('chatIdentity').textContent = chatName ? '· ' + chatName : '';
             started = true;
             if (chatName) rememberName(chatName);
             applyNameState();
@@ -939,7 +1051,8 @@
         const v = $('chatNameInput').value.trim();
         if (!v) return;
         chatName = v;
-        localStorage.setItem('chatName', v);
+        localStorage.setItem(nameStorageKey, v);
+        $('chatIdentity').textContent = '· ' + v;
         rememberName(v);
         applyNameState();
         $('chatInput').focus();
@@ -947,6 +1060,7 @@
 
     window.chatToggle = function () {
         chatOpen = !chatOpen;
+        if (chatOpen) $('botBox').classList.remove('open');
         $('chatBox').classList.toggle('open', chatOpen);
         if (chatOpen) {
             unread = 0; unreadMention = false; updateBadge();
@@ -992,7 +1106,7 @@
             if (id > lastId) lastId = id;
             if (empty) empty.remove();
             rememberName(m.ime);
-            const mine = m.clientId === clientId;
+            const mine = m.clientId === clientId || (chatName && norm(m.ime) === norm(chatName));
             const tagged = !mine && textMentionsMe(String(m.tekst || ''));
             const div = document.createElement('div');
             div.className = 'chat-msg' + (mine ? ' mine' : '') + (tagged ? ' tagged-me' : '');
@@ -1011,7 +1125,9 @@
         });
         if (!box.children.length) box.innerHTML = '<div class="chat-empty">Još nema poruka. Počnite razgovor!</div>';
         if (added && (nearBottom || chatOpen)) scrollDown();
+        if (fromOthers && chatOpen) notifySound();
         if (fromOthers && !chatOpen && lastId) {
+            notifySound();
             unread += fromOthers;
             if (mentionsMe) unreadMention = true;
             updateBadge();
@@ -1020,15 +1136,17 @@
 
     function chatPoll() {
         if (typeof loggedUser === 'undefined' || !loggedUser) return;
-        const firstLoad = lastId === 0;
+        const firstLoad = !chatHistoryInitialized;
         fetch(GOOGLE_SCRIPT_URL + '?akcija=ucitajPoruke&sifra=' + encodeURIComponent(loggedUser) + '&posle=' + lastId)
             .then(r => r.json())
             .then(data => {
                 if (data.status !== 'OK' || !Array.isArray(data.poruke)) return;
+                chatHistoryInitialized = true;
                 // Pri prvom učitavanju stare poruke se ne računaju kao nepročitane
                 if (firstLoad) {
                     const prev = unread, prevM = unreadMention;
-                    render(data.poruke);
+                    const oldSound = soundReady; soundReady = false;
+                    render(data.poruke); soundReady = oldSound;
                     unread = prev; unreadMention = prevM; updateBadge();
                     if (!data.poruke.length) $('chatMessages').innerHTML = '<div class="chat-empty">Još nema poruka. Počnite razgovor!</div>';
                 } else {
@@ -1164,5 +1282,41 @@
 })();
 </script>
 
+
+<style>
+#assistantDock { position:fixed; right:22px; bottom:22px; display:flex; flex-direction:column; gap:12px; z-index:1200; align-items:center; }
+#assistantDock #chatFab, #assistantDock #botFab { position:relative; right:auto; bottom:auto; width:56px; height:56px; border-radius:50%; align-items:center; justify-content:center; font-size:25px; cursor:pointer; box-shadow:var(--shadow); color:#fff; }
+#assistantDock #botFab { display:none; background:#24574f; border:1px solid #398579; }
+#assistantDock #chatFab { display:none; }
+#botBox { display:none; position:fixed; right:92px; bottom:22px; width:min(360px,calc(100vw - 110px)); height:440px; max-height:calc(100vh - 44px); background:var(--panel); border:1px solid var(--border); border-radius:14px; overflow:hidden; z-index:1201; flex-direction:column; box-shadow:var(--shadow); }
+#botBox.open { display:flex; }
+#botBox .chat-head { background:#24574f; }
+.bot-body { flex:1; padding:16px; background:var(--bg); overflow-y:auto; }
+.bot-bubble { background:var(--panel-3); padding:12px; border-radius:12px; color:var(--text); font-size:13px; line-height:1.5; }
+#botReply { margin-top:12px; color:var(--text-dim); font-size:13px; }
+#chatBox { right:92px; bottom:22px; }
+@media(max-width:768px) { #assistantDock { right:14px; bottom:14px; } #chatBox,#botBox { right:0; bottom:0; width:100%; height:100%; max-height:100%; border-radius:0; } }
+</style>
+<script>
+function botToggle() {
+ const box=document.getElementById('botBox'); const open=!box.classList.contains('open');
+ if (document.getElementById('chatBox').classList.contains('open')) chatToggle();
+ box.classList.toggle('open',open);
+ if(open) document.getElementById('botInput').focus();
+}
+document.getElementById('botForm').addEventListener('submit',function(e){
+ e.preventDefault();
+ const input=document.getElementById('botInput');
+ if(!input.value.trim())return;
+ const reply=document.getElementById('botReply');
+ reply.textContent='Pretražujem bazu znanja...';
+ const question=input.value.trim();
+ fetch(GOOGLE_SCRIPT_URL+'?akcija=botPitaj&pitanje='+encodeURIComponent(question)+'&sifra='+encodeURIComponent(loggedUser),{cache:'no-store'})
+ .then(r=>{if(!r.ok)throw Error('Server nije dostupan');return r.json()})
+ .then(data=>{reply.textContent=data.odgovor || 'Za ovo pitanje još nema potvrđenog odgovora u bazi znanja.';})
+ .catch(()=>{reply.textContent='Baza znanja još nije povezana. Potrebno je dodati akciju botPitaj u Google Apps Script.';});
+ input.value='';
+});
+</script>
 </body>
 </html>
