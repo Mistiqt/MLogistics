@@ -42,7 +42,9 @@
 
         .header-clean { background-color: var(--panel); padding: 25px 0; border-bottom: 1px solid var(--border-soft); position: relative; }
         .brand-logo { font-weight: 700; font-size: 26px; letter-spacing: 7px; color: var(--brand-light); text-transform: uppercase; text-align: center; width: 100%; }
-        .logout-wrapper { position: absolute; right: 30px; top: 50%; transform: translateY(-50%); }
+        .logout-wrapper { position: absolute; right: 30px; top: 50%; transform: translateY(-50%); display:flex; align-items:center; gap:12px; }
+        .logged-user-label { font-size:12px; color:var(--text-dim); white-space:nowrap; }
+        .logged-user-label strong { color:var(--brand-light); font-weight:700; }
 
         .nav-clean-tabs { margin-top: 25px; display: flex; justify-content: center; align-items: center; gap: 15px; position: relative; flex-wrap: wrap; }
         .nav-tab-item { display: inline-block; background: var(--panel); border: 1px solid var(--border); padding: 12px 28px; border-radius: 30px; font-weight: 500; color: var(--text-dim) !important; text-decoration: none !important; transition: all 0.2s; cursor: pointer; line-height: 1.2; }
@@ -184,6 +186,8 @@
             .header-clean { padding: 18px 80px 18px 12px; min-height: 70px; display: flex; align-items: center; justify-content: center; }
             .brand-logo { width: auto; font-size: clamp(15px, 4vw, 21px); letter-spacing: 2px; overflow-wrap: anywhere; }
             .logout-wrapper { right: 12px; }
+            .logout-wrapper { gap:6px; flex-direction:column; align-items:flex-end; }
+            .logged-user-label { font-size:10px; }
             .logout-wrapper .btn { font-size: 11px; padding: 5px 8px; }
             .nav-clean-tabs { justify-content: center; gap: 7px; margin-top: 14px; }
             .nav-tab-item { font-size: 12px; padding: 10px 13px; }
@@ -238,7 +242,7 @@
     <div id="mainPortal">
         <header class="header-clean">
             <div class="brand-logo">Stellantis</div>
-            <div class="logout-wrapper"><button onclick="logout()" class="btn btn-sm btn-outline-danger">Odjava</button></div>
+            <div class="logout-wrapper"><span class="logged-user-label">Logovan kao <strong id="loggedUsername"></strong></span><button onclick="logout()" class="btn btn-sm btn-outline-danger">Odjava</button></div>
         </header>
 
         <div class="custom-container">
@@ -461,6 +465,12 @@
             reader.readAsDataURL(file);
         }
 
+        // Samo slova iz prijavnog naloga; nikad ne prikazujemo sifru u celosti.
+        function prikazKorisnickogImena(nalog) {
+            const ime = String(nalog || "").replace(/[^\p{L}]/gu, "");
+            return ime || "Korisnik";
+        }
+
         function checkAuth() {
             const inputVal = document.getElementById('accessPassword').value.trim();
             showLoading(true);
@@ -471,6 +481,7 @@
                     showLoading(false);
                     if (data.status === "OK") {
                         loggedUser = inputVal;
+                        document.getElementById("loggedUsername").textContent = prikazKorisnickogImena(loggedUser);
                         userRole = data.uloga;
                         localStorage.setItem('sifra', loggedUser); 
                         
@@ -1314,7 +1325,7 @@ document.getElementById('botForm').addEventListener('submit',function(e){
 (function(){
   'use strict';
   const TTL=30*60*1000;
-  const GREETING='Zdravo! 👋 Ja sam Duka, tvoj virtuelni asistent. Kako mogu da ti pomognem?\n\nMožeš me pitati o procedurama, dokumentaciji, radu u aplikaciji i drugim informacijama iz baze znanja.';
+  const GREETING='Zdravo! Ja sam Duka, tvoj virtuelni asistent. Kako mogu da ti pomognem danas?';
   const $=id=>document.getElementById(id);
   let messages=[], lastActivity=0, currentKey='', pending=false;
   function hash(s){let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return (h>>>0).toString(36);}
@@ -1333,7 +1344,7 @@ document.getElementById('botForm').addEventListener('submit',function(e){
   function safeUrl(value){try{const u=new URL(value);return u.protocol==='https:'?u.href:'';}catch(e){return '';}}
   function render(){const area=$('dukaMessages');if(!area)return;area.replaceChildren();messages.forEach(m=>{
     const bubble=document.createElement('div');bubble.className='duka-message '+(m.role==='user'?'user':'assistant');
-    const who=document.createElement('div');who.className='duka-who';who.textContent=m.role==='user'?'Ti':'Duka';bubble.appendChild(who);
+    const who=document.createElement('div');who.className='duka-who';who.textContent=m.role==='user'?prikazKorisnickogImena(loggedUser):'Duka';bubble.appendChild(who);
     const content=document.createElement('div');content.textContent=m.text||'';bubble.appendChild(content);
     if(m.slika){const url=safeUrl(m.slika);if(url){const img=document.createElement('img');img.src=url;img.alt='Slika iz baze znanja';img.loading='lazy';img.addEventListener('click',()=>{if(typeof zoomImage==='function')zoomImage(img);else window.open(url,'_blank','noopener');});bubble.appendChild(img);}}
     area.appendChild(bubble);
