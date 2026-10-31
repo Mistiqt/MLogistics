@@ -374,6 +374,7 @@
         let isEditing = ""; 
 
         function logout() {
+            if (typeof dukaClearOnLogout === 'function') dukaClearOnLogout();
             localStorage.removeItem('sifra');
             location.reload();
         }
@@ -902,7 +903,7 @@ document.getElementById('botForm').addEventListener('submit',function(e){
 </style>
 
 <div id="assistantDock"><button id="botFab" onclick="botToggle()" aria-label="Pitaj bota" title="Pitaj bota">🤖</button><button id="chatFab" onclick="chatToggle()" aria-label="Team Chat" title="Team Chat">💬<span id="chatBadge">0</span></button></div>
-<div id="botBox" role="dialog" aria-label="Pitaj bota"><div class="chat-head"><span>🤖 PITAJ BOTA</span><button onclick="botToggle()" aria-label="Zatvori">×</button></div><div class="bot-body"><div class="bot-bubble">Zdravo! Ovde ćeš moći da pitaš o poslovnim procedurama i internim pravilima. Baza znanja još nije podešena.</div><div id="botReply" aria-live="polite"></div></div><form id="botForm" class="chat-input-row"><input id="botInput" type="text" maxlength="500" placeholder="Postavi pitanje..." required><button class="chat-send" type="submit">Pitaj</button></form></div>
+<div id="botBox" role="dialog" aria-label="Duka asistent"><div class="chat-head"><span>🤖 DUKA <small style="font-size:10px;text-transform:none;font-weight:400">· Baza znanja se ažurira</small></span><button onclick="botToggle()" aria-label="Zatvori">×</button></div><div id="dukaMessages" class="bot-body" aria-live="polite"></div><form id="botForm" class="chat-input-row"><input id="botInput" type="text" maxlength="500" placeholder="Pitaj Duku..." autocomplete="off" required><button id="dukaSend" class="chat-send" type="submit">Pošalji</button></form></div>
 
 <div id="chatBox">
     <div class="chat-head"><span>TEAM CHAT <small id="chatIdentity" style="font-weight:400;text-transform:none"></small></span><button onclick="chatToggle()" aria-label="Zatvori">×</button></div>
@@ -1297,26 +1298,62 @@ document.getElementById('botForm').addEventListener('submit',function(e){
 #chatBox { right:92px; bottom:22px; }
 @media(max-width:768px) { #assistantDock { right:14px; bottom:14px; } #chatBox,#botBox { right:0; bottom:0; width:100%; height:100%; max-height:100%; border-radius:0; } }
 </style>
+<style>
+#botBox { height: min(530px, calc(100vh - 44px)); }
+#dukaMessages { display:flex; flex-direction:column; gap:12px; }
+.duka-message { max-width:92%; padding:11px 13px; border-radius:13px; font-size:13px; line-height:1.5; overflow-wrap:anywhere; white-space:pre-wrap; }
+.duka-message.assistant { align-self:flex-start; background:var(--panel-3); color:var(--text); border-bottom-left-radius:3px; }
+.duka-message.user { align-self:flex-end; background:var(--brand-2); color:white; border-bottom-right-radius:3px; }
+.duka-message .duka-who { font-size:10px; opacity:.7; font-weight:700; margin-bottom:4px; }
+.duka-message img { display:block; max-width:100%; max-height:230px; object-fit:contain; border-radius:8px; margin-top:9px; cursor:zoom-in; }
+.duka-message a { color:#8bbaff; text-decoration:underline; }
+.duka-message.assistant strong { font-weight:700; }
+@media(max-width:768px){#botBox{height:100%;max-height:100%;}}
+</style>
 <script>
-function botToggle() {
- const box=document.getElementById('botBox'); const open=!box.classList.contains('open');
- if (document.getElementById('chatBox').classList.contains('open')) chatToggle();
- box.classList.toggle('open',open);
- if(open) document.getElementById('botInput').focus();
-}
-document.getElementById('botForm').addEventListener('submit',function(e){
- e.preventDefault();
- const input=document.getElementById('botInput');
- if(!input.value.trim())return;
- const reply=document.getElementById('botReply');
- reply.textContent='Pretražujem bazu znanja...';
- const question=input.value.trim();
- fetch(GOOGLE_SCRIPT_URL+'?akcija=botPitaj&pitanje='+encodeURIComponent(question)+'&sifra='+encodeURIComponent(loggedUser),{cache:'no-store'})
- .then(r=>{if(!r.ok)throw Error('Server nije dostupan');return r.json()})
- .then(data=>{reply.textContent=data.odgovor || 'Za ovo pitanje još nema potvrđenog odgovora u bazi znanja.';})
- .catch(()=>{reply.textContent='Baza znanja još nije povezana. Potrebno je dodati akciju botPitaj u Google Apps Script.';});
- input.value='';
-});
+(function(){
+  'use strict';
+  const TTL=30*60*1000;
+  const GREETING='Zdravo! 👋 Ja sam Duka, tvoj virtuelni asistent. Kako mogu da ti pomognem?\n\nMožeš me pitati o procedurama, dokumentaciji, radu u aplikaciji i drugim informacijama iz baze znanja.';
+  const $=id=>document.getElementById(id);
+  let messages=[], lastActivity=0, currentKey='', pending=false;
+  function hash(s){let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return (h>>>0).toString(36);}
+  function key(){return loggedUser?'duka_history_v2_'+hash(loggedUser):'';}
+  function reset(){messages=[{role:'assistant',text:GREETING}];lastActivity=0;}
+  function load(){
+    const k=key(); if(!k)return;
+    if(k===currentKey)return;
+    currentKey=k;reset();
+    try{const raw=sessionStorage.getItem(k);if(raw){const obj=JSON.parse(raw);if(obj&&Array.isArray(obj.messages)&&Date.now()-Number(obj.lastActivity)<TTL&&Date.now()>=Number(obj.lastActivity)){messages=obj.messages.slice(-100);lastActivity=Number(obj.lastActivity);}else sessionStorage.removeItem(k);}}catch(e){sessionStorage.removeItem(k);}
+    render();
+  }
+  function save(){if(!currentKey)return;try{sessionStorage.setItem(currentKey,JSON.stringify({messages:messages.slice(-100),lastActivity}));}catch(e){console.warn('Duka: memorija pregledača je puna',e);}}
+  function expire(){if(lastActivity&&Date.now()-lastActivity>=TTL){reset();save();render();}}
+  function add(role,text,slika){messages.push({role,text:String(text||''),slika:slika||''});messages=messages.slice(-100);lastActivity=Date.now();save();render();}
+  function safeUrl(value){try{const u=new URL(value);return u.protocol==='https:'?u.href:'';}catch(e){return '';}}
+  function render(){const area=$('dukaMessages');if(!area)return;area.replaceChildren();messages.forEach(m=>{
+    const bubble=document.createElement('div');bubble.className='duka-message '+(m.role==='user'?'user':'assistant');
+    const who=document.createElement('div');who.className='duka-who';who.textContent=m.role==='user'?'Ti':'Duka';bubble.appendChild(who);
+    const content=document.createElement('div');content.textContent=m.text||'';bubble.appendChild(content);
+    if(m.slika){const url=safeUrl(m.slika);if(url){const img=document.createElement('img');img.src=url;img.alt='Slika iz baze znanja';img.loading='lazy';img.addEventListener('click',()=>{if(typeof zoomImage==='function')zoomImage(img);else window.open(url,'_blank','noopener');});bubble.appendChild(img);}}
+    area.appendChild(bubble);
+  });area.scrollTop=area.scrollHeight;}
+  window.botToggle=function(){const box=$('botBox'),opening=!box.classList.contains('open');if(opening){if(!loggedUser)return;if($('chatBox').classList.contains('open'))chatToggle();load();expire();}box.classList.toggle('open',opening);if(opening)$('botInput').focus();};
+  $('botFab').title='Pitaj Duku';$('botFab').setAttribute('aria-label','Pitaj Duku');
+  $('botForm').addEventListener('submit',async function(e){
+    e.preventDefault();if(pending||!loggedUser)return;load();expire();const input=$('botInput');const q=input.value.trim();if(!q)return;
+    input.value='';add('user',q);pending=true;$('dukaSend').disabled=true;
+    const wait=document.createElement('div');wait.className='duka-message assistant';wait.textContent='Duka pretražuje bazu znanja...';$('dukaMessages').appendChild(wait);$('dukaMessages').scrollTop=$('dukaMessages').scrollHeight;
+    const requestUser=loggedUser,requestKey=currentKey;
+    try{const url=GOOGLE_SCRIPT_URL+'?akcija=botPitaj&pitanje='+encodeURIComponent(q)+'&sifra='+encodeURIComponent(requestUser)+'&_='+Date.now();const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error('Server nije dostupan');const data=await r.json();if(requestUser!==loggedUser||requestKey!==currentKey)return;
+      wait.remove();add('assistant',data.odgovor||'Za ovo pitanje još nema potvrđenog odgovora u bazi znanja.',data.slika||'');
+    }catch(err){if(requestUser===loggedUser&&requestKey===currentKey){wait.remove();add('assistant','Trenutno ne mogu da pristupim bazi znanja. Pokušaj ponovo.');}}
+    finally{pending=false;$('dukaSend').disabled=false;}
+  });
+  // Provera važi i dok je prozor zatvoren; nakon spavanja kartice proverava se pri otvaranju.
+  setInterval(()=>{if(loggedUser){load();expire();}},30000);
+  window.dukaClearOnLogout=function(){if(currentKey)sessionStorage.removeItem(currentKey);reset();currentKey='';};
+})();
 </script>
 </body>
 </html>
