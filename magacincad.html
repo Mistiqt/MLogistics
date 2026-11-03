@@ -40,12 +40,6 @@
             border-color: #60a5fa;
         }
 
-        .cad-accordion {background:#0f172a;border:1px solid #475569;border-radius:6px;}
-        .cad-accordion summary {cursor:pointer;padding:9px 8px;color:#bae6fd;font-weight:600;list-style-position:inside;}
-        .cad-accordion[open] > div {max-height:42vh;overflow-y:auto;}
-        .cad-accordion summary {font-size:11px;user-select:none;}
-        .cad-accordion:not([open]) {background:#172235;}
-        .cad-left-panel > .flex-1 {min-height:0;overflow-y:auto;}
         /* Responsive CAD: controls wrap into rows; no controls disappear off-screen. */
         .cad-header {display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding-top:7px;padding-bottom:7px;max-height:38vh;overflow-y:auto;overflow-x:hidden;}
         .cad-brand {flex:0 0 auto;min-width:0;}
@@ -203,20 +197,6 @@
                 <i class="fa-solid fa-folder-open"></i> Učitaj PDF
                 <input type="file" id="file-input" accept=".pdf" onchange="openProject(event)" class="hidden">
             </label>
-            <!-- HELP: prečice su skrivene dok korisnik ne otvori meni -->
-            <details id="cad-shortcuts-help" class="relative ml-auto text-[11px] text-slate-200 shrink-0" style="z-index:50">
-                <summary class="cursor-pointer list-none bg-slate-800/95 hover:bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 shadow-xl font-semibold flex items-center gap-2" title="Prikaži ili sakrij prečice"><i class="fa-solid fa-circle-question text-sky-400"></i> Prečice <i class="fa-solid fa-chevron-down text-[9px]"></i></summary>
-                <div id="cad-shortcuts-popup" class="fixed right-3 mt-1 bg-slate-800/95 backdrop-blur border border-slate-600 rounded-lg px-3 py-2 text-slate-300 shadow-xl max-h-[65vh] overflow-y-auto">
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+Z</kbd> Undo</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Delete</kbd> Obriši</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Shift + Drag</kbd> Box Selekcija</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+G / Ctrl+Shift+G</kbd> Grupa</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">F1/F2/F3/F4</kbd> Linija / Grid / Polilinija / Poligon</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Enter / Esc</kbd> Završi Poliliniju</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">R</kbd> Rotiraj za 45°</div>
-                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+C / Ctrl+V</kbd> Kopiraj / nalepi sa razmakom</div>
-                </div>
-            </details>
         </div>
     </header>
 
@@ -231,28 +211,6 @@
             </div>
             
             <div class="flex-1 overflow-y-auto p-3 space-y-4">
-            <!-- LAYERS / SKLADISTENJE -->
-            <div class="mb-3 space-y-1 text-xs">
-              <details class="cad-accordion"><summary>▤ Slojevi / Layers</summary><div class="p-2 space-y-2">
-                <div class="flex justify-between items-center"><b class="text-cyan-300">LAYERS / SLOJEVI</b><button onclick="addCADLayer()" class="bg-blue-700 px-2 py-1 rounded">+ Layer</button></div>
-                <div id="cad-layer-list" class="space-y-1"></div>
-                <div class="flex gap-1"><button onclick="moveSelectionToActiveLayer()" class="bg-slate-700 px-2 py-1 rounded flex-1" title="Premesti selektovane elemente u aktivni sloj">Premesti izbor</button><button onclick="mergeCADLayers()" class="bg-slate-700 px-2 py-1 rounded flex-1" title="Spoji izabrani i aktivni sloj">Spoji slojeve</button></div>
-                </div></details>
-                <details class="cad-accordion"><summary>▦ Kutije i kapacitet</summary><div class="p-2 space-y-2">
-                    <b class="text-emerald-300">KUTIJE I KAPACITET</b>
-                     <label class="block mt-1">Materijal<select id="box-material" class="w-full bg-slate-900 rounded p-1"><option value="cardboard">Karton</option><option value="metal">Metal</option><option value="plastic">Plastika</option></select></label>
-                     <label class="block mt-1">Boja kutije <input id="box-color" type="color" value="#92400e" class="w-full h-8 bg-slate-900 rounded" /></label><label class="block mt-1">Maksimalno slaganje (stackable)<input id="box-stack" type="number" min="1" max="100" step="1" value="3" class="w-full bg-slate-900 rounded p-1"></label>
-                    <div class="grid grid-cols-2 gap-1"><label>Širina (m)<input id="box-w" type="number" min="0.001" step="0.001" value="0.6" class="w-full bg-slate-900 rounded p-1"></label><label>Dužina (m)<input id="box-h" type="number" min="0.001" step="0.001" value="0.4" class="w-full bg-slate-900 rounded p-1"></label></div>
-                    <div class="grid grid-cols-2 gap-1"><label>Razmak (m)<input id="box-gap" type="number" min="0" step="0.001" value="0" class="w-full bg-slate-900 rounded p-1"></label><label>Visina kutije (m)<input id="box-z" type="number" min="0.001" step="0.001" value="0.3" class="w-full bg-slate-900 rounded p-1"></label></div>
-                    <div class="grid grid-cols-2 gap-1"><label>Visina prostora (m)<input id="space-z" type="number" min="0.001" step="0.001" value="3" class="w-full bg-slate-900 rounded p-1"></label><label>Max komada<input id="box-limit" type="number" min="1" max="10000" step="1" value="2000" class="w-full bg-slate-900 rounded p-1"></label></div>
-                    <button onclick="createCADBox()" class="w-full bg-blue-700 rounded p-1.5">Dodaj jednu kutiju u aktivni layer</button>
-                    <button onclick="transferCADBoxesToPlan()" class="w-full bg-indigo-700 rounded p-1.5">Prenesi izabrane kutije u tlocrt (kopija)</button><button onclick="calculateBoxCapacity()" class="w-full bg-emerald-700 rounded p-1.5">Popuni izabranu pravougaonu zonu</button>
-                    <div id="box-capacity-result" class="text-slate-300 whitespace-pre-line"></div>
-                    <p class="text-slate-400 text-[10px]">Izaberi pravougaoni objekat kao zonu. Raspored je pravougaona mreža; ne uzima u obzir prolaze, nosivost i prepreke. Broj po visini je teorijski.</p>
-                </div></details>
-            </div>
-
-
 
                 <!-- GEOMETRIJA & PROSTORIJE -->
                 <div>
@@ -374,7 +332,7 @@
                             <i class="fa-solid fa-truck-pickup text-amber-500 text-lg group-hover:scale-110 transition"></i>
                             <span class="text-[11px] font-medium text-slate-300 mt-1">Viljuškar</span>
                         </div>
-                        <div onclick="addPreset('mesh_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-border-all text-slate-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Klasična mrežasta ograda (siva)</span></div><div onclick="addPreset('sliding_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-arrows-left-right text-slate-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Klizna ograda (točkići)</span></div><div onclick="addPreset('safety_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-road-barrier text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Safety ograda</span></div><div onclick="addPreset('worker')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-person text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Radnik (3D)</span></div><div onclick="addPreset('elevated_sign')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-sign-hanging text-amber-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Tabla / Broj crteža (3D visina)</span></div>
+                        <div onclick="addPreset('mesh_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-border-all text-slate-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Klasična mrežasta ograda (siva)</span></div><div onclick="addPreset('sliding_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-arrows-left-right text-slate-300 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Klizna ograda (točkići)</span></div><div onclick="addPreset('safety_barrier')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center" title="Žuto-crna bankina bez rukohvata"><i class="fa-solid fa-road-barrier text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Žuto-crna bankina (bez rukohvata)</span></div><div onclick="addPreset('safety_fence')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-road-barrier text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Safety ograda</span></div><div onclick="addPreset('worker')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-person text-yellow-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Radnik (3D)</span></div><div onclick="addPreset('elevated_sign')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 cursor-pointer flex flex-col items-center text-center"><i class="fa-solid fa-sign-hanging text-amber-400 text-lg"></i><span class="text-[11px] font-medium text-slate-300 mt-1">Tabla / Broj crteža (3D visina)</span></div>
                          <div onclick="addPreset('extinguisher')" class="bg-slate-900 hover:bg-slate-700 p-2 rounded border border-slate-700 hover:border-red-400 cursor-pointer flex flex-col items-center text-center group transition">
                             <span class="inline-flex bg-red-600 text-white font-black text-lg items-center justify-center w-6 h-6">H</span>
                             <span class="text-[11px] font-medium text-slate-300 mt-1">PP Aparat</span>
@@ -382,6 +340,25 @@
                     </div>
                 </div>
 
+            </div>
+
+            <!-- LAYERS / SKLADISTENJE -->
+            <div class="p-3 border-t border-slate-700 space-y-2 text-xs" style="max-height:48vh;overflow-y:auto">
+                <div class="flex justify-between items-center"><b class="text-cyan-300">LAYERS / SLOJEVI</b><button onclick="addCADLayer()" class="bg-blue-700 px-2 py-1 rounded">+ Layer</button></div>
+                <div id="cad-layer-list" class="space-y-1"></div>
+                <div class="flex gap-1"><button onclick="moveSelectionToActiveLayer()" class="bg-slate-700 px-2 py-1 rounded flex-1" title="Premesti selektovane elemente u aktivni sloj">Premesti izbor</button><button onclick="mergeCADLayers()" class="bg-slate-700 px-2 py-1 rounded flex-1" title="Spoji izabrani i aktivni sloj">Spoji slojeve</button></div>
+                <div class="border-t border-slate-700 pt-2 space-y-2">
+                    <b class="text-emerald-300">KUTIJE I KAPACITET</b>
+                     <label class="block mt-1">Materijal<select id="box-material" class="w-full bg-slate-900 rounded p-1"><option value="cardboard">Karton — braon</option><option value="metal">Metal — bordo</option></select></label>
+                     <label class="block mt-1">Maksimalno slaganje (stackable)<input id="box-stack" type="number" min="1" max="100" step="1" value="3" class="w-full bg-slate-900 rounded p-1"></label>
+                    <div class="grid grid-cols-2 gap-1"><label>Širina (m)<input id="box-w" type="number" min="0.001" step="0.001" value="0.6" class="w-full bg-slate-900 rounded p-1"></label><label>Dužina (m)<input id="box-h" type="number" min="0.001" step="0.001" value="0.4" class="w-full bg-slate-900 rounded p-1"></label></div>
+                    <div class="grid grid-cols-2 gap-1"><label>Razmak (m)<input id="box-gap" type="number" min="0" step="0.001" value="0" class="w-full bg-slate-900 rounded p-1"></label><label>Visina kutije (m)<input id="box-z" type="number" min="0.001" step="0.001" value="0.3" class="w-full bg-slate-900 rounded p-1"></label></div>
+                    <div class="grid grid-cols-2 gap-1"><label>Visina prostora (m)<input id="space-z" type="number" min="0.001" step="0.001" value="3" class="w-full bg-slate-900 rounded p-1"></label><label>Max komada<input id="box-limit" type="number" min="1" max="10000" step="1" value="2000" class="w-full bg-slate-900 rounded p-1"></label></div>
+                    <button onclick="createCADBox()" class="w-full bg-blue-700 rounded p-1.5">Dodaj jednu kutiju u aktivni layer</button>
+                    <button onclick="calculateBoxCapacity()" class="w-full bg-emerald-700 rounded p-1.5">Popuni izabranu pravougaonu zonu</button>
+                    <div id="box-capacity-result" class="text-slate-300 whitespace-pre-line"></div>
+                    <p class="text-slate-400 text-[10px]">Izaberi pravougaoni objekat kao zonu. Raspored je pravougaona mreža; ne uzima u obzir prolaze, nosivost i prepreke. Broj po visini je teorijski.</p>
+                </div>
             </div>
 
             <!-- MINI STATS FOOTER -->
@@ -411,7 +388,18 @@
                 <span id="hud-scale" class="font-mono text-slate-400">1m = 20px</span>
             </div>
 
-
+            <!-- KEYBOARD SHORTCUTS HELP BOX -->
+            <div class="absolute top-4 right-4 bg-slate-800/80 backdrop-blur border border-slate-700 rounded-lg px-3 py-2 text-[11px] text-slate-400 shadow-xl pointer-events-none">
+                <div class="font-semibold text-slate-300 mb-1">Prečice:</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+Z</kbd> Undo</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Delete</kbd> Obriši</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Shift + Drag</kbd> Box Selekcija</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+G / Ctrl+Shift+G</kbd> Grupa</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">F1/F2/F3/F4</kbd> Linija / Grid / Polilinija / Poligon</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Enter / Esc</kbd> Završi Poliliniju</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">R</kbd> Rotiraj za 45°</div>
+                <div><kbd class="bg-slate-700 px-1 rounded text-slate-200">Ctrl+C / Ctrl+V</kbd> Kopiraj / nalepi sa razmakom</div>
+            </div>
         </main>
 
         <!-- RIGHT SIDEBAR: PROPERTIES / INSPECTOR PANEL -->
@@ -548,6 +536,13 @@
                 <label id="cad-3d-height-label" class="block text-sky-300 font-semibold">Visina u 3D (m)</label>
                 <input id="cad-3d-height" type="number" min="0.1" max="30" step="0.05" onchange="updateCAD3DHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2" />
                 <p class="text-slate-400 text-[10px]">Za stub, zid, rolo vrata i safety ogradu: unesi željenu visinu u metrima. Visina u 3D je nezavisna od dimenzija u 2D.</p>
+            </div>
+            <div id="barrier-beam-controls" class="hidden border-t border-slate-700 pt-3 space-y-2">
+                <h5 class="font-bold text-yellow-300">Žuto-crna bankina – horizontalna šipka</h5>
+                <label class="block">Visina (debljina) horizontalne šipke (m)
+                    <input id="barrier-beam-height" type="number" min="0.01" max="30" step="0.01" onchange="updateBarrierBeamHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1">
+                </label>
+                <p class="text-slate-400 text-[10px]">Visina bankine iznad je ukupna visina od poda do vrha šipke. Visina šipke se podešava zasebno, a nogice automatski popunjavaju preostalu visinu.</p>
             </div>
             <div id="mesh-fence-controls" class="hidden border-t border-slate-700 pt-3 space-y-2"><h5 class="font-bold text-slate-300">Klasična ograda – kvadratna mreža</h5><label class="block font-semibold text-sky-300">Visina ograde (m)<input id="mesh-fence-height" type="number" min="0.1" max="30" step="0.05" onchange="updateMeshFenceHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label><label class="block">Veličina otvora mreže (m)<input id="mesh-fence-cell" type="number" min="0.05" max="2" step="0.05" onchange="updateMeshFenceCell(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label><p class="text-slate-400 text-[10px]">Visinu unosiš ovde. Dužina, debljina, rotacija i boja podešavaju se u standardnim poljima iznad. Bez točkića, siva po defaultu.</p></div><div id="sliding-fence-controls" class="hidden border-t border-slate-700 pt-3 space-y-2"><h5 class="font-bold text-slate-300">Klizna ograda na točkićima</h5><label class="block">Visina (m)<input id="sliding-fence-height" type="number" min="0.2" max="15" step="0.05" onchange="updateSlidingFenceHeight(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label><p class="text-slate-400 text-[10px]">Širinu (dužinu ograde), dubinu i ugao menjaš u standardnim poljima iznad. Siva boja je podrazumevana.</p></div><div id="dock-door-controls" class="hidden border-t border-slate-700 pt-3 space-y-2"><h5 class="font-bold text-sky-300">Doking – rolo vrata</h5><label class="block">Visina rolo vrata (m)<input id="dock-door-height" type="number" min="1.5" max="8" step="0.1" onchange="updateDockDoor('dockDoorHeight',this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 mt-1"></label><label class="block">Podignutost vrata (%)<input id="dock-door-open" type="range" min="0" max="100" step="5" oninput="updateDockDoor('dockDoorOpen',this.value)" class="w-full mt-1"><span id="dock-door-open-value" class="text-slate-300">0%</span></label><p class="text-slate-400 text-[10px]">0% = spuštena, 100% = potpuno podignuta. Žuta podna zona ostaje bez uzvišenja.</p></div><div id="rack-properties" class="border-t border-slate-700 pt-3 space-y-3 hidden">
                     <h5 class="font-bold text-blue-400 uppercase tracking-wider text-[10px]">Specifično za Regal</h5>
@@ -1003,6 +998,8 @@
                     Object.assign(newObj,{w_m:5,h_m:.08,fenceHeight:2,meshCell:.3,color:'#9ca3af',strokeColor:'#6b7280',label:''});break;
                 case 'sliding_fence':
                     Object.assign(newObj,{w_m:5,h_m:.24,slidingFenceHeight:2,color:'#94a3b8',strokeColor:'#cbd5e1',label:'Klizna ograda'});break;
+                case 'safety_barrier':
+                    Object.assign(newObj,{w_m:5,h_m:.22,fenceHeight:.45,barrierBeamHeight:.14,color:'#facc15',strokeColor:'#111827',label:'Bankina'});break;
                 case 'safety_fence':
                     Object.assign(newObj,{w_m:5,h_m:.18,fenceHeight:1.15,color:'#facc15',strokeColor:'#111827',label:'Safety ograda'});break;
                 case 'worker':
@@ -1394,6 +1391,7 @@
                     for(let i=1;i<Math.max(2,Math.ceil(w/35));i++){const xx=-w/2+i*w/Math.max(2,Math.ceil(w/35));CTX.beginPath();CTX.moveTo(xx,-h/2);CTX.lineTo(xx,h/2);CTX.stroke();}
                     break;
                 }
+                case 'safety_barrier':
                 case 'safety_fence': {
                     CTX.fillStyle='#facc15';CTX.fillRect(-w/2,-h/2,w,h);
                     CTX.save();CTX.beginPath();CTX.rect(-w/2,-h/2,w,h);CTX.clip();
@@ -2280,26 +2278,13 @@
                     else if (transformType === 'resize') {
                         const isGridLine = selected.type === 'line' && selected.gridLine;
                         const minDim = isGridLine ? 0.001 : 0.2;
-                        // Transform mouse to the object's own axes, not global screen axes.
-                        const a=(Number(selected.angle)||0)*Math.PI/180;
-                        const cx=selected.x_m+selected.w_m/2, cy=selected.y_m+selected.h_m/2;
-                        const dx=world.x-cx,dy=world.y-cy;
-                        const localX=dx*Math.cos(a)+dy*Math.sin(a);
-                        const localY=-dx*Math.sin(a)+dy*Math.cos(a);
-                        const snapDim=v=>Math.max(minDim,snapEnabled ? Math.round(v/snapGridSize)*snapGridSize : v);
-                        const originalW=selected.w_m,originalH=selected.h_m;
-                        const nextW=snapDim(originalW/2+localX);
-                        const nextH=snapDim(originalH/2+localY);
-                        const lineLike=['line','wall'].includes(selected.type);
-                        const horizontal=lineLike && (Math.abs(originalH)<0.00001 || (originalW>=originalH && originalH<=0.3));
-                        const vertical=lineLike && (Math.abs(originalW)<0.00001 || (originalH>originalW && originalW<=0.3));
-                        if(selected.type==='circle') {selected.w_m=nextW;selected.h_m=nextW;}
-                        else if(horizontal) {selected.w_m=nextW;selected.h_m=originalH;}
-                        else if(vertical) {selected.w_m=originalW;selected.h_m=nextH;}
-                        else {selected.w_m=nextW;selected.h_m=nextH;}
-                        if(isGridLine){
-                            if(horizontal){selected.w_m=Math.max(.001,gridSnap(selected.w_m));selected.h_m=0;}
-                            else {selected.w_m=0;selected.h_m=Math.max(.001,gridSnap(selected.h_m));}
+                        const newW = Math.max(minDim, world.x - selected.x_m);
+                        const newH = Math.max(minDim, world.y - selected.y_m);
+                        selected.w_m = isGridLine ? (selected.h_m <= 0.000001 ? Math.max(0.001,gridSnap(newW)) : 0) : (snapEnabled ? Math.round(newW / snapGridSize) * snapGridSize : newW);
+                        if (selected.type === 'circle') {
+                            selected.h_m = selected.w_m;
+                        } else {
+                            selected.h_m = isGridLine ? (selected.w_m === 0 ? Math.max(0.001,gridSnap(newH)) : 0) : (snapEnabled ? Math.round(newH / snapGridSize) * snapGridSize : newH);
                         }
                     }
                     updateInspector();
@@ -2581,11 +2566,13 @@
                 const isRoom=['relax_house','driver_zone','paper_reception','office','toilet'].includes(selected.type);
                 roomControls.classList.toggle('hidden',!isRoom);
                 if(isRoom){document.getElementById('room-door-side').value=selected.doorSide||'front';document.getElementById('room-door-width').value=selected.doorWidth??.9;document.getElementById('room-door-height').value=selected.roomDoorHeight??2.1;document.getElementById('room-door-enabled').checked=selected.hasDoor!==false;}
+                document.getElementById('barrier-beam-controls').classList.toggle('hidden',selected.type!=='safety_barrier');
+                if(selected.type==='safety_barrier')document.getElementById('barrier-beam-height').value=selected.barrierBeamHeight??Math.min(Math.max(.09,(selected.fenceHeight??.45)*.32),.28);
                 const heightControls=document.getElementById('cad-3d-height-controls');
-                heightControls.classList.toggle('hidden', !['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception','office','toilet','column_cross'].includes(selected.type));
-                if(['wall','roller_door','safety_fence','relax_house','driver_zone','paper_reception','office','toilet','column_cross'].includes(selected.type)) {
+                heightControls.classList.toggle('hidden', !['wall','roller_door','safety_fence','safety_barrier','relax_house','driver_zone','paper_reception','office','toilet','column_cross'].includes(selected.type));
+                if(['wall','roller_door','safety_fence','safety_barrier','relax_house','driver_zone','paper_reception','office','toilet','column_cross'].includes(selected.type)) {
                     document.getElementById('cad-3d-height').value=selected.type==='column_cross'?(selected.columnHeight??7):selected.type==='wall'?(selected.wallHeight??2.8):selected.type==='roller_door'?(selected.doorHeight??2.8):(['relax_house','driver_zone','paper_reception','office','toilet'].includes(selected.type)?(selected.roomHeight??2.8):(selected.fenceHeight??1.15));
-                    document.getElementById('cad-3d-height-label').textContent=selected.type==='column_cross'?'Visina stuba od poda (m)':selected.type==='mesh_fence'?'Visina mrežaste ograde (m)':selected.type==='safety_fence'?'Visina safety ograde (m)':(['relax_house','driver_zone','paper_reception','office','toilet'].includes(selected.type)?'Visina kućice / prostorije (m)':'Visina u 3D (m)');
+                    document.getElementById('cad-3d-height-label').textContent=selected.type==='column_cross'?'Visina stuba od poda (m)':selected.type==='mesh_fence'?'Visina mrežaste ograde (m)':selected.type==='safety_barrier'?'Ukupna visina bankine (m)':selected.type==='safety_fence'?'Visina safety ograde (m)':(['relax_house','driver_zone','paper_reception','office','toilet'].includes(selected.type)?'Visina kućice / prostorije (m)':'Visina u 3D (m)');
                 }
 
                 document.getElementById('prop-label').value = selected.label || '';
@@ -2672,6 +2659,16 @@
             updateStats();
         }
 
+        function updateBarrierBeamHeight(value) {
+            const beamHeight=Number(value);
+            if(!Number.isFinite(beamHeight)||beamHeight<.01||beamHeight>30){alert('Visina šipke mora biti između 0.01 i 30 m.');updateInspector();return;}
+            const barriers=selectedObjectIds.map(id=>objects.find(o=>o.id===id)).filter(o=>o&&o.type==='safety_barrier'&&!o.locked&&layerEditable(o));
+            if(barriers.some(o=>beamHeight>Number(o.fenceHeight??.45))){alert('Visina šipke ne može biti veća od ukupne visine bankine.');updateInspector();return;}
+            if(!barriers.length)return;
+            snapshotCAD();barriers.forEach(o=>o.barrierBeamHeight=beamHeight);
+            draw();updateInspector();if(cad3dActive)queueCAD3DRefresh();
+        }
+
         function updateCAD3DHeight(value) {
             const height=Number(value);
             if(!Number.isFinite(height)||height<0.1||height>30){alert('Visina mora biti između 0.1 i 30 m.');updateInspector();return;}
@@ -2682,7 +2679,7 @@
                     if(o.type==='column_cross')o.columnHeight=height;
                     if(o.type==='wall')o.wallHeight=height;
                     if(o.type==='roller_door')o.doorHeight=height;
-                    if(o.type==='safety_fence'||o.type==='mesh_fence')o.fenceHeight=height;
+                    if(o.type==='safety_fence'||o.type==='safety_barrier'||o.type==='mesh_fence')o.fenceHeight=height;
                     if(['relax_house','driver_zone','paper_reception','office','toilet'].includes(o.type))o.roomHeight=height;
                 }
             });
@@ -2944,24 +2941,7 @@
             objects.forEach(o=>{if((o.layerId||'base')===source.id)o.layerId=activeLayerId;});
             cadLayers=cadLayers.filter(l=>l.id!==source.id);renderCADLayers();draw();}
         function readBoxNumber(id,allowZero=false){const v=Number(document.getElementById(id).value);if(!Number.isFinite(v)||(allowZero?v<0:v<=0))throw Error('Neispravna vrednost: '+id);return v;}
-        function boxSettings(){const material=document.getElementById("box-material").value;const stack=readBoxNumber("box-stack");if(!Number.isInteger(stack)||stack>100)throw Error("Stackable mora biti ceo broj od 1 do 100.");return {material,stack,color:document.getElementById('box-color').value};}
-        document.getElementById('box-material').addEventListener('change',e=>{document.getElementById('box-color').value=({metal:'#881337',cardboard:'#92400e',plastic:'#0284c7'})[e.target.value]||'#64748b';});
-        function transferCADBoxesToPlan(){
-            const selected=objects.filter(o=>selectedObjectIds.includes(o.id)&&['metal','cardboard','plastic'].includes(o.material));
-            if(!selected.length){alert('Selektuj jednu ili više kutija iz sloja Kutije.');return;}
-            const target=cadLayers.find(l=>l.id==='base')||cadLayers.find(l=>/tlocrt/i.test(l.name));
-            if(!target){alert('Sloj Tlocrt nije pronađen.');return;}
-            if(target.locked){alert('Sloj Tlocrt je zaključan.');return;}
-            const x=prompt('Pomeraj kopije po X osi (m):','0');if(x===null)return;
-            const y=prompt('Pomeraj kopije po Y osi (m):','0');if(y===null)return;
-            const dx=Number(x.replace(',','.')),dy=Number(y.replace(',','.'));
-            if(!Number.isFinite(dx)||!Number.isFinite(dy)){alert('Neispravan pomeraj.');return;}
-            snapshotCAD();const ids=[];
-            for(const o of selected){const copy={...o,id:generateId(),layerId:target.id,x_m:o.x_m+dx,y_m:o.y_m+dy,zIndex:objects.length};delete copy.stackParent;delete copy.boxSignature;objects.push(copy);ids.push(copy.id);}
-            target.visible=true;selectedObjectIds=ids;activeLayerId=target.id;
-            renderCADLayers();updateInspector();updateStats();draw();if(cad3dActive)queueCAD3DRefresh();
-            alert('Preneto '+ids.length+' kutija u Tlocrt. Originali ostaju u izvornom sloju.');
-        }
+        function boxSettings(){const material=document.getElementById("box-material").value;const stack=readBoxNumber("box-stack");if(!Number.isInteger(stack)||stack>100)throw Error("Stackable mora biti ceo broj od 1 do 100.");return {material,stack,color:material==="metal"?"#881337":"#92400e"};}
         // 2D dugme: jedan klik = jedna fizicka kutija. Nakon limita novi stub.
         let cadBox2DLastRoot=null;
         function createCADBox(){
@@ -2969,7 +2949,7 @@
                 const l=cadLayers.find(x=>x.id===activeLayerId);
                 if(!l||l.locked||!l.visible)throw Error('Aktivni sloj mora biti vidljiv i otključan.');
                 const w=readBoxNumber('box-w'),h=readBoxNumber('box-h'),settings=boxSettings(),z=readBoxNumber('box-z');
-                const signature=[w,h,z,settings.material,settings.stack,settings.color,activeLayerId].join('|');
+                const signature=[w,h,z,settings.material,settings.stack,activeLayerId].join('|');
                 const root=objects.find(o=>o.id===cadBox2DLastRoot && o.boxSignature===signature);
                 if(root){
                     stackCADBox3D(root,false);
@@ -2978,7 +2958,7 @@
                 snapshotCAD();
                 const pt=screenToWorld(CANVAS.width/2,CANVAS.height/2);
                 const o={id:generateId(),type:'rect',x_m:pt.x-w/2,y_m:pt.y-h/2,w_m:w,h_m:h,angle:0,
-                    label:({metal:'Metal',cardboard:'Karton',plastic:'Plastika'})[settings.material],material:settings.material,stackable:settings.stack,
+                    label:settings.material==='metal'?'Metal':'Karton',material:settings.material,stackable:settings.stack,
                     stackLevels:1,color:settings.color,strokeColor:'#f8fafc',strokeWidth:1,fillOpacity:65,
                     layerId:activeLayerId,zIndex:objects.length,boxHeight:z,boxSignature:signature};
                 objects.push(o);cadBox2DLastRoot=o.id;selectedObjectIds=[o.id];updateInspector();updateStats();draw();
@@ -3014,7 +2994,7 @@
         // Svaki klik dodaje JEDNU fizičku kutiju: popuni stub do limita,
         // pa započni sledeći stub u istom redu, čak i ako korisnik klikće stari stub.
         function stackCADBox3D(clicked,rebuild=true){
-            if(!clicked || !['metal','cardboard','plastic'].includes(clicked.material) || !layerEditable(clicked))return;
+            if(!clicked || !['metal','cardboard'].includes(clicked.material) || !layerEditable(clicked))return;
             const root=objects.find(q=>q.id===(clicked.stackParent||clicked.id))||clicked;
             const max=Math.max(1,Math.floor(Number(root.stackable)||1));
             const family=objects.filter(q=>q.id===root.id||q.stackParent===root.id);
@@ -3040,7 +3020,7 @@
         function queueCAD3DRefresh(){
             if(!cad3dActive)return;
             clearTimeout(cad3dRefreshTimer);
-            cad3dRefreshTimer=setTimeout(()=>{cad3dRefreshTimer=null;if(cad3dActive)buildCAD3D(true);},90);
+            cad3dRefreshTimer=setTimeout(()=>{cad3dRefreshTimer=null;if(cad3dActive){try{buildCAD3D(true)}catch(err){showCAD3DError(err)};}},90);
         }
         let cad3dOrbit={yaw:.65,pitch:.75,dist:65,cx:0,cz:0};
         let cad3dShowColumns=true;
@@ -3059,10 +3039,18 @@
             if(cad3dFrame){cancelAnimationFrame(cad3dFrame);cad3dFrame=null;}
             if(!active){clearTimeout(cad3dRefreshTimer);return;}
             if(!window.THREE){alert('3D zahteva Three.js i internet konekciju.');cad3dActive=false;host.classList.add('hidden');return;}
-            buildCAD3D();
+            try { buildCAD3D(); }
+            catch(err) { showCAD3DError(err); }
+        }
+        function showCAD3DError(err){
+            console.error('MagacinCAD 3D:',err);
+            const host=document.getElementById('cad3d');
+            let panel=document.getElementById('cad3d-error');
+            if(!panel){panel=document.createElement('div');panel.id='cad3d-error';panel.style.cssText='position:absolute;top:65px;left:20px;right:20px;z-index:20;background:#7f1d1d;color:white;padding:15px;border-radius:8px;font:13px sans-serif;white-space:pre-wrap';host.appendChild(panel);}
+            panel.textContent='Greška pri pokretanju 3D prikaza: '+(err?.message||String(err))+'\\nProveri WebGL / hardversko ubrzanje u pregledaču.';
         }
         function buildCAD3D(preserveCamera=false){
-            const T=window.THREE,host=document.getElementById('cad3d');if(!T)return;
+            const T=window.THREE,host=document.getElementById('cad3d');if(!T)return;document.getElementById('cad3d-error')?.remove();
             if(cad3dFrame){cancelAnimationFrame(cad3dFrame);cad3dFrame=null;}
             if(cad3dRenderer){cad3dRenderer.dispose();cad3dRenderer.domElement.remove();}
             cad3dScene=new T.Scene();cad3dScene.background=new T.Color('#18263b');cad3dScene.fog=new T.FogExp2('#18263b',0.0035);
@@ -3213,6 +3201,38 @@
                         const wheel=part(new T.CylinderGeometry(.12,.12,.07,20),dark,xx,.12,0);wheel.rotation.x=Math.PI/2;
                     }
                     beam(0,.025,0,length+.25,.035,.09,dark);
+                    cad3dScene.add(group);return true;
+                }
+                if(o.type==='safety_barrier'){
+                    // Podignuta žuto-crna bankina: jedna horizontalna greda na nogicama,
+                    // bez gornjih rukohvata. fenceHeight je ukupna visina od poda.
+                    const group=new T.Group();group.position.set(cx,0,cz);group.rotation.y=-(o.angle||0)*Math.PI/180;
+                    const length=Math.max(.1,w),depth=Math.max(.05,d),height=Math.max(.15,Math.min(30,Number(o.fenceHeight)||.45));
+                    const yellow=new T.MeshStandardMaterial({color:'#facc15',roughness:.65});
+                    const black=new T.MeshStandardMaterial({color:'#111827',roughness:.7});
+                    function part(px,py,pz,bw,bh,bd,mat){
+                        const mesh=new T.Mesh(new T.BoxGeometry(bw,bh,bd),mat);
+                        mesh.position.set(px,py,pz);mesh.userData.objectId=o.id;
+                        editableMeshes.push(mesh);group.add(mesh);
+                    }
+                    const beamHeight=Math.max(.01,Math.min(height,Number(o.barrierBeamHeight) || Math.min(Math.max(.09,height*.32),.28)));
+                    const beamBottom=height-beamHeight;
+                    const count=Math.max(2,Math.ceil(length/.4));
+                    for(let i=0;i<count;i++){
+                        part(-length/2+(i+.5)*length/count,height-beamHeight/2,0,
+                             length/count+.002,beamHeight,depth,i%2?black:yellow);
+                    }
+                    const postCount=Math.max(2,Math.min(150,Math.ceil(length/2)+1));
+                    // Krajnje nogice su unutar ivica grede, bez širenja preko krajeva.
+                    // Dubina nogice i stope ne prelazi dubinu horizontalne grede.
+                    const postWidth=Math.min(length/2,depth,.10);
+                    const usableLength=Math.max(0,length-postWidth);
+                    for(let i=0;i<postCount;i++){
+                        const px=-usableLength/2+i*usableLength/(postCount-1);
+                        part(px,beamBottom/2,0,postWidth,Math.max(.01,beamBottom),depth,i%2?black:yellow);
+                        // Stopa je u gabaritu nogice i grede, bez isturenih ivica.
+                        part(px,.018,0,postWidth,.036,depth,black);
+                    }
                     cad3dScene.add(group);return true;
                 }
                 if(o.type==='safety_fence'){
@@ -3698,14 +3718,14 @@
                 }
                 if(detailedObject(o,x,z,w,d)){
                     // Rendered as a composed recognizable model.
-                }else if(['metal','cardboard','plastic'].includes(o.material)){
+                }else if(o.material==='metal'||o.material==='cardboard'){
                     // A stackLevel of 0 is an empty placement; show one base box so it can be clicked.
                     const levels=Math.max(1,Math.min(Math.max(1,Number(o.stackable)||1),Number(o.stackLevels)||1));
                     const height=Math.max(.01,Number(o.boxHeight)||.3);
                     for(let k=0;k<levels;k++){
-                        const mesh=block(x,z,w,d,height,o.color||'#92400e',angle,k*height,o);
+                        const mesh=block(x,z,w,d,height,o.material==='metal'?'#881337':'#92400e',angle,k*height,o);
                         // Separate outline for EVERY stacked level, not a single solid block.
-                        const edges=new T.LineSegments(new T.EdgesGeometry(mesh.geometry),new T.LineBasicMaterial({color:0xe2e8f0}));
+                        const edges=new T.LineSegments(new T.EdgesGeometry(mesh.geometry),new T.LineBasicMaterial({color:o.material==='metal'?0xfda4af:0xfed7aa}));
                         mesh.add(edges);
                     }
                 }else{
@@ -3715,7 +3735,7 @@
             }
             visible.forEach(o=>{if(o.type==='column_cross' && !cad3dShowColumns)return;addObject(o);});
             cad3dCamera=new T.PerspectiveCamera(55,1,.1,10000);
-            cad3dRenderer=new T.WebGLRenderer({antialias:true,alpha:false});cad3dRenderer.outputColorSpace=T.SRGBColorSpace;cad3dRenderer.toneMapping=T.ACESFilmicToneMapping;cad3dRenderer.toneMappingExposure=1.35;cad3dRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));host.appendChild(cad3dRenderer.domElement);
+            cad3dRenderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'default'});cad3dRenderer.outputColorSpace=T.SRGBColorSpace;cad3dRenderer.toneMapping=T.ACESFilmicToneMapping;cad3dRenderer.toneMappingExposure=1.35;cad3dRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));host.appendChild(cad3dRenderer.domElement);
             const canvas=cad3dRenderer.domElement;canvas.style.cssText='width:100%;height:100%;display:block;cursor:grab;touch-action:none;';canvas.tabIndex=0;
             const raycaster=new T.Raycaster(),pointer=new T.Vector2(),floor=new T.Plane(new T.Vector3(0,1,0),0);
             function hitAt(e){const r=canvas.getBoundingClientRect();pointer.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);raycaster.setFromCamera(pointer,cad3dCamera);return raycaster.intersectObjects(editableMeshes,false)[0]||null;}
@@ -3765,7 +3785,7 @@
             canvas.addEventListener('pointerup',e=>{
                 if(!state||e.pointerId!==state.id)return;
                 const done=state;state=null;canvas.style.cursor='grab';
-                if(!done.moved&&done.obj&&(['metal','cardboard','plastic'].includes(done.obj.material)))stackCADBox3D(done.obj);
+                if(!done.moved&&done.obj&&(done.obj.material==='metal'||done.obj.material==='cardboard'))stackCADBox3D(done.obj);
                 if(done.kind==='object'&&done.obj){
                     if(!done.moved){}
                     else {updateInspector();updateStats();draw();}
@@ -3791,7 +3811,7 @@
                     cad3dRenderer.setSize(rect.width,rect.height,false);cad3dCamera.aspect=rect.width/rect.height;cad3dCamera.updateProjectionMatrix();
                     const a=cad3dOrbit;
                     cad3dCamera.position.set(a.cx+a.dist*Math.sin(a.yaw)*Math.cos(a.pitch),a.dist*Math.sin(a.pitch),a.cz+a.dist*Math.cos(a.yaw)*Math.cos(a.pitch));
-                    cad3dCamera.lookAt(a.cx,0,a.cz);cad3dRenderer.render(cad3dScene,cad3dCamera);
+                    cad3dCamera.lookAt(a.cx,0,a.cz);try{cad3dRenderer.render(cad3dScene,cad3dCamera);}catch(err){showCAD3DError(err);cad3dActive=false;return;}
                 }
                 cad3dFrame=requestAnimationFrame(animate);
             };animate();
@@ -3929,7 +3949,7 @@
                     doc.setDrawColor(71,85,105);doc.setLineWidth(.25);
                     for(let i=1;i<Math.max(2,Math.ceil(Math.abs(o.w_m)/.4));i++){const t=i/Math.max(2,Math.ceil(Math.abs(o.w_m)/.4));doc.line(...rotate(-w/2+w*t,-h/2),...rotate(-w/2+w*t,h/2));}
                 }
-                else if(o.type==='safety_fence'){
+                else if(o.type==='safety_fence'||o.type==='safety_barrier'){
                     // Ograda je u PDF-u u stvarnoj razmeri: širina trake prati h_m,
                     // bez minimalne debljine koja bi prekrila susedne objekte.
                     const strip=Math.max(.08,Math.min(h*.85,1.8));
@@ -3947,7 +3967,7 @@
                     doc.line(...p,...q);
                     const p2=rotate(-w/2,h/2),q2=rotate(w/2,h/2);
                     doc.line(...p2,...q2);
-                    const posts=Math.max(2,Math.min(200,Math.ceil(Math.abs(o.w_m)/2)+1));
+                    const posts=o.type==='safety_barrier'?0:Math.max(2,Math.min(200,Math.ceil(Math.abs(o.w_m)/2)+1));
                     for(let i=0;i<posts;i++){
                         const t=i/(posts-1),px=-w/2+t*w;
                         doc.line(...rotate(px,-h/2),...rotate(px,h/2));
@@ -4226,18 +4246,5 @@
             loadTemplate('standard');
         };
     </script>
-<script>
-// Pomoć ostaje u desnom delu trake; padajući meni se pozicionira ispod dugmeta.
-(function(){
-  const help=document.getElementById('cad-shortcuts-help');
-  const popup=document.getElementById('cad-shortcuts-popup');
-  if(!help||!popup)return;
-  function place(){const r=help.querySelector('summary').getBoundingClientRect();popup.style.top=Math.round(r.bottom+4)+'px';popup.style.right=Math.max(8,Math.round(innerWidth-r.right))+'px';}
-  help.addEventListener('toggle',()=>{if(help.open)place();});
-  window.addEventListener('resize',()=>{if(help.open)place();});
-  document.addEventListener('pointerdown',e=>{if(help.open&&!help.contains(e.target))help.open=false;});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&help.open)help.open=false;});
-})();
-</script>
 </body>
 </html>
