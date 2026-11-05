@@ -121,6 +121,7 @@
     
 .save-overlay{position:fixed;inset:0;background:rgba(6,9,15,.78);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
 .save-overlay.active{display:flex}.save-dialog{background:var(--panel-bg);border:1px solid var(--brand-light);border-radius:12px;padding:32px 45px;text-align:center;box-shadow:0 18px 70px #0009;max-width:90vw}.save-dialog .rotator{display:block;margin:0 auto 20px;width:46px;height:46px;border-width:5px}.save-dialog strong{display:block;font-size:19px;margin-bottom:10px}.save-dialog p{color:var(--text-dim);margin:0}.mini-btn:disabled{opacity:.5;cursor:wait}
+.search-result .qty-highlight{font-size:19px;font-weight:800;color:#fff;letter-spacing:.2px}.search-result .search-meta{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:7px;color:var(--text-dim);font-size:13px}.history-view-banner{padding:14px 17px;margin:14px 0;background:var(--panel-2);border:1px solid var(--brand-light);border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.history-view-banner strong{color:var(--brand-light)}
 </style>
 </head>
 <body>
@@ -193,6 +194,7 @@
     </div>
 
     <div id="global_search_results" class="search-results" aria-live="polite"></div>
+    <div id="history_view_banner" class="history-view-banner" style="display:none"></div>
     <div style="overflow-x: auto;">
         <table id="popis-tabela">
             <thead>
@@ -314,7 +316,34 @@
         return true;
     }
 
+    let viewingHistory = false;
+    let loadSerial = 0;
+    function toggleHistoryView(active) {
+        viewingHistory = active;
+        document.querySelectorAll('.btn-sync,.btn-reset').forEach(b => {b.disabled=active;b.style.opacity=active?'.45':'';});
+        if (!active) document.getElementById('history_view_banner').style.display='none';
+    }
+    function showHistoryInMainTable(entry) {
+        ++loadSerial;
+        toggleHistoryView(true);
+        const banner=document.getElementById('history_view_banner');
+        banner.style.display='flex';
+        banner.innerHTML=`<div><strong>ISTORIJSKI POPIS — SAMO PREGLED</strong><div>${escapeHtml(entry.sheet)} · ${escapeHtml(formatHistoryDate(entry.datum))} · ${escapeHtml(formatHistoryTime(entry.vreme))} · ${entry.items.length} stavki</div></div><button class="mini-btn" id="back_to_current">Vrati aktuelni popis</button>`;
+        document.getElementById('back_to_current').onclick=()=>ucitajPodatke();
+        const tbody=document.getElementById('tabela-sadrzaj');tbody.innerHTML='';
+        (entry.items||[]).forEach(item=>{
+            const tr=document.createElement('tr');
+            [item.name,item.supplier,item.partNumber,item.qty].forEach((value,i)=>{
+                const td=document.createElement('td');td.textContent=value==null?'':String(value);
+                if(i===3){td.className='qty-cell';td.style.fontWeight='800';td.style.fontSize='17px';}
+                tr.appendChild(td);
+            });tbody.appendChild(tr);
+        });
+        document.getElementById('popis-tabela').scrollIntoView({behavior:'smooth',block:'start'});
+    }
     async function ucitajPodatke() {
+        toggleHistoryView(false);
+        const currentLoad=++loadSerial;
         let sheetName = document.getElementById('filter_osoba').value;
         let tbody = document.getElementById('tabela-sadrzaj');
         
@@ -327,7 +356,7 @@
             let response = await fetch(`${WEB_APP_URL}?sheet=${encodeURIComponent(sheetName)}`);
             let data = await response.json();
             
-            if (sheetName !== document.getElementById('filter_osoba').value) return;
+            if (currentLoad !== loadSerial || sheetName !== document.getElementById('filter_osoba').value) return;
             if (data.error) {
                 tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:#f08890;">Greška: ${data.error}</td></tr>`;
                 return;
@@ -336,6 +365,7 @@
             prikaziTabelu(data);
         } catch (error) {
             console.error("Greška pri učitavanju:", error);
+            if(currentLoad !== loadSerial) return;
             tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:#f08890;">Greška pri povezivanju sa Google Sheets! Proverite URL.</td></tr>`;
         } finally {
             postaviLoading(false);
@@ -371,6 +401,7 @@
     }
     async function sacuvajUGoggleSheet() {
         if(saveInProgress) return;
+        if(viewingHistory){alert("Istorijski popis je samo za pregled. Kliknite Vrati aktuelni popis.");return;}
         if (!proveriDatumVreme()) return;
 
         if (!confirm("Da li ste sigurni da želite da sačuvate promene u Google Sheets bazu?")) {
@@ -418,6 +449,7 @@
     }
 
     function resetujKolicine() {
+        if(viewingHistory) return;
         if (!confirm("Da li ste sigurni da želite da resetujete sve količine na 0?")) return;
         document.querySelectorAll('.qty-input').forEach(input => input.value = "0");
 
@@ -486,7 +518,7 @@
                 if (data.error) throw new Error(data.error);
                 if (!data.length) { panel.textContent = 'Nema pronađenih Part Number-a.'; return; }
                 panel.innerHTML = `<div style="margin-bottom:8px;color:var(--text-dim)">Pronađeno: ${data.length}${data.length===100?' (prvih 100)':''}</div>` + data.map(item =>
-                    `<div class="search-result"><div><b>${escapeHtml(item.partNumber)}</b> — ${escapeHtml(item.name)}<div style="font-size:12px;color:var(--text-dim)">${escapeHtml(item.supplier)} | QTY: ${escapeHtml(item.qty)}</div></div><button class="mini-btn" data-sheet="${escapeHtml(item.sheet)}" data-part="${escapeHtml(item.partNumber)}">Otvori popis</button></div>`).join('');
+                    `<div class="search-result"><div><b>${escapeHtml(item.partNumber)}</b> — ${escapeHtml(item.name)}<div class="search-meta"><span>${escapeHtml(item.supplier)}</span><span>QTY: <strong class="qty-highlight">${escapeHtml(item.qty)}</strong></span><span>Datum popisa: <b>${escapeHtml(formatHistoryDate(item.datum_popisa))}</b></span></div></div><button class="mini-btn" data-sheet="${escapeHtml(item.sheet)}" data-part="${escapeHtml(item.partNumber)}">Otvori popis</button></div>`).join('');
                 panel.querySelectorAll('button[data-sheet]').forEach(btn => btn.addEventListener('click', async () => {
                     const select = document.getElementById('filter_osoba');
                     select.value = btn.dataset.sheet;
@@ -547,9 +579,8 @@
             content.innerHTML='<table><thead><tr><th>Datum (MM/DD/YYYY)</th><th>Vreme (AM/PM)</th><th>Dobavljač</th><th>Stavki</th><th>Akcije</th></tr></thead><tbody>'+
                 data.map((x,i)=>`<tr><td>${escapeHtml(formatHistoryDate(x.datum))}</td><td>${escapeHtml(formatHistoryTime(x.vreme))}</td><td>${escapeHtml(x.sheet)}</td><td>${escapeHtml(x.count)}</td><td><button class="mini-btn" data-history-index="${i}">Prikaži</button> <button class="mini-btn" data-export-index="${i}">Skini Excel</button></td></tr>`).join('')+'</tbody></table><div id="history_details"></div>';
             content.querySelectorAll('button[data-history-index]').forEach(b=>b.addEventListener('click',()=>{
-                const x=data[Number(b.dataset.historyIndex)];const rows=x.items||[];
-                document.getElementById('history_details').innerHTML=`<h3>Popis: ${escapeHtml(x.sheet)} — ${escapeHtml(formatHistoryDate(x.datum))} ${escapeHtml(formatHistoryTime(x.vreme))}</h3><button class="mini-btn" id="export_open_history">Skini ovaj popis u Excel</button><table><thead><tr><th>Component Name</th><th>Supplier</th><th>Part Number</th><th>QTY</th></tr></thead><tbody>${rows.map(y=>`<tr><td>${escapeHtml(y.name)}</td><td>${escapeHtml(y.supplier)}</td><td>${escapeHtml(y.partNumber)}</td><td>${escapeHtml(y.qty)}</td></tr>`).join('')}</tbody></table>`;
-                document.getElementById('export_open_history').addEventListener('click',()=>exportHistoryExcel(x));
+                const x=data[Number(b.dataset.historyIndex)];
+                showHistoryInMainTable(x);
             }));
             content.querySelectorAll('button[data-export-index]').forEach(b=>b.addEventListener('click',()=>exportHistoryExcel(data[Number(b.dataset.exportIndex)])));
         }catch(e){status.textContent='Greška pri učitavanju istorije: '+e.message;}
