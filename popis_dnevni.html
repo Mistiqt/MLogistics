@@ -118,7 +118,10 @@
         .mini-btn { background:var(--brand); color:white; border:0; padding:8px 12px; border-radius:5px; cursor:pointer; }
         .history-panel { margin-top:25px; padding:18px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; }
         .history-panel table { margin-top:12px; }
-    </style>
+    
+.save-overlay{position:fixed;inset:0;background:rgba(6,9,15,.78);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.save-overlay.active{display:flex}.save-dialog{background:var(--panel-bg);border:1px solid var(--brand-light);border-radius:12px;padding:32px 45px;text-align:center;box-shadow:0 18px 70px #0009;max-width:90vw}.save-dialog .rotator{display:block;margin:0 auto 20px;width:46px;height:46px;border-width:5px}.save-dialog strong{display:block;font-size:19px;margin-bottom:10px}.save-dialog p{color:var(--text-dim);margin:0}.mini-btn:disabled{opacity:.5;cursor:wait}
+</style>
 </head>
 <body>
 
@@ -222,6 +225,7 @@
     </div>
 </div>
 
+<div id="save_overlay" class="save-overlay" role="status" aria-live="polite" aria-label="Čuvanje u toku"><div class="save-dialog"><span class="rotator" aria-hidden="true"></span><strong>Čuvanje u Google Sheets...</strong><p>Molimo sačekajte završetak čuvanja popisa.</p></div></div>
 <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby7AJvdcxsBsoEGvslb3b76Pu88YBZXi4QN70bvrboyoGhEvKhrlGUJaMycabbXH1R4TQ/exec";
 
@@ -359,7 +363,14 @@
         });
     }
 
+    let saveInProgress = false;
+    function setSaving(active) {
+        saveInProgress = active;
+        document.getElementById('save_overlay').classList.toggle('active',active);
+        document.querySelectorAll('.btn-sync').forEach(b=>{b.disabled=active;b.style.opacity=active?'.55':'';});
+    }
     async function sacuvajUGoggleSheet() {
+        if(saveInProgress) return;
         if (!proveriDatumVreme()) return;
 
         if (!confirm("Da li ste sigurni da želite da sačuvate promene u Google Sheets bazu?")) {
@@ -378,7 +389,7 @@
             updates[partNum] = val !== "" ? Number(val) : "";
         });
 
-        postaviLoading(true, "Čuvanje...");
+        setSaving(true);
 
         try {
             let response = await fetch(WEB_APP_URL, {
@@ -389,17 +400,20 @@
             let result = await response.json();
             
             if (result.status === "success") {
+                setSaving(false);
                 alert("Uspešno sačuvano u Google Sheets bazu!");
                 ucitajPodatke();
                 ucitajIstoriju();
             } else {
+                setSaving(false);
                 alert("Došlo je do greške: " + (result.message || "Nepoznata greška"));
             }
         } catch (error) {
             console.error("Greška:", error);
+            setSaving(false);
             alert("Greška u mreži prilikom čuvanja.");
         } finally {
-            postaviLoading(false, "Učitavanje...");
+            setSaving(false);
         }
     }
 
@@ -486,25 +500,59 @@
             } catch(e) { if(serial===searchSerial) panel.textContent = 'Greška pri pretrazi: ' + e.message; }
         }, 300);
     }
+    function formatHistoryDate(raw) {
+        if(raw===null || raw===undefined || raw==='') return '—';
+        const str=String(raw).trim();
+        let m=str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if(m) return `${m[2]}/${m[3]}/${m[1]}`;
+        m=str.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})/);
+        if(m) return `${m[2].padStart(2,'0')}/${m[1].padStart(2,'0')}/${m[3]}`;
+        const d=new Date(str);
+        if(!isNaN(d.getTime())) return new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Belgrade',month:'2-digit',day:'2-digit',year:'numeric'}).format(d);
+        return str;
+    }
+    function formatHistoryTime(raw) {
+        if(raw===null || raw===undefined || raw==='') return '—';
+        const str=String(raw).trim();
+        const m=str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+        if(m) {
+            let h=Number(m[1]);const ampm=m[3]?m[3].toUpperCase():(h>=12?'PM':'AM');
+            if(m[3]) h=h%12||12; else h=h%12||12;
+            return `${String(h).padStart(2,'0')}:${m[2]} ${ampm}`;
+        }
+        const d=new Date(str);
+        if(!isNaN(d.getTime())) return new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Belgrade',hour:'2-digit',minute:'2-digit',hour12:true}).format(d);
+        return str;
+    }
+    function exportHistoryExcel(entry) {
+        if(typeof XLSX==='undefined') {alert('Excel biblioteka nije dostupna.');return;}
+        const rows=[['DATUM POPISA:',formatHistoryDate(entry.datum)],['VREME POPISA:',formatHistoryTime(entry.vreme)],['DOBAVLJAČ / SHEET:',entry.sheet],[],['Component Name','Supplier','Part number','QTY']];
+        (entry.items||[]).forEach(x=>rows.push([x.name,x.supplier,String(x.partNumber),x.qty]));
+        const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:45},{wch:28},{wch:23},{wch:12}];
+        const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Popis');
+        const safe=String(entry.sheet).replace(/[\\/:*?"<>|]/g,'_');
+        XLSX.writeFile(wb,`Popis_${safe}_${formatHistoryDate(entry.datum).replaceAll('/','-')}.xlsx`);
+    }
     async function ucitajIstoriju() {
-        const status = document.getElementById('history_status');
-        const content = document.getElementById('history_content');
-        const supplier = document.getElementById('history_supplier').value;
-        status.textContent = 'Učitavanje istorije...'; content.innerHTML = '';
+        const status=document.getElementById('history_status');
+        const content=document.getElementById('history_content');
+        const supplier=document.getElementById('history_supplier').value;
+        status.innerHTML='<span class="rotator" style="vertical-align:middle;margin-right:8px"></span>Učitavanje istorije...';content.innerHTML='';
         try {
-            const r = await fetch(`${WEB_APP_URL}?action=history&sheet=${encodeURIComponent(supplier)}`);
-            const data = await r.json();
-            if(data.error) throw new Error(data.error);
-            status.textContent = data.length ? `Sačuvani popisi: ${data.length}` : 'Nema sačuvanih popisa u poslednjih 10 dana.';
-            if(!data.length) return;
-            content.innerHTML = '<table><thead><tr><th>Datum</th><th>Vreme</th><th>Dobavljač</th><th>Stavki</th><th>Pregled</th></tr></thead><tbody>' +
-                data.map((x,i)=>`<tr><td>${escapeHtml(x.datum)}</td><td>${escapeHtml(x.vreme)}</td><td>${escapeHtml(x.sheet)}</td><td>${escapeHtml(x.count)}</td><td><button class="mini-btn" data-history-index="${i}">Prikaži</button></td></tr>`).join('')+'</tbody></table><div id="history_details"></div>';
-            content.querySelectorAll('button[data-history-index]').forEach(b => b.addEventListener('click',()=>{
-                const x=data[Number(b.dataset.historyIndex)];
-                const rows=x.items || [];
-                document.getElementById('history_details').innerHTML = `<h3>Popis: ${escapeHtml(x.sheet)} — ${escapeHtml(x.datum)} ${escapeHtml(x.vreme)}</h3><table><thead><tr><th>Component Name</th><th>Supplier</th><th>Part Number</th><th>QTY</th></tr></thead><tbody>${rows.map(y=>`<tr><td>${escapeHtml(y.name)}</td><td>${escapeHtml(y.supplier)}</td><td>${escapeHtml(y.partNumber)}</td><td>${escapeHtml(y.qty)}</td></tr>`).join('')}</tbody></table>`;
+            const r=await fetch(`${WEB_APP_URL}?action=history&sheet=${encodeURIComponent(supplier)}`);
+            if(!r.ok) throw new Error('HTTP '+r.status);
+            const data=await r.json();if(data.error) throw new Error(data.error);
+            status.textContent=data.length?`Sačuvani popisi: ${data.length}`:'Nema sačuvanih popisa u poslednjih 10 dana.';
+            if(!data.length)return;
+            content.innerHTML='<table><thead><tr><th>Datum (MM/DD/YYYY)</th><th>Vreme (AM/PM)</th><th>Dobavljač</th><th>Stavki</th><th>Akcije</th></tr></thead><tbody>'+
+                data.map((x,i)=>`<tr><td>${escapeHtml(formatHistoryDate(x.datum))}</td><td>${escapeHtml(formatHistoryTime(x.vreme))}</td><td>${escapeHtml(x.sheet)}</td><td>${escapeHtml(x.count)}</td><td><button class="mini-btn" data-history-index="${i}">Prikaži</button> <button class="mini-btn" data-export-index="${i}">Skini Excel</button></td></tr>`).join('')+'</tbody></table><div id="history_details"></div>';
+            content.querySelectorAll('button[data-history-index]').forEach(b=>b.addEventListener('click',()=>{
+                const x=data[Number(b.dataset.historyIndex)];const rows=x.items||[];
+                document.getElementById('history_details').innerHTML=`<h3>Popis: ${escapeHtml(x.sheet)} — ${escapeHtml(formatHistoryDate(x.datum))} ${escapeHtml(formatHistoryTime(x.vreme))}</h3><button class="mini-btn" id="export_open_history">Skini ovaj popis u Excel</button><table><thead><tr><th>Component Name</th><th>Supplier</th><th>Part Number</th><th>QTY</th></tr></thead><tbody>${rows.map(y=>`<tr><td>${escapeHtml(y.name)}</td><td>${escapeHtml(y.supplier)}</td><td>${escapeHtml(y.partNumber)}</td><td>${escapeHtml(y.qty)}</td></tr>`).join('')}</tbody></table>`;
+                document.getElementById('export_open_history').addEventListener('click',()=>exportHistoryExcel(x));
             }));
-        } catch(e) {status.textContent='Greška pri učitavanju istorije: '+e.message;}
+            content.querySelectorAll('button[data-export-index]').forEach(b=>b.addEventListener('click',()=>exportHistoryExcel(data[Number(b.dataset.exportIndex)])));
+        }catch(e){status.textContent='Greška pri učitavanju istorije: '+e.message;}
     }
     function initHistorySuppliers() {
         const source=document.getElementById('filter_osoba');
