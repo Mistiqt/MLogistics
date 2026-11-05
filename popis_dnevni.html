@@ -328,7 +328,7 @@
         toggleHistoryView(true);
         const banner=document.getElementById('history_view_banner');
         banner.style.display='flex';
-        banner.innerHTML=`<div><strong>ISTORIJSKI POPIS — SAMO PREGLED</strong><div>${escapeHtml(entry.sheet)} · ${escapeHtml(formatHistoryDate(entry.datum))} · ${escapeHtml(formatHistoryTime(entry.vreme))} · ${entry.items.length} stavki</div></div><button class="mini-btn" id="back_to_current">Vrati aktuelni popis</button>`;
+        banner.innerHTML=`<div><strong>ISTORIJA POPISA — SAMO PREGLED</strong><div>${escapeHtml(entry.sheet)} · ${escapeHtml(formatHistoryDate(entry.datum))} · ${escapeHtml(formatHistoryTime(entry.vreme))} · ${entry.items.length} stavki</div></div><button class="mini-btn" id="back_to_current">Vrati aktuelni popis</button>`;
         document.getElementById('back_to_current').onclick=()=>ucitajPodatke();
         const tbody=document.getElementById('tabela-sadrzaj');tbody.innerHTML='';
         (entry.items||[]).forEach(item=>{
