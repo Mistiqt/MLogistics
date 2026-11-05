@@ -530,7 +530,7 @@
                     if (target) { target.scrollIntoView({behavior:'smooth',block:'center'}); target.focus(); }
                 }));
             } catch(e) { if(serial===searchSerial) panel.textContent = 'Greška pri pretrazi: ' + e.message; }
-        }, 300);
+        }, 180);
     }
     function formatHistoryDate(raw) {
         if(raw===null || raw===undefined || raw==='') return '—';
