@@ -576,7 +576,7 @@
             const data=await r.json();if(data.error) throw new Error(data.error);
             status.textContent=data.length?`Sačuvani popisi: ${data.length}`:'Nema sačuvanih popisa u poslednjih 10 dana.';
             if(!data.length)return;
-            content.innerHTML='<table><thead><tr><th>Datum (MM/DD/YYYY)</th><th>Vreme (AM/PM)</th><th>Dobavljač</th><th>Stavki</th><th>Akcije</th></tr></thead><tbody>'+
+            content.innerHTML='<table><thead><tr><th>Datum (DD/MM/YYYY)</th><th>Vreme (AM/PM)</th><th>Dobavljač</th><th>Stavki</th><th>Akcije</th></tr></thead><tbody>'+
                 data.map((x,i)=>`<tr><td>${escapeHtml(formatHistoryDate(x.datum))}</td><td>${escapeHtml(formatHistoryTime(x.vreme))}</td><td>${escapeHtml(x.sheet)}</td><td>${escapeHtml(x.count)}</td><td><button class="mini-btn" data-history-index="${i}">Prikaži</button> <button class="mini-btn" data-export-index="${i}">Skini Excel</button></td></tr>`).join('')+'</tbody></table><div id="history_details"></div>';
             content.querySelectorAll('button[data-history-index]').forEach(b=>b.addEventListener('click',()=>{
                 const x=data[Number(b.dataset.historyIndex)];
