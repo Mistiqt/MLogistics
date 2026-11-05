@@ -109,6 +109,12 @@
         .btn-refresh-modern.loading svg { animation: rotacija 0.8s linear infinite; }
         
         tr:hover td { background-color: rgba(255, 255, 255, 0.01); }
+        .search-results { margin: -10px 0 20px; padding: 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; display:none; }
+        .search-result { padding: 10px; border-bottom: 1px solid var(--border-soft); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+        .search-result:last-child { border-bottom:0; }
+        .mini-btn { background:var(--brand); color:white; border:0; padding:8px 12px; border-radius:5px; cursor:pointer; }
+        .history-panel { margin-top:25px; padding:18px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; }
+        .history-panel table { margin-top:12px; }
     </style>
 </head>
 <body>
@@ -155,6 +161,10 @@
                 <option value="Nedschroef">Nedschroef</option>
             </select>
         </div>
+        <div class="form-group" style="min-width:260px;">
+            <label for="global_part_search">Pretraga Part Number (svi dobavljači):</label>
+            <input type="text" id="global_part_search" placeholder="Unesite ceo ili deo PN..." autocomplete="off" oninput="pretraziGlobalno()">
+        </div>
         <div class="form-group" style="flex: 0.6; min-width: 180px;">
             <label for="datum_popisa">Datum Popisa: *</label>
             <input type="date" id="datum_popisa" required>
@@ -176,6 +186,7 @@
         </div>
     </div>
 
+    <div id="global_search_results" class="search-results" aria-live="polite"></div>
     <div style="overflow-x: auto;">
         <table id="popis-tabela">
             <thead>
@@ -196,6 +207,15 @@
         <button class="action-btn btn-reset" onclick="resetujKolicine()">Resetuj količine</button>
         <button class="action-btn btn-excel" onclick="izveziUExcel()">Izvezi u Excel</button>
         <button class="action-btn btn-sync" onclick="sacuvajUGoggleSheet()">Sačuvaj u Google Sheets</button>
+    </div>
+    <div class="history-panel">
+        <label>Istorija sačuvanih popisa — poslednjih 10 dana</label>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+            <div class="form-group"><label for="history_supplier">Dobavljač</label><select id="history_supplier"><option value="">Svi dobavljači</option></select></div>
+            <button class="btn-refresh-modern" onclick="ucitajIstoriju()">Prikaži istoriju</button>
+        </div>
+        <div id="history_status" style="margin-top:10px;color:var(--text-dim);font-size:13px;"></div>
+        <div id="history_content" style="overflow-x:auto;"></div>
     </div>
 </div>
 
@@ -300,6 +320,7 @@
             let response = await fetch(`${WEB_APP_URL}?sheet=${encodeURIComponent(sheetName)}`);
             let data = await response.json();
             
+            if (sheetName !== document.getElementById('filter_osoba').value) return;
             if (data.error) {
                 tbody.innerHTML = `<tr><td colspan="4" class="center" style="color:#f08890;">Greška: ${data.error}</td></tr>`;
                 return;
@@ -367,6 +388,7 @@
             if (result.status === "success") {
                 alert("Uspešno sačuvano u Google Sheets bazu!");
                 ucitajPodatke();
+                ucitajIstoriju();
             } else {
                 alert("Došlo je do greške: " + (result.message || "Nepoznata greška"));
             }
@@ -426,10 +448,73 @@
     document.getElementById('datum_popisa').addEventListener('change', sacuvajDatumVreme);
     document.getElementById('vreme_popisa').addEventListener('change', sacuvajDatumVreme);
 
+    // Globalna pretraga na serveru; ne menja trenutno izabranog dobavljača.
+    let searchTimer = null, searchSerial = 0;
+    function escapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function pretraziGlobalno() {
+        clearTimeout(searchTimer);
+        const q = document.getElementById('global_part_search').value.trim();
+        const panel = document.getElementById('global_search_results');
+        const serial = ++searchSerial;
+        if (!q) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
+        panel.style.display = 'block';
+        panel.textContent = 'Pretraga svih dobavljača...';
+        searchTimer = setTimeout(async () => {
+            try {
+                const r = await fetch(`${WEB_APP_URL}?action=search&pn=${encodeURIComponent(q)}`);
+                const data = await r.json();
+                if (serial !== searchSerial) return;
+                if (data.error) throw new Error(data.error);
+                if (!data.length) { panel.textContent = 'Nema pronađenih Part Number-a.'; return; }
+                panel.innerHTML = `<div style="margin-bottom:8px;color:var(--text-dim)">Pronađeno: ${data.length}${data.length===100?' (prvih 100)':''}</div>` + data.map(item =>
+                    `<div class="search-result"><div><b>${escapeHtml(item.partNumber)}</b> — ${escapeHtml(item.name)}<div style="font-size:12px;color:var(--text-dim)">${escapeHtml(item.supplier)} | QTY: ${escapeHtml(item.qty)}</div></div><button class="mini-btn" data-sheet="${escapeHtml(item.sheet)}" data-part="${escapeHtml(item.partNumber)}">Otvori popis</button></div>`).join('');
+                panel.querySelectorAll('button[data-sheet]').forEach(btn => btn.addEventListener('click', async () => {
+                    const select = document.getElementById('filter_osoba');
+                    select.value = btn.dataset.sheet;
+                    if (select.value !== btn.dataset.sheet) { alert('Dobavljač nije na listi: ' + btn.dataset.sheet); return; }
+                    document.getElementById('global_part_search').value = '';
+                    panel.style.display = 'none'; ++searchSerial;
+                    await promenaDobavljaca();
+                    const target = [...document.querySelectorAll('.qty-input')].find(x => x.dataset.part === btn.dataset.part);
+                    if (target) { target.scrollIntoView({behavior:'smooth',block:'center'}); target.focus(); }
+                }));
+            } catch(e) { if(serial===searchSerial) panel.textContent = 'Greška pri pretrazi: ' + e.message; }
+        }, 300);
+    }
+    async function ucitajIstoriju() {
+        const status = document.getElementById('history_status');
+        const content = document.getElementById('history_content');
+        const supplier = document.getElementById('history_supplier').value;
+        status.textContent = 'Učitavanje istorije...'; content.innerHTML = '';
+        try {
+            const r = await fetch(`${WEB_APP_URL}?action=history&sheet=${encodeURIComponent(supplier)}`);
+            const data = await r.json();
+            if(data.error) throw new Error(data.error);
+            status.textContent = data.length ? `Sačuvani popisi: ${data.length}` : 'Nema sačuvanih popisa u poslednjih 10 dana.';
+            if(!data.length) return;
+            content.innerHTML = '<table><thead><tr><th>Datum</th><th>Vreme</th><th>Dobavljač</th><th>Stavki</th><th>Pregled</th></tr></thead><tbody>' +
+                data.map((x,i)=>`<tr><td>${escapeHtml(x.datum)}</td><td>${escapeHtml(x.vreme)}</td><td>${escapeHtml(x.sheet)}</td><td>${escapeHtml(x.count)}</td><td><button class="mini-btn" data-history-index="${i}">Prikaži</button></td></tr>`).join('')+'</tbody></table><div id="history_details"></div>';
+            content.querySelectorAll('button[data-history-index]').forEach(b => b.addEventListener('click',()=>{
+                const x=data[Number(b.dataset.historyIndex)];
+                const rows=x.items || [];
+                document.getElementById('history_details').innerHTML = `<h3>Popis: ${escapeHtml(x.sheet)} — ${escapeHtml(x.datum)} ${escapeHtml(x.vreme)}</h3><table><thead><tr><th>Component Name</th><th>Supplier</th><th>Part Number</th><th>QTY</th></tr></thead><tbody>${rows.map(y=>`<tr><td>${escapeHtml(y.name)}</td><td>${escapeHtml(y.supplier)}</td><td>${escapeHtml(y.partNumber)}</td><td>${escapeHtml(y.qty)}</td></tr>`).join('')}</tbody></table>`;
+            }));
+        } catch(e) {status.textContent='Greška pri učitavanju istorije: '+e.message;}
+    }
+    function initHistorySuppliers() {
+        const source=document.getElementById('filter_osoba');
+        const target=document.getElementById('history_supplier');
+        [...source.options].forEach(opt=>target.add(new Option(opt.text,opt.value)));
+    }
+
     window.onload = function() {
         // Datum i vreme se ne popunjavaju automatski - korisnik ih mora upisati (osim ako su već upisani za tog dobavljača u Google Sheets-u)
         osveziOznakeDatumVreme();
+        initHistorySuppliers();
         ucitajPodatke();
+        ucitajIstoriju();
     };
 </script>
 
