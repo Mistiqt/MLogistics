@@ -1341,7 +1341,7 @@ document.getElementById('botForm').addEventListener('submit',function(e){
   function save(){if(!currentKey)return;try{sessionStorage.setItem(currentKey,JSON.stringify({messages:messages.slice(-100),lastActivity}));}catch(e){console.warn('Duka: memorija pregledača je puna',e);}}
   function expire(){if(lastActivity&&Date.now()-lastActivity>=TTL){reset();save();render();}}
   function add(role,text,slika){messages.push({role,text:String(text||''),slika:slika||''});messages=messages.slice(-100);lastActivity=Date.now();save();render();}
-  function safeUrl(value){try{const u=new URL(value);return u.protocol==='https:'?u.href:'';}catch(e){return '';}}
+  function safeUrl(value){const v=String(value||'').trim();if(/^data:image\/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/i.test(v)&&v.length<=1700000)return v;try{const u=new URL(v);return u.protocol==='https:'?u.href:'';}catch(e){return '';}}
   function render(){const area=$('dukaMessages');if(!area)return;area.replaceChildren();messages.forEach(m=>{
     const bubble=document.createElement('div');bubble.className='duka-message '+(m.role==='user'?'user':'assistant');
     const who=document.createElement('div');who.className='duka-who';who.textContent=m.role==='user'?prikazKorisnickogImena(loggedUser):'Duka';bubble.appendChild(who);
