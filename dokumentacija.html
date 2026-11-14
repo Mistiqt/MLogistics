@@ -1493,9 +1493,55 @@
     }
 
 
+    // Kopije se pripremaju u redosledu PF x N, DDT x N, CMR x N.
+    // Originalni HTML dokumenata i sva postojeca @page/CSS pravila ostaju ista.
+    function ukloniPrivremeneKopijeStampe() {
+        document.querySelectorAll('[data-duka-print-copy="1"]').forEach(el => el.remove());
+    }
+
     function stampajGlavneDokumente() {
-        document.body.classList.remove("printing-otpremnica");
-        document.body.classList.add("printing-glavni");
+        // Bez stalnog polja u aplikaciji: podrazumevano 7, po potrebi promeni.
+        const unos = window.prompt('Broj primeraka po dokumentu (Proforma, DDT, CMR):', '7');
+        if (unos === null) return;
+        const broj = Number(unos.trim());
+        if (!Number.isInteger(broj) || broj < 1 || broj > 100) {
+            alert('Unesi ceo broj primeraka od 1 do 100.');
+            return;
+        }
+
+        ukloniPrivremeneKopijeStampe();
+        const dokumenti = ['proformaTab', 'ddtTab', 'cmrTab'];
+        for (const id of dokumenti) {
+            const original = document.getElementById(id);
+            // Dodaj kopije odmah iza originala, bez promene njegovog izgleda.
+            let poslednji = original;
+            for (let i = 1; i < broj; i++) {
+                const kopija = original.cloneNode(true);
+                kopija.setAttribute('data-duka-print-copy', '1');
+                // cloneNode ne prenosi uvek trenutno unete vrednosti polja.
+                const izvornaPolja = original.querySelectorAll('input, textarea, select');
+                const kopiranaPolja = kopija.querySelectorAll('input, textarea, select');
+                izvornaPolja.forEach((polje, j) => {
+                    const cilj = kopiranaPolja[j];
+                    if (!cilj) return;
+                    if (polje.matches('input[type=checkbox], input[type=radio]')) cilj.checked = polje.checked;
+                    else cilj.value = polje.value;
+                });
+                // CSS za stampu je vezan za originalne ID-jeve; klonovi
+                // postoje samo tokom stampanja i odmah se uklanjaju.
+                poslednji.insertAdjacentElement('afterend', kopija);
+                poslednji = kopija;
+            }
+        }
+
+        document.body.classList.remove('printing-otpremnica');
+        document.body.classList.add('printing-glavni');
+        const ocisti = () => {
+            ukloniPrivremeneKopijeStampe();
+            window.removeEventListener('afterprint', ocisti);
+        };
+        window.addEventListener('afterprint', ocisti);
+        // U prozoru Edge-a Copies mora ostati 1: kopije su vec pripremljene.
         window.print();
     }
 
