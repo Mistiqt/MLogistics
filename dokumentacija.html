@@ -362,9 +362,16 @@
             box-sizing: border-box;
             border: 1px solid #ccc;
         }
+
+        /* Sekundarne PDF akcije: diskretnije od glavnih dugmadi. */
+        .pdf-sekundarne-akcije { margin-top: 15px; padding-top: 10px; border-top: 1px solid #d8dce0; }
+        .btn-pdf-sekundarno { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 6px 8px; background: #e9ecef; color: #495057; border: 1px solid #c9cfd5; border-radius: 4px; font-size: 10px; font-weight: 500; cursor: pointer; }
+        .btn-pdf-sekundarno:hover { background: #dce2e7; }
+        .btn-pdf-sekundarno:focus-visible { outline: 2px solid #526f8a; outline-offset: 2px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 
@@ -421,6 +428,11 @@
         </div>
         <button class="btn-stampaj" onclick="stampajGlavneDokumente()">🖨️ Štampaj PF, DDT, CMR</button>
         <button class="btn-sacuvaj" onclick="pokreniCuvanjeDokumenta('glavni')">💾 Sačuvaj PF, DDT, CMR (Izaberi folder)</button>
+        <div class="pdf-sekundarne-akcije">
+            <button class="btn-pdf-sekundarno" type="button" onclick="document.getElementById('ucitajPdfZaIzmenu').click()">📂 Učitaj PDF za izmenu</button>
+            <input type="file" id="ucitajPdfZaIzmenu" accept="application/pdf,.pdf" style="display:none" onchange="ucitajPdfDokumentZaIzmenu(this)">
+            <button class="btn-pdf-sekundarno" type="button" onclick="sacuvajIspravljeniPdf()">💾 Sačuvaj ispravku (bez nove numeracije)</button>
+        </div>
     </div>
 
     <div class="sidebar no-print" id="sidebarOtpremnica" style="display: none;">
@@ -1743,10 +1755,164 @@
             }
         }
 
+        // Podaci su u PDF metapodacima; vidljive A4 stranice ostaju nepromenjene.
+        const stanje = kodirajStanjeDokumentacije();
+        pdf.setProperties({
+            title: 'Izvozna dokumentacija',
+            subject: 'Izvozna dokumentacija - podaci za ponovno uredjivanje',
+            keywords: 'STELLANTIS_EDIT_V1:' + stanje,
+            creator: 'Izvozna dokumentacija HTML'
+        });
         return pdf.output("blob");
     }
 
 
+
+
+    // ===== PDF -> izvorni formular (bez OCR-a, radi za PDF sacuvan novom verzijom) =====
+    function kodirajStanjeDokumentacije() {
+        const elements = Array.from(document.querySelectorAll('input,select,textarea,[contenteditable="true"]'))
+            .filter(el => !el.closest('[data-duka-print-copy]') && el.id !== 'ucitajPdfZaIzmenu');
+        const values = elements.map((el, index) => ({
+            id: el.id || null, index,
+            kind: el.matches('[contenteditable="true"]') ? 'editable' : el.tagName.toLowerCase(),
+            value: el.matches('[contenteditable="true"]') ? el.innerHTML : el.value,
+            checked: el.matches('input[type="checkbox"],input[type="radio"]') ? el.checked : undefined
+        }));
+        const bytes = new TextEncoder().encode(JSON.stringify({ version:1, values }));
+        let binary = '';
+        for (let i=0; i<bytes.length; i+=8192) binary += String.fromCharCode(...bytes.subarray(i,i+8192));
+        return btoa(binary);
+    }
+
+    function vratiStanjeDokumentacije(base64) {
+        const binary = atob(base64);
+        const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+        const state = JSON.parse(new TextDecoder().decode(bytes));
+        if (state.version !== 1 || !Array.isArray(state.values)) {
+            throw new Error('Nepoznat format podataka u PDF-u.');
+        }
+        const saved = state.values;
+        const byId = id => saved.find(item => item.id === id);
+        const buyer = byId('selectKupac');
+        if (buyer && document.getElementById('selectKupac')) {
+            document.getElementById('selectKupac').value = buyer.value;
+        }
+        // Prvo generisi redove za kupca; raniji kod ih je brisao NAKON ucitavanja.
+        promeniKupca();
+        // Stari PDF metapodaci cuvaju polja po globalnom indeksu, ali NE cuvaju
+        // broj dinamicki dodatih redova. Za kupce bez pocetnih redova zato
+        // moramo ponovo napraviti redove PRE vracanja vrednosti.
+        const savedStart = saved.findIndex(item => item.id === 'prikazDeliveryProforma');
+        const savedEnd = saved.findIndex(item => item.id === 'ddtPrikazNazivKupca');
+        if (savedStart >= 0 && savedEnd > savedStart) {
+            const dynamicSaved = saved.slice(savedStart + 1, savedEnd)
+                .filter(item => item.kind === 'input');
+            const buyerKey = document.getElementById('selectKupac').value;
+            const isManual = buyerKey === 'pomigliano' || buyerKey === 'san_benigno';
+            const inputsPerRow = isManual ? 6 : 2;
+            const wantedRows = Math.ceil(dynamicSaved.length / inputsPerRow);
+            const tbody = document.getElementById('redoviTabelaProforma');
+            if (tbody) {
+                tbody.innerHTML = '';
+                for (let i = 0; i < wantedRows; i++) dodajRed('', '0');
+            }
+        }
+        const elements = Array.from(document.querySelectorAll('input,select,textarea,[contenteditable="true"]'))
+            .filter(el => !el.closest('[data-duka-print-copy]') && el.id !== 'ucitajPdfZaIzmenu');
+        let restored = 0;
+        saved.forEach(item => {
+            const el = item.id ? document.getElementById(item.id) : elements[item.index];
+            if (!el || !elements.includes(el)) return;
+            if (item.kind === 'editable') el.innerHTML = item.value || '';
+            else if (item.checked !== undefined) el.checked = !!item.checked;
+            else el.value = item.value == null ? '' : item.value;
+            restored++;
+        });
+        // Bez masovnog dispatchEvent('change'): onchange za kupca ponovo brise redove.
+        promeniIncoterm();
+        azurirajBrojeve();
+        azurirajTablice();
+        if (typeof azurirajDelivery === 'function') azurirajDelivery();
+        // Obracunaj kolicine, tezine i prikaze DDT/CMR iz vracenih redova.
+        document.querySelectorAll('#redoviTabelaProforma tr').forEach(row => {
+            const code = row.querySelector('.input-kod');
+            if (code && typeof izracunaj === 'function') izracunaj(code);
+            else if (row.querySelector('.input-cena') && typeof izracunajCassino === 'function')
+                izracunajCassino(row.querySelector('.input-cena'));
+        });
+        if (typeof prebrojUkupno === 'function') prebrojUkupno();
+        if (typeof azurirajOtpremnicuKontrole === 'function') azurirajOtpremnicuKontrole();
+        // Otvori Proformu da se rezultat odmah vidi, nezavisno od prethodnog taba.
+        document.querySelectorAll('.sheet').forEach(el => el.classList.remove('active'));
+        document.getElementById('proformaTab').classList.add('active');
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        const firstTab = document.querySelector('.tab-btn');
+        if (firstTab) firstTab.classList.add('active');
+        document.getElementById('sidebarGlavna').style.display = 'block';
+        document.getElementById('sidebarOtpremnica').style.display = 'none';
+        document.getElementById('stranaNaslov').innerText = 'PROFORMA';
+        return restored;
+    }
+
+    async function ucitajPdfDokumentZaIzmenu(input) {
+        const file = input.files && input.files[0];
+        input.value = '';
+        if (!file) return;
+        try {
+            if (!window.pdfjsLib) throw new Error('PDF biblioteka nije ucitana. Proveri internet konekciju.');
+            // Proveri izabrani fajl pre prosledjivanja PDF.js biblioteci.
+            if (file.size === 0) throw new Error('Izabrani PDF ima 0 bajtova. Proveri da li je PDF pravilno sacuvan i moze li da se otvori u Edge-u.');
+            const buffer = await file.arrayBuffer();
+            if (!buffer.byteLength) throw new Error('Pregledac je procitao 0 bajtova iz PDF-a. Izaberi lokalno sacuvanu, ispravnu PDF datoteku.');
+            const data = new Uint8Array(buffer);
+            if (data.length < 5 || String.fromCharCode(...data.subarray(0,5)) !== '%PDF-') {
+                throw new Error('Izabrani fajl nije prepoznat kao PDF (nedostaje %PDF- zaglavlje).');
+            }
+            const pdf = await pdfjsLib.getDocument({data, disableFontFace:true}).promise;
+            const metadata = await pdf.getMetadata();
+            const keywords = String(metadata.info?.Keywords || '');
+            const marker = 'STELLANTIS_EDIT_V1:';
+            if (!keywords.startsWith(marker)) throw new Error('Ovaj PDF nema sacuvane podatke formulara. PDF-ovi iz stare verzije su slike stranica i ne mogu se pouzdano automatski vratiti u polja.');
+            if (!confirm('Ucitaj podatke iz "' + file.name + '"? Trenutno uneti podaci bice zamenjeni.')) return;
+            const brojPolja = vratiStanjeDokumentacije(keywords.slice(marker.length));
+            if (!brojPolja) throw new Error('PDF sadrzi metapodatke, ali nijedno polje nije moglo biti popunjeno.');
+            window.dokumentacijaUcitanPdfZaIspravku = true;
+            alert('Ucitano ' + brojPolja + ' polja iz PDF-a. Proforma je otvorena za izmenu. DDT i CMR su osvezeni.');
+        } catch(e) { alert('Ucitavanje PDF-a nije uspelo: ' + e.message); }
+    }
+
+    async function sacuvajIspravljeniPdf() {
+        if (!window.dokumentacijaUcitanPdfZaIspravku) {
+            alert('Ova opcija je za ispravku ranije ucitanog PDF-a. Za novi dokument koristi standardno cuvanje.');
+            return;
+        }
+        try {
+            const configs = [
+                ['proformaTab',190,'portrait',10],
+                ['ddtTab',285,'landscape',6],
+                ['cmrTab',190,'portrait',10]
+            ];
+            const sheets = configs.map(([id,w,orient,margin]) => {
+                const clone = document.getElementById(id).cloneNode(true);
+                clone.className = 'sheet';
+                clone.style.cssText = 'display:block!important;width:'+w+'mm!important;max-width:'+w+'mm!important;margin:0 auto!important;padding:0!important;box-sizing:border-box!important;background:#fff!important;box-shadow:none!important;';
+                if (id==='proformaTab') clone.style.paddingTop='10mm';
+                if (id==='cmrTab') { const h=clone.querySelector('h3'); if(h) h.remove(); }
+                pripremiZaCuvanje(clone);
+                return {el:clone,sirinaMm:w,orijentacija:orient,marginaMm:margin,skala:id==='ddtTab'?3:undefined};
+            });
+            await ugradiLogoUKlon(...sheets.map(s=>s.el));
+            const blob = await listaSheetovaUPdfBlob(sheets);
+            const a = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            a.href=url;
+            a.download='Ispravka_PF_DDT_'+(document.getElementById('inputDdtBroj')?.value||'')+'_CMR_'+(document.getElementById('inputCmrBroj')?.value||'')+'.pdf';
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(()=>URL.revokeObjectURL(url),60000);
+            alert('Pokrenuto je preuzimanje ispravljenog PDF-a. Numeracija na serveru nije menjana.');
+        } catch(e) { alert('Greska pri cuvanju ispravke: '+e.message); }
+    }
 
     // Centralna numeracija sa portala. Brojaci u listu Brojaci predstavljaju SLEDECI broj.
     const DOC_COUNTER_API = 'https://script.google.com/macros/s/AKfycbx9dmnfozKUQplxXWzfxUx5YIGyGOJqwuhvQ1uQxejE37NgTSbdHrJryYZ2HCK-Rn-o/exec';
