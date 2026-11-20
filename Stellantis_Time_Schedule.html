@@ -39,7 +39,7 @@ body.has-schedule-scroll{padding-bottom:24px}
 #scheduleTable td.has-comment select{border-bottom:2px dotted #ffdc7c}
 body.viewer-mode #employeesTable button,body.viewer-mode #empDialog,body.viewer-mode #employees .toolbar button{display:none!important}body.readonly-mode #scheduleTable select{pointer-events:none;opacity:.75}
 </style></head><body><header><h1>Time Schedule · Planiranje i evidencija</h1><small>Stellantis Logistics - Plastic Shop · <span id="timeRoleBadge">Provera pristupa…</span> · <span id="timeDbState">Baza: povezivanje…</span></small></header><main><nav><button class="primary" onclick="show('schedule')">Kalendar</button><button onclick="show('overview')">Overview</button><button onclick="show('reports')">Izveštaji</button><button onclick="show('employees')">Zaposleni</button><button onclick="show('legendView')">Legenda</button></nav>
-<section id="schedule"><div class="toolbar"><label>Mesec <input type="month" id="month" onchange="renderSchedule()"></label><label>Tim <select id="teamFilter" onchange="renderSchedule()"></select></label><label>Pretraga <input id="search" placeholder="Ime i prezime" oninput="renderSchedule()"></label><button data-manage-only onclick="openEmployee()">+ Novi zaposleni</button><button onclick="saveJSON()">Sačuvaj backup</button><button onclick="configureTimeEndpoint()" title="Podesi URL Google Apps Script Web App-a">Proveri vezu</button><button data-manage-only onclick="document.getElementById('restore').click()">Uvezi backup</button><input class="hidden" id="restore" type="file" accept=".json" onchange="restoreJSON(event)"></div><div class="kpis" id="kpis"></div><p class="note">Klik na status otvara listu iz legende. Sve promene se čuvaju u zajedničkoj Google Sheets bazi.</p><div id="activePerson" class="hidden"></div><div class="scroll" id="scheduleTable"></div><div id="detailsPanel" class="hidden"></div></section>
+<section id="schedule"><div class="toolbar"><label>Mesec <input type="month" id="month" onchange="renderSchedule()"></label><label>Tim <select id="teamFilter" onchange="renderSchedule()"></select></label><label>Pretraga <input id="search" placeholder="Ime i prezime" oninput="renderSchedule()"></label><button data-manage-only onclick="openEmployee()">+ Novi zaposleni</button><button onclick="saveJSON()">Sačuvaj backup</button><button onclick="configureTimeEndpoint()" title="Podesi URL Google Apps Script Web App-a">Poveži bazu</button><button data-manage-only onclick="document.getElementById('restore').click()">Uvezi backup</button><input class="hidden" id="restore" type="file" accept=".json" onchange="restoreJSON(event)"></div><div class="kpis" id="kpis"></div><p class="note">Klik na status otvara listu iz legende. Sve promene se čuvaju u zajedničkoj Google Sheets bazi.</p><div id="activePerson" class="hidden"></div><div class="scroll" id="scheduleTable"></div><div id="detailsPanel" class="hidden"></div></section>
 <section id="overview" class="hidden"><h2>Overview po timu</h2><div class="toolbar"><label>Period <input type="month" id="overviewMonth" onchange="renderOverview()"></label><label>Status <select id="overviewStatus" onchange="renderOverview()"></select></label><label>Grupisanje <select id="grouping" onchange="renderOverview()"><option value="week">ISO nedelja</option><option value="month">Mesec</option></select></label></div><div class="scroll" id="overviewTable"></div></section>
 <section id="reports" class="hidden"><h2>Mesečni i tromesečni izveštaj</h2><div class="toolbar"><label>Godina <input type="number" id="reportYear" min="2020" max="2100" onchange="renderReport()"></label><label>Period <select id="reportPeriod" onchange="renderReport()"><option value="month">Mesečni</option><option value="quarter">Tromesečni</option></select></label><label>Mesec / kvartal <select id="reportPart" onchange="renderReport()"></select></label><label>Tim <select id="reportTeam" onchange="renderReport()"></select></label><button class="primary" onclick="exportReport()">Izvezi CSV (Excel)</button><button onclick="window.print()">Štampaj / PDF</button></div><p class="note">Brojevi predstavljaju ukupan broj dana sa svakom oznakom u izabranom periodu, zbirno za izabrani tim ili sve zaposlene. Tabela ispod prikazuje broj dana po svakom zaposlenom.</p><div class="kpis" id="reportKpis"></div><div class="scroll" id="reportTable"></div></section>
 <section id="employees" class="hidden"><div class="toolbar"><h2 style="margin-right:auto">Zaposleni</h2><button class="primary" onclick="openEmployee()">+ Dodaj zaposlenog</button></div><div class="scroll" id="employeesTable"></div></section>
@@ -48,7 +48,7 @@ body.viewer-mode #employeesTable button,body.viewer-mode #empDialog,body.viewer-
 </main><dialog id="overviewDialog" class="overview-dialog"><div class="dialog-head"><h2 id="overviewDialogTitle">Pregled evidencije</h2><button onclick="document.getElementById('overviewDialog').close()">✕ Zatvori</button></div><div id="overviewDialogBody"></div></dialog><script>
 // Uloga se proverava preko postojeceg Apps Script endpointa i sifre iz index.html.
 // Bez potvrde servera aplikacija ostaje u rezimu pregleda.
-const TIME_AUTH_URL='https://script.google.com/macros/s/AKfycbx7XsTQVmHfwvkoiJxpbGuAu7WixeSqUMVepsSed_6cU85xlATMK32tAXUdrjspR1Gk/exec';
+const TIME_AUTH_URL='https://script.google.com/macros/s/AKfycbx9dmnfozKUQplxXWzfxUx5YIGyGOJqwuhvQ1uQxejE37NgTSbdHrJryYZ2HCK-Rn-o/exec';
 let TIME_ROLE='GUEST';let TIME_DB_READY=false;
 const canManagePeople=()=>TIME_DB_READY&&(TIME_ROLE==='MASTER'||TIME_ROLE==='ADMIN');
 const canEditSchedule=()=>TIME_DB_READY&&['MASTER','ADMIN','TEAM_LEADER'].includes(TIME_ROLE);
@@ -58,12 +58,15 @@ function applyRoleUI(){
  document.querySelectorAll('[data-manage-only]').forEach(el=>el.classList.toggle('hidden',!canManagePeople()));
  const badge=document.getElementById('timeRoleBadge');if(badge)badge.textContent='Uloga: '+TIME_ROLE;
 }
-async function configureTimeEndpoint(){
- try {
-  const response=await fetch(TIME_AUTH_URL+'?akcija=timeDijagnostika&_='+Date.now(),{cache:'no-store'});
-  const data=await response.json();
-  alert('Provera zajednickog servera\n'+JSON.stringify(data,null,2)+'\n\nServer mora biti isti kao u index.html.');
- } catch(e) {alert('Provera servera nije uspela: '+e.message);}
+function configureTimeEndpoint(){
+ const current=TIME_AUTH_URL;
+ const entered=prompt('Nalepi kompletan Web app URL iz Deploy → Manage deployments → Copy (mora da se završava sa /exec):',current);
+ if(entered===null)return;
+ const url=entered.trim();
+ if(!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url)){
+   alert('Neispravan URL. Kopiraj kompletan Web app URL koji se završava sa /exec.');return;
+ }
+ alert('Adresa je definisana u oba HTML fajla. Za promenu treba izmeniti oba fajla i objaviti ih zajedno.');
 }
 async function loadPortalRole(){
  let password='';try{password=localStorage.getItem('sifra')||''}catch(e){}
@@ -73,11 +76,6 @@ async function loadPortalRole(){
   if(!response.ok)throw Error('HTTP '+response.status);
   const result=await response.json();
   TIME_ROLE=result.status==='OK'?String(result.uloga||'GUEST').trim().toUpperCase().replace(/[ -]/g,'_'):'GUEST';
-  if(TIME_ROLE==='GUEST'){
-    timeState('PRIJAVA ODBIJENA');
-    alert('Portal i Time Schedule koriste istu bazu, ali server nije potvrdio ovu sesiju. Odjavi se sa glavnog portala i prijavi ponovo. Ako problem ostane, proveri da li su oba HTML fajla objavljena sa ISTOM Apps Script adresom.');
-    applyRoleUI();return;
-  }
  }catch(e){console.warn('Time Sheet: provera uloge nije uspela',e);TIME_ROLE='GUEST'}
  applyRoleUI();await timeLoadRemote();renderSchedule();renderEmployees();
 }
