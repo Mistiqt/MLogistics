@@ -272,7 +272,7 @@
                     </div>
                 </div>
                 <a href="https://logimind.net" target="_blank" class="nav-tab-item" id="navStillServis">STILL-Servis</a>
-                <a href="TimeSchedule_Cloudflare_D1.html" target="_blank" rel="noopener" id="navTimeSheet" class="nav-tab-item">Time Sheet Planning</a>
+                <a href="TimeSchedule.html" target="_blank" rel="noopener" id="navTimeSheet" class="nav-tab-item">Time Sheet Planning</a>
                 <a href="zaposleni.html" target="_blank" class="nav-tab-item" id="navZaposleni">Zaposleni</a>
                 <a href="https://202.37.103.104:9091/stdauth/login?logoutNew=true" target="_blank" class="nav-tab-item" id="navETS" style="display: none;">ETS</a>
                 
@@ -380,7 +380,6 @@
         function logout() {
             if (typeof dukaClearOnLogout === 'function') dukaClearOnLogout();
             localStorage.removeItem('sifra');
-            localStorage.removeItem('stellantis_d1_token');
             location.reload();
         }
 
@@ -485,8 +484,7 @@
                         document.getElementById("loggedUsername").textContent = prikazKorisnickogImena(loggedUser);
                         userRole = data.uloga;
                         localStorage.setItem('sifra', loggedUser);
-                        if (data.d1Token) localStorage.setItem('stellantis_d1_token',data.d1Token);
-                        else localStorage.removeItem('stellantis_d1_token'); 
+
                         
                         document.getElementById('loginScreen').style.display = "none";
                         document.getElementById('mainPortal').style.display = "block";
@@ -514,8 +512,7 @@
                     } else {
                         document.getElementById('loginError').style.display = "block";
                         localStorage.removeItem('sifra');
-                        localStorage.removeItem('stellantis_d1_token');
-                    }
+                                }
                 })
                 .catch(err => { showLoading(false); document.getElementById('loginError').style.display = "block"; });
         }
