@@ -75,7 +75,7 @@ body.has-schedule-scroll{padding-bottom:30px}
 const TIME_API_URL='https://script.google.com/macros/s/AKfycbx9dmnfozKUQplxXWzfxUx5YIGyGOJqwuhvQ1uQxejE37NgTSbdHrJryYZ2HCK-Rn-o/exec';
 let TIME_ROLE='GUEST';let TIME_DB_READY=false;
 const canManagePeople=()=>TIME_DB_READY&&(TIME_ROLE==='MASTER'||TIME_ROLE==='ADMIN');
-const canEditSchedule=()=>TIME_DB_READY&&['MASTER','ADMIN'].includes(TIME_ROLE);
+const canEditSchedule=()=>TIME_DB_READY&&['MASTER','ADMIN','TEAM_LEADER'].includes(TIME_ROLE);
 function applyRoleUI(){
  document.body.classList.toggle('viewer-mode',!canManagePeople());
  document.body.classList.toggle('readonly-mode',!canEditSchedule());
