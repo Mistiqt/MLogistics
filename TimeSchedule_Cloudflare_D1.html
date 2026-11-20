@@ -49,7 +49,7 @@ body.viewer-mode #employeesTable button,body.viewer-mode #empDialog,body.viewer-
 #scheduleScrollBar>div{height:1px;pointer-events:none}
 body.has-schedule-scroll{padding-bottom:30px}
 #overviewTable{max-height:70vh}#overviewTable table{width:100%;min-width:600px}#overviewTable td:first-child{text-align:left}#overviewTable .overview-team-row td{background:#234766;color:#f3faff;border-top:2px solid #47799e}#overviewTable .overview-person{padding-left:26px;color:#c8dff5}#overviewStatus{min-width:220px;max-width:340px}</style></head><body><header><h1>Time Schedule · Planiranje i evidencija</h1><small>Stellantis Logistics - Plastic Shop · <span id="timeRoleBadge">Provera pristupa…</span> · <span id="timeDbState">Baza: povezivanje…</span></small></header><main><nav><button class="primary" onclick="show('schedule')">Kalendar</button><button onclick="show('overview')">Overview</button><button onclick="show('reports')">Izveštaji</button><button onclick="show('employees')">Zaposleni</button><button onclick="show('legendView')">Legenda</button></nav>
-<section id="schedule"><div class="toolbar"><label>Mesec <input type="month" id="month" onchange="renderSchedule()"></label><label>Tim <select id="teamFilter" onchange="renderSchedule()"></select></label><label>Pretraga <input id="search" placeholder="Ime i prezime" oninput="renderSchedule()"></label><button data-manage-only onclick="openEmployee()">+ Novi zaposleni</button><button onclick="saveJSON()">Sačuvaj backup</button><button onclick="configureTimeEndpoint()" title="Cloudflare D1 API">Poveži bazu</button><button data-manage-only onclick="document.getElementById('restore').click()">Uvezi backup</button><input class="hidden" id="restore" type="file" accept=".json" onchange="restoreJSON(event)"></div><div class="kpis" id="kpis"></div><p class="note">Kalendar prikazuje sve dane meseca – pomeri tabelu horizontalno do poslednjeg datuma. Klik na status otvara listu iz legende. Sve promene se čuvaju u zajedničkoj Cloudflare D1 bazi.</p><div id="activePerson" class="hidden"></div><div class="scroll" id="scheduleTable"></div><div id="detailsPanel" class="hidden"></div></section>
+<section id="schedule"><div class="toolbar"><label>Mesec <input type="month" id="month" onchange="renderSchedule()"></label><label>Tim <select id="teamFilter" onchange="renderSchedule()"></select></label><label>Pretraga <input id="search" placeholder="Ime i prezime" oninput="renderSchedule()"></label><button data-manage-only onclick="openEmployee()">+ Novi zaposleni</button><button onclick="saveJSON()">Sačuvaj backup</button><button onclick="configureTimeEndpoint()" title="Google Sheets / Apps Script">Poveži bazu</button><button data-manage-only onclick="document.getElementById('restore').click()">Uvezi backup</button><input class="hidden" id="restore" type="file" accept=".json" onchange="restoreJSON(event)"></div><div class="kpis" id="kpis"></div><p class="note">Kalendar prikazuje sve dane meseca – pomeri tabelu horizontalno do poslednjeg datuma. Klik na status otvara listu iz legende. Sve promene se čuvaju u zajedničkoj Google Sheets bazi.</p><div id="activePerson" class="hidden"></div><div class="scroll" id="scheduleTable"></div><div id="detailsPanel" class="hidden"></div></section>
 <section id="overview" class="hidden"><h2>Overview po timu</h2><div class="toolbar"><label>Period <input type="month" id="overviewMonth" onchange="renderOverview()"></label><label>Status <select id="overviewStatus" onchange="renderOverview()"></select></label><label>Grupisanje <select id="grouping" onchange="renderOverview()"><option value="week">ISO nedelja</option><option value="month">Mesec</option></select></label></div><div class="scroll" id="overviewTable"></div></section>
 <section id="reports" class="hidden"><h2>Mesečni i tromesečni izveštaj</h2><div class="toolbar"><label>Godina <input type="number" id="reportYear" min="2020" max="2100" onchange="renderReport()"></label><label>Period <select id="reportPeriod" onchange="renderReport()"><option value="month">Mesečni</option><option value="quarter">Tromesečni</option></select></label><label>Mesec / kvartal <select id="reportPart" onchange="renderReport()"></select></label><label>Tim <select id="reportTeam" onchange="renderReport()"></select></label><button class="primary" onclick="exportReport()">Izvezi CSV (Excel)</button><button onclick="window.print()">Štampaj / PDF</button></div><p class="note">Brojevi predstavljaju ukupan broj dana sa svakom oznakom u izabranom periodu, zbirno za izabrani tim ili sve zaposlene. Tabela ispod prikazuje broj dana po svakom zaposlenom.</p><div class="kpis" id="reportKpis"></div><div class="scroll" id="reportTable"></div></section>
 <section id="employees" class="hidden"><div class="toolbar"><h2 style="margin-right:auto">Zaposleni</h2><button class="primary" onclick="openEmployee()">+ Dodaj zaposlenog</button></div><div class="scroll" id="employeesTable"></div></section>
@@ -58,7 +58,7 @@ body.has-schedule-scroll{padding-bottom:30px}
 </main><dialog id="lateDialog"><h2>Kašnjenje (K)</h2><p id="latePersonInfo" class="note"></p><form id="lateForm" onsubmit="saveLateEntry(event)"><div class="formgrid"><label>Od (planirani dolazak)<input type="text" id="lateFrom" required maxlength="5" inputmode="numeric" placeholder="00:00" pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]" title="Unesi vreme u formatu 00:00–23:59" autocomplete="off"></label><label>Do (stvarni dolazak)<input type="text" id="lateTo" required maxlength="5" inputmode="numeric" placeholder="23:59" pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]" title="Unesi vreme u formatu 00:00–23:59" autocomplete="off"></label></div><label style="display:flex;flex-direction:column;gap:6px;margin-top:12px">Komentar<textarea id="lateComment" rows="3" style="background:#19283d;color:white;border:1px solid #334861;border-radius:8px;padding:10px" placeholder="Razlog kašnjenja (opciono)"></textarea></label><div class="toolbar" style="margin-top:15px"><button class="primary" type="submit">Sačuvaj kašnjenje</button><button type="button" onclick="lateDialog.close()">Otkaži</button></div></form></dialog><dialog id="overviewDialog" class="overview-dialog"><div class="dialog-head"><h2 id="overviewDialogTitle">Pregled evidencije</h2><button onclick="document.getElementById('overviewDialog').close()">✕ Zatvori</button></div><div id="overviewDialogBody"></div></dialog><script>
 // Uloga se proverava preko postojeceg Apps Script endpointa i sifre iz index.html.
 // Bez potvrde servera aplikacija ostaje u rezimu pregleda.
-const TIME_API_URL='https://stellantis-logistics-api.kostimir.workers.dev';
+const TIME_API_URL='https://script.google.com/macros/s/AKfycbx9dmnfozKUQplxXWzfxUx5YIGyGOJqwuhvQ1uQxejE37NgTSbdHrJryYZ2HCK-Rn-o/exec';
 let TIME_ROLE='GUEST';let TIME_DB_READY=false;
 const canManagePeople=()=>TIME_DB_READY&&(TIME_ROLE==='MASTER'||TIME_ROLE==='ADMIN');
 const canEditSchedule=()=>TIME_DB_READY&&['MASTER','ADMIN'].includes(TIME_ROLE);
@@ -68,7 +68,7 @@ function applyRoleUI(){
  document.querySelectorAll('[data-manage-only]').forEach(el=>el.classList.toggle('hidden',!canManagePeople()));
  const badge=document.getElementById('timeRoleBadge');if(badge)badge.textContent='Uloga: '+TIME_ROLE;
 }
-function configureTimeEndpoint(){alert('Cloudflare D1 API: '+TIME_API_URL+'\nAdresa se podešava u HTML kodu.');}
+function configureTimeEndpoint(){alert('Google Sheets / Apps Script: '+TIME_API_URL+'\nAdresa se podešava u HTML kodu.');}
 async function loadPortalRole(){await timeLoadRemote();renderSchedule();renderEmployees();}
 function addOptionalComment(p,date,status){if(!status||status==='P'){if(p.comments)delete p.comments[date];return}let old=p.comments?.[date]||'';let value=prompt('Opcioni komentar za '+p.name+' · '+date+' · '+status+'\n(Otkaži = bez izmene komentara)',old);if(value===null)return;p.comments??={};if(value.trim())p.comments[date]=value.trim();else delete p.comments[date]}
 function editCellComment(id,date){if(!canEditSchedule())return;const lateP=db.people.find(p=>String(p.id)===String(id));if(lateP?.statuses?.[date]==='K'){openLateDialog(id,date);return;}let p=db.people.find(p=>String(p.id)===String(id));if(!p)return;let status=p.statuses?.[date];if(!status||status==='P'){alert('Komentar je dostupan za statuse različite od P.');return}addOptionalComment(p,date,status);persist();renderSchedule()}
@@ -134,27 +134,39 @@ function reportDates(){let y=Number($('reportYear').value),part=Number($('report
 
 let TIME_REV=0,TIME_PENDING=false,TIME_SAVING=false,TIME_BLOCKED=false;
 function timeState(message){const x=document.getElementById('timeDbState');if(x)x.textContent='Baza: '+message;}
-function timeToken(){return localStorage.getItem('stellantis_d1_token')||'';}
-async function timeRequest(path,data){
- const r=await fetch(TIME_API_URL+path,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+timeToken()},body:JSON.stringify(data),cache:'no-store'});
- const x=await r.json();if(!r.ok)throw Error(x.error||'HTTP '+r.status);return x;
-}
+function timeCredentials(){return (localStorage.getItem('sifra')||'').trim();}
 async function timeLoadRemote(){
- TIME_DB_READY=false;applyRoleUI();timeState('učitavanje…');
- if(!timeToken()){timeState('NEMA SESIJE');return;}
+ TIME_DB_READY=false;applyRoleUI();timeState('učitavanje iz Google Sheets…');
+ const sifra=timeCredentials();
+ if(!sifra){TIME_ROLE='GUEST';timeState('NEMA SESIJE – prijavi se na portalu');applyRoleUI();return;}
  try{
-  const x=await timeRequest('/api/load',{});
-  TIME_ROLE=x.role;TIME_REV=x.revision;db=x.db;
-  TIME_BLOCKED=false;TIME_DB_READY=true;timeState('Cloudflare D1 · sinhronizovano');
+  const r=await fetch(TIME_API_URL+'?akcija=timeUcitaj&sifra='+encodeURIComponent(sifra)+'&_='+Date.now(),{cache:'no-store'});
+  if(!r.ok)throw Error('HTTP '+r.status);
+  const x=await r.json();
+  if(x.status!=='OK')throw Error(x.poruka||'Neuspešno učitavanje');
+  const auth=await fetch(TIME_API_URL+'?akcija=proveriKorisnika&sifra='+encodeURIComponent(sifra)+'&_='+Date.now(),{cache:'no-store'});
+  const a=await auth.json();
+  if(a.status!=='OK')throw Error('Sesija nije validna');
+  TIME_ROLE=a.uloga;TIME_REV=Number(x.revision)||0;
+  if(x.initialized&&x.db&&Array.isArray(x.db.people)&&x.db.legend){db=x.db;TIME_BLOCKED=false;TIME_DB_READY=true;timeState('Google Sheets · sinhronizovano');}
+  else {TIME_BLOCKED=true;TIME_DB_READY=false;timeState('TimeScheduleDB nema podatke – upis blokiran');}
   refreshFilters();refreshOverviewStatuses();renderSchedule();renderEmployees();applyRoleUI();
- }catch(e){console.error(e);TIME_ROLE='GUEST';timeState('GREŠKA – samo pregled');applyRoleUI();alert('D1 učitavanje: '+e.message)}
+ }catch(e){console.error(e);TIME_ROLE='GUEST';TIME_BLOCKED=true;timeState('GREŠKA – samo pregled');applyRoleUI();alert('Google Sheets učitavanje: '+e.message);}
 }
-function timeQueueSave(){if(!TIME_DB_READY||TIME_BLOCKED){alert('Baza nije spremna za upis');return}TIME_PENDING=true;timeState('čuvanje…');if(!TIME_SAVING)timeSaveNow();}
+function timeQueueSave(){
+ if(!TIME_DB_READY||TIME_BLOCKED){alert('Baza nije spremna za upis');return;}
+ TIME_PENDING=true;timeState('čuvanje…');if(!TIME_SAVING)timeSaveNow();
+}
 async function timeSaveNow(){
  if(TIME_SAVING)return;TIME_SAVING=true;
  while(TIME_PENDING){TIME_PENDING=false;
-  try{const x=await timeRequest('/api/save',{revision:TIME_REV,db});TIME_REV=x.revision;timeState('Cloudflare D1 · sinhronizovano');}
-  catch(e){TIME_BLOCKED=true;TIME_DB_READY=false;applyRoleUI();timeState('GREŠKA / KONFLIKT');alert('Upis nije uspeo: '+e.message+'\nSačuvaj lokalni backup pre osvežavanja.');break;}
+  try{
+   const r=await fetch(TIME_API_URL,{method:'POST',body:JSON.stringify({akcija:'timeSacuvaj',user:timeCredentials(),revision:TIME_REV,db}),cache:'no-store'});
+   if(!r.ok)throw Error('HTTP '+r.status);
+   const x=await r.json();
+   if(x.status!=='OK')throw Error(x.poruka||'Upis nije uspeo');
+   TIME_REV=Number(x.revision);timeState('Google Sheets · sinhronizovano');
+  }catch(e){TIME_BLOCKED=true;TIME_DB_READY=false;TIME_PENDING=false;applyRoleUI();timeState('GREŠKA / KONFLIKT');alert('Upis nije uspeo: '+e.message+'\nSačuvaj lokalni backup pre osvežavanja.');break;}
  }
  TIME_SAVING=false;
 }
