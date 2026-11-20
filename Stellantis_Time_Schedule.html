@@ -6,7 +6,778 @@ function doGet(e) {
   if (e.parameter.akcija === "timeUcitaj") return timeUcitaj_(e);
 
   // AKCIJA ZA LOGIN
+  if (e.parameter.akcija === "proveriKorisnika") {function doGet(e) {
+  e = e || {parameter:{}};
+  if (e.parameter.akcija === 'timePing') return ContentService.createTextOutput(JSON.stringify({status:'OK',api:'TIME_SCHEDULE_V2'})).setMimeType(ContentService.MimeType.JSON);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  if (e.parameter.akcija === "timeUcitaj") return timeUcitaj_(e);
+
+  // AKCIJA ZA LOGIN
   if (e.parameter.akcija === "proveriKorisnika") {
+    const sifra = e.parameter.sifra;
+    const sheetKorisnici = ss.getSheetByName("Korisnici");
+    if (!sheetKorisnici) return ContentService.createTextOutput(JSON.stringify({status: "ERROR"})).setMimeType(ContentService.MimeType.JSON);
+    
+    const podaci = sheetKorisnici.getDataRange().getValues();
+    for (let i = 1; i < podaci.length; i++) {
+      if (podaci[i][0].toString() === sifra.toString() && podaci[i][2] === "aktivan") {
+        return ContentService.createTextOutput(JSON.stringify({status: "OK", uloga: podaci[i][1]})).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({status: "NE"})).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // LAYOUTCAD: samo aktivan korisnik sa ulogom MASTER.
+  // Ova provera štiti odluku portala o otvaranju kartice, ali ne i
+  // direktan pristup statičkom layoutcad.html fajlu na javnom hostingu.
+  if (e.parameter.akcija === "proveriLayoutCad") {
+    const sifra = String(e.parameter.sifra || "").trim();
+    const korisnici = ss.getSheetByName("Korisnici");
+    let dozvoljeno = false;
+    if (sifra && korisnici) {
+      const redovi = korisnici.getDataRange().getValues();
+      for (let i = 1; i < redovi.length; i++) {
+        if (String(redovi[i][0]).trim() === sifra &&
+            String(redovi[i][1]).trim().toUpperCase() === "MASTER" &&
+            String(redovi[i][2]).trim().toLowerCase() === "aktivan") {
+          dozvoljeno = true;
+          break;
+        }
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({
+      status: dozvoljeno ? "OK" : "ERROR", dozvoljeno: dozvoljeno
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // UCITAVANJE BROJACA
+  if (e.parameter.akcija === "ucitajBrojace") {
+    const sheet = ss.getSheetByName("Brojaci");
+    const data = sheet.getDataRange().getValues();
+    const otp = otpBrojac_();
+    return ContentService.createTextOutput(JSON.stringify({proforma: data[0][1], cmr: data[1][1], otpremnica: otp})).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // UCITAVANJE ZAPOSLENIH
+  if (e.parameter.akcija === "ucitajZaposlene") {
+    const sheet = ss.getSheetByName("Zaposleni"); 
+    const data = sheet.getDataRange().getValues();
+    const result = data.slice(1).map(row => ({id: row[0], ime: row[1], prezime: row[2], pozicija: row[3], nadredjeni: row[4], tl: row[5]}));
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // BOT: pretraga odobrenih pitanja iz lista ChatBot
+  if (e.parameter.akcija === "dukaVerzija") {
+    return ContentService.createTextOutput(JSON.stringify({status:"OK",verzija:"DUKA-GEMINI-AUTO-RETRY-2026-10-31",onlinePretraga:true,izvor:"Gemini + Google Search",konfigurisano:!!PropertiesService.getScriptProperties().getProperty("DUKA_GEMINI_API_KEY")})).setMimeType(ContentService.MimeType.JSON);
+  }
+  if (e.parameter.akcija === "botPitaj") {
+    return botPitaj_(e);
+  }
+
+  // >>> CHAT: UCITAVANJE PORUKA
+  if (e.parameter.akcija === "ucitajPoruke") {
+    return ucitajPoruke(e);
+  }
+
+  // STANDARDNO UCITAVANJE OBJAVA (ucitajObjave)
+  const sheet = ss.getSheetByName("Sheet1");
+  const data = sheet.getDataRange().getValues();
+  const result = data.slice(1).map(row => ({
+    id: row[0], naslov: row[1], mesto: row[2], datum: row[3],
+    smena: row[4], leader: row[5], tekst: row[6], slika: row[7],
+    dokaz: row[8], status: row[9], komentar: row[10],
+    autorObjave: row[11], autorKomentara: row[12]
+  }));
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let data;
+  try { data = JSON.parse(e.postData.contents); } 
+  catch (err) { return ContentService.createTextOutput("GRESKA").setMimeType(ContentService.MimeType.TEXT); }
+
+  if (data.akcija === "timeSacuvaj") return timeSacuvaj_(data);
+
+  // >>> CHAT: SLANJE PORUKE (mora pre getRole, jer chat salje "sifra", a ne "user")
+  if (data.akcija === "posaljiPoruku") {
+    return posaljiPoruku(data);
+  }
+
+  const output = ContentService.createTextOutput(JSON.stringify({status: "SUCCESS"})).setMimeType(ContentService.MimeType.JSON);
+  
+  // Pomocna funkcija za dobijanje uloge
+  function getRole(sifra) {
+    const sheetKorisnici = ss.getSheetByName("Korisnici");
+    const podaci = sheetKorisnici.getDataRange().getValues();
+    for (let i = 1; i < podaci.length; i++) {
+      if (podaci[i][0].toString().trim() === sifra.toString().trim()) {
+        return podaci[i][1].toString().trim().toUpperCase();
+      }
+    }
+    return "GUEST";
+  }
+
+  const userRole = getRole(data.user);
+
+
+  // DOKUMENTACIJA: evidentiraj sacuvani komplet PF/DDT/CMR i atomarno pomeri oba brojaca.
+  if (data.akcija === "evidentirajDokumentaciju") {
+    const korisnici = ss.getSheetByName("Korisnici");
+    const rows = korisnici ? korisnici.getDataRange().getValues() : [];
+    const user = String(data.user || "").trim();
+    const valid = rows.slice(1).some(r => String(r[0]).trim() === user && String(r[2]).trim().toLowerCase() === "aktivan" && ["MASTER", "ADMIN", "TEAM_LEADER"].includes(String(r[1]).trim().toUpperCase()));
+    if (!valid) return brojacJson_({status:"ERROR",poruka:"Samo aktivan MASTER, ADMIN ili TEAM_LEADER moze evidentirati dokumentaciju."});
+    const ddt = Number(data.ddtBroj), cmr = Number(data.cmrBroj);
+    const godina = String(data.godina || "");
+    const key = String(data.requestId || "").trim();
+    if (!Number.isSafeInteger(ddt) || ddt < 1 || !Number.isSafeInteger(cmr) || cmr < 1 || !/^20\d{2}$/.test(godina) || !/^[a-zA-Z0-9-]{8,100}$/.test(key))
+      return brojacJson_({status:"ERROR",poruka:"Neispravni brojevi, godina ili ID zahteva."});
+    const lock = LockService.getScriptLock();
+    try { lock.waitLock(20000); } catch(err) { return brojacJson_({status:"ERROR",poruka:"Server je zauzet. Pokusajte ponovo."}); }
+    try {
+      const sheet = ss.getSheetByName("Brojaci");
+      if (!sheet) return brojacJson_({status:"ERROR",poruka:"Nedostaje list Brojaci."});
+      let log = ss.getSheetByName("EvidencijaDokumentacije");
+      if (!log) { log = ss.insertSheet("EvidencijaDokumentacije"); log.appendRow(["requestId","vreme","godina","DDT","CMR","korisnik","nazivFajla"]); }
+      const logRows = log.getLastRow();
+      if (logRows > 1 && log.getRange(2,1,logRows-1,1).getValues().some(r => String(r[0]) === key))
+        return brojacJson_({status:"OK",ponovljeno:true,proforma:sheet.getRange(1,2).getValue(),cmr:sheet.getRange(2,2).getValue()});
+      const nextDdt = Number(sheet.getRange(1,2).getValue());
+      const nextCmr = Number(sheet.getRange(2,2).getValue());
+      if (nextDdt !== ddt || nextCmr !== cmr)
+        return brojacJson_({status:"CONFLICT",poruka:"Brojevi su se promenili. PDF je sacuvan; proverite evidenciju pre ponovnog cuvanja.",proforma:nextDdt,cmr:nextCmr});
+      log.appendRow([key,new Date(),godina,ddt,cmr,user,String(data.nazivFajla||"").slice(0,180)]);
+      sheet.getRange(1,2).setValue(ddt+1);
+      sheet.getRange(2,2).setValue(cmr+1);
+      return brojacJson_({status:"OK",proforma:ddt+1,cmr:cmr+1});
+    } finally { lock.releaseLock(); }
+  }
+
+  // Evidencija otpremnica: početni broj 400; svako uspešno evidentiranje +1.
+  if (data.akcija === 'evidentirajOtpremnicu') {
+    const users = ss.getSheetByName('Korisnici');
+    const rows = users ? users.getDataRange().getValues() : [];
+    const valid = rows.slice(1).some(r => String(r[0]).trim() === String(data.user||'').trim() && String(r[2]).trim().toLowerCase() === 'aktivan');
+    if (!valid) return brojacJson_({status:'ERROR',poruka:'Neophodan je aktivan korisnički nalog.'});
+    const broj = Number(data.broj), godina = String(data.godina||''), key = String(data.requestId||'');
+    if (!Number.isSafeInteger(broj) || broj < 400 || !/^20\d{2}$/.test(godina) || !/^[a-zA-Z0-9-]{8,100}$/.test(key))
+      return brojacJson_({status:'ERROR',poruka:'Neispravni podaci otpremnice.'});
+    const lock = LockService.getScriptLock();
+    try { lock.waitLock(20000); } catch(e) { return brojacJson_({status:'ERROR',poruka:'Server je zauzet.'}); }
+    try {
+      const sh = ss.getSheetByName('Brojaci');
+      if (!sh) return brojacJson_({status:'ERROR',poruka:'Nedostaje list Brojaci.'});
+      let log = ss.getSheetByName('EvidencijaOtpremnica');
+      if (!log) { log = ss.insertSheet('EvidencijaOtpremnica'); log.appendRow(['requestId','vreme','godina','broj','korisnik','nazivFajla']); }
+      if (log.getLastRow() > 1 && log.getRange(2,1,log.getLastRow()-1,1).getValues().some(r => String(r[0]) === key))
+        return brojacJson_({status:'OK',ponovljeno:true,otpremnica:otpBrojacBezLocka_(sh)});
+      const next = otpBrojacBezLocka_(sh);
+      if (next !== broj) return brojacJson_({status:'CONFLICT',poruka:'Broj otpremnice je u međuvremenu promenjen. PDF je sačuvan; proverite evidenciju.',otpremnica:next});
+      log.appendRow([key,new Date(),godina,broj,String(data.user),String(data.nazivFajla||'').slice(0,180)]);
+      sh.getRange(3,2).setValue(broj+1);
+      return brojacJson_({status:'OK',otpremnica:broj+1});
+    } finally { lock.releaseLock(); }
+  }
+
+  // Samo MASTER može ručno menjati brojače. Provera je serverska.
+  if (data.akcija === 'povecajBrojac' || data.akcija === 'postaviBrojac') {
+    const users = ss.getSheetByName('Korisnici');
+    const rows = users ? users.getDataRange().getValues() : [];
+    const master = rows.slice(1).some(r => String(r[0]).trim() === String(data.user||'').trim() && String(r[1]).trim().toUpperCase() === 'MASTER' && String(r[2]).trim().toLowerCase() === 'aktivan');
+    if (!master) return brojacJson_({status:'ERROR',poruka:'Samo aktivan MASTER može menjati brojače.'});
+    if (!['proforma','cmr'].includes(data.tip)) return brojacJson_({status:'ERROR',poruka:'Nepoznat brojač.'});
+    const lock = LockService.getScriptLock();
+    try { lock.waitLock(20000); } catch(e) { return brojacJson_({status:'ERROR',poruka:'Server je zauzet.'}); }
+    try {
+      const sheet = ss.getSheetByName('Brojaci');
+      const row = data.tip === 'proforma' ? 1 : 2;
+      const current = Number(sheet.getRange(row,2).getValue());
+      if (!Number.isSafeInteger(current)) return brojacJson_({status:'ERROR',poruka:'Neispravna trenutna vrednost.'});
+      if (data.akcija === 'povecajBrojac' && Number.isSafeInteger(Number(data.ocekuje)) && Number(data.ocekuje) !== current)
+        return brojacJson_({status:'CONFLICT',poruka:'Broj se promenio. Osvežite stranicu.'});
+      const next = data.akcija === 'povecajBrojac' ? current+1 : Number(data.vrednost);
+      if (!Number.isSafeInteger(next) || next < 1) return brojacJson_({status:'ERROR',poruka:'Unesite pozitivan ceo broj.'});
+      sheet.getRange(row,2).setValue(next);
+      return brojacJson_({status:'OK',vrednost:next});
+    } finally { lock.releaseLock(); }
+  }
+
+  // 3. ZAPOSLENI
+  if (data.akcija === "dodajZaposlenog" || data.akcija === "obrisiZaposlenog") {
+    const sheet = ss.getSheetByName("Zaposleni");
+    if (data.akcija === "dodajZaposlenog") sheet.appendRow([data.id, data.ime, data.prezime, data.pozicija, data.nadredjeni, data.tl]);
+    else {
+      const values = sheet.getDataRange().getValues();
+      for (let i = 1; i < values.length; i++) {
+        if (values[i][0].toString() === data.id.toString()) { sheet.deleteRow(i + 1); break; }
+      }
+    }
+    return output;
+  }
+
+  // 4. DODAJ OBJAVE
+  if (data.akcija === "dodaj") {
+    let slikaZaUpis = (data.slika && data.slika.length < 45000) ? data.slika : "SLIKA PREVELIKA";
+    ss.getSheetByName("Sheet1").appendRow([data.id, data.naslov, data.mesto, data.datum, data.smena, data.leader, data.tekst, slikaZaUpis, "", "Nije zavrseno", "", data.user, ""]);
+    return output;
+  }
+
+  // 5. IZMENI OBJAVE (HTML salje "zavrsiObjavu")
+  if (data.akcija === "izmeni" || data.akcija === "zavrsiObjavu") {
+    const sheet = ss.getSheetByName("Sheet1");
+    const values = sheet.getDataRange().getValues();
+    const targetId = data.id.toString().trim();
+    
+    for (let i = 1; i < values.length; i++) {
+      if (values[i][0].toString().trim() === targetId) {
+        const red = i + 1;
+        if (data.dokaz === "DELETE" || data.brisiSliku === true) {
+          sheet.getRange(red, 9).clearContent();
+        } else if (data.dokaz && data.dokaz.length > 5) {
+          if (data.dokaz.length < 45000) sheet.getRange(red, 9).setValue(data.dokaz);
+          else sheet.getRange(red, 9).setValue("SLIKA PREVELIKA");
+        }
+        sheet.getRange(red, 10).setValue("Zavrseno");
+        sheet.getRange(red, 11).setValue(data.komentar);
+        sheet.getRange(red, 13).setValue(data.user);
+        return output;
+      }
+    }
+  }
+
+  // 5b. OBRISI SAMO SLIKU DOKAZA - ne dira komentar, status ni autorKomentara
+  if (data.akcija === "obrisiDokaz") {
+    const sheet = ss.getSheetByName("Sheet1");
+    const values = sheet.getDataRange().getValues();
+    const targetId = data.id.toString().trim();
+
+    for (let i = 1; i < values.length; i++) {
+      if (values[i][0].toString().trim() === targetId) {
+        const red = i + 1;
+        sheet.getRange(red, 9).clearContent(); // samo kolona "dokaz"
+        return output;
+      }
+    }
+  }
+
+  // 6. OBRISI I ARHIVIRAJ (HTML salje "obrisiObjavu")
+  if (data.akcija === "obrisi" || data.akcija === "obrisiObjavu") {
+    const sheet = ss.getSheetByName("Sheet1");
+    const values = sheet.getDataRange().getValues();
+    for (let i = 1; i < values.length; i++) {
+      if (values[i][0].toString() === data.id.toString()) {
+        const archive = ss.getSheetByName("Arhiva");
+        if (archive) archive.appendRow(values[i]);
+        sheet.deleteRow(i + 1);
+        return output;
+      }
+    }
+  }
+  return ContentService.createTextOutput("ERROR").setMimeType(ContentService.MimeType.TEXT);
+}
+
+
+// ============================================================
+// >>> CHAT (novo) - sve ispod je dodato, ostatak skripta je nepromenjen
+// ============================================================
+
+const CHAT_SHEET = "Chat";
+const CHAT_MAX_ROWS = 500;     // cuva se poslednjih 500 poruka
+const CHAT_LOAD_LIMIT = 50;    // koliko poruka se salje pri prvom ucitavanju (manje jer poruke mogu imati slike)
+const CHAT_IMG_LIMIT = 45000;  // max duzina slike u celiji (Google Sheets ogranicenje je 50000 znakova)
+
+// Ista provera kao u "proveriKorisnika": sifra postoji u koloni A i kolona C je "aktivan"
+function chatSifraVazi(sifra) {
+  if (!sifra) return false;
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Korisnici");
+  if (!sh) return false;
+  const podaci = sh.getDataRange().getValues();
+  for (let i = 1; i < podaci.length; i++) {
+    if (podaci[i][0].toString().trim() === sifra.toString().trim() && podaci[i][2] === "aktivan") return true;
+  }
+  return false;
+}
+
+function chatGetSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(CHAT_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(CHAT_SHEET);
+    sh.appendRow(["id", "vreme", "ime", "tekst", "clientId", "slika"]);
+    // Kolone ime i tekst kao obican tekst (sprecava da se "=..." tumaci kao formula)
+    sh.getRange("C:D").setNumberFormat("@");
+  } else if (sh.getRange(1, 6).getValue() !== "slika") {
+    // Postojeci Chat sheet iz prve verzije: dodaj kolonu "slika"
+    sh.getRange(1, 6).setValue("slika");
+  }
+  return sh;
+}
+
+function chatJson(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function ucitajPoruke(e) {
+  if (!chatSifraVazi(e.parameter.sifra)) return chatJson({status: "ERR", poruka: "Neovlašćen pristup."});
+
+  const posle = Number(e.parameter.posle) || 0;
+  const sh = chatGetSheet();
+  const last = sh.getLastRow();
+  if (last < 2) return chatJson({status: "OK", poruke: []});
+
+  // Citamo samo kraj tabele radi brzine
+  const start = Math.max(2, last - CHAT_MAX_ROWS + 1);
+  const vals = sh.getRange(start, 1, last - start + 1, 6).getValues();
+
+  let poruke = vals
+    .filter(r => Number(r[0]) > posle)
+    .map(r => ({
+      id: Number(r[0]),
+      vreme: r[1] instanceof Date ? r[1].toISOString() : String(r[1]),
+      ime: r[2],
+      tekst: r[3],
+      clientId: r[4],
+      slika: r[5] || ""
+    }));
+
+  if (posle === 0 && poruke.length > CHAT_LOAD_LIMIT) poruke = poruke.slice(-CHAT_LOAD_LIMIT);
+  return chatJson({status: "OK", poruke: poruke});
+}
+
+function posaljiPoruku(data) {
+  if (!chatSifraVazi(data.sifra)) return chatJson({status: "ERR", poruka: "Neovlašćen pristup."});
+
+  const tekst = String(data.tekst || "").trim().substring(0, 500);
+  const ime = String(data.ime || "").trim().substring(0, 30);
+  let slika = String(data.slika || "");
+  if (slika) {
+    if (slika.indexOf("data:image/") !== 0) return chatJson({status: "ERR", poruka: "Neispravna slika."});
+    if (slika.length > CHAT_IMG_LIMIT) return chatJson({status: "ERR", poruka: "Slika je prevelika."});
+  }
+  if ((!tekst && !slika) || !ime) return chatJson({status: "ERR", poruka: "Prazna poruka."});
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sh = chatGetSheet();
+    const last = sh.getLastRow();
+    const lastId = last >= 2 ? Number(sh.getRange(last, 1).getValue()) || 0 : 0;
+    sh.appendRow([lastId + 1, new Date(), ime, tekst, String(data.clientId || ""), slika]);
+
+    // Ciscenje starih poruka
+    const total = sh.getLastRow() - 1;
+    if (total > CHAT_MAX_ROWS + 100) sh.deleteRows(2, total - CHAT_MAX_ROWS);
+  } finally {
+    lock.releaseLock();
+  }
+  return chatJson({status: "OK"});
+}
+
+function brojacJson_(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
+
+// Otpremnica je u redu 3 lista Brojaci (kolona B). Ne menja PF/DDT i CMR.
+function otpBrojacBezLocka_(sheet) {
+  const cell = sheet.getRange(3,2);
+  const raw = cell.getValue();
+  if (raw === '' || raw === null) { sheet.getRange(3,1).setValue('Otpremnica'); cell.setValue(400); return 400; }
+  const n = Number(raw);
+  if (!Number.isSafeInteger(n) || n < 1) throw new Error('Neispravna vrednost brojača otpremnice.');
+  return n;
+}
+function otpBrojac_() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Brojaci');
+    return sh ? otpBrojacBezLocka_(sh) : 400;
+  } finally { lock.releaseLock(); }
+}
+
+// ===== DUKA / BAZA ZNANJA (privatni chatbot) =====
+// ChatBot: A ID, B Kategorija, C Pitanje, D Kljucne_reci,
+//          E Odgovor, F Aktivno, G Slika_URL.
+// Istorija razgovora se NE upisuje u list "Chat".
+// HTML zasebno cuva istoriju po korisniku u sessionStorage i uklanja je
+// nakon 30 minuta bez nove poruke. Server vraca samo odgovor na pitanje.
+const DUKA_INACTIVITY_MINUTES = 30;
+
+function botSlikaUrl_(value) {
+  const url = String(value || '').trim();
+  if (!/^https:\/\//i.test(url) || url.length > 2000 || /[\s<>"']/.test(url)) return '';
+  // Podrzava Drive link /file/d/ID/view, open?id=ID, uc?id=ID,
+  // thumbnail?id=ID, kao i /d/ID/ putanju.
+  if (/^https:\/\/drive\.google\.com\//i.test(url)) {
+    const pathId = url.match(/\/file\/d\/([A-Za-z0-9_-]{10,})/i);
+    const queryId = url.match(/[?&]id=([A-Za-z0-9_-]{10,})/i);
+    const id = pathId ? pathId[1] : (queryId ? queryId[1] : '');
+    if (id) return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w1200';
+  }
+  return url;
+}
+
+// Slika ubačena preko Insert > Image > Image in cell u koloni G.
+// Vraća data URL da browser može da prikaže sliku bez Drive deljenja.
+// Ako je u G običan URL, zadržava postojeće ponašanje.
+function dukaSlikaIzCelije_(sheet, rowNumber, displayValue) {
+  const cell = sheet.getRange(rowNumber, 7);
+  const value = cell.getValue();
+  if (value && typeof value.getContentUrl === 'function') {
+    try {
+      const temporaryUrl = value.getContentUrl();
+      if (!temporaryUrl) return '';
+      const response = UrlFetchApp.fetch(temporaryUrl, {
+        muteHttpExceptions: true, followRedirects: true
+      });
+      if (response.getResponseCode() !== 200) {
+        console.warn('DUKA slika: HTTP ' + response.getResponseCode() + ' red ' + rowNumber);
+        return '';
+      }
+      const blob = response.getBlob();
+      const mime = String(blob.getContentType() || '').split(';')[0].toLowerCase();
+      if (!/^image\/(png|jpeg|gif|webp)$/.test(mime)) return '';
+      const bytes = blob.getBytes();
+      if (bytes.length > 1200000) {
+        console.warn('DUKA slika prevelika u redu ' + rowNumber);
+        return '';
+      }
+      return 'data:' + mime + ';base64,' + Utilities.base64Encode(bytes);
+    } catch (err) {
+      console.warn('DUKA slika u redu ' + rowNumber + ': ' + String(err));
+      return '';
+    }
+  }
+  return botSlikaUrl_(displayValue);
+}
+
+function botNormalizuj_(v) {
+  return String(v == null ? '' : v).toLocaleLowerCase('sr-RS')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'dj').replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+
+
+// ===== DUKA: ONLINE ODGOVORI (Google Gemini + Google Search) =====
+// Ključ se postavlja u Project Settings > Script Properties: DUKA_GEMINI_API_KEY.
+// Nikada ne stavljati API ključ u HTML ili u javni izvorni kod.
+const DUKA_GREETING_ = 'Zdravo! Ja sam Duka, tvoj virtuelni asistent. Kako mogu da ti pomognem danas?';
+function dukaPozdrav_(p) {
+  if (/^(zdravo|cao|hej|dobar dan|dobro jutro|dobro vece|kako si|kako ste|sta ima|kako ide)( danas| duka| kako si| kako ste)*$/.test(p) || /^(ko si|kako se zoves|sta si ti)$/.test(p))
+    return {status:'OK',odgovor:DUKA_GREETING_,slika:'',izvor:'Duka'};
+  if (/^(hvala|hvala ti|zahvaljujem)$/.test(p)) return {status:'OK',odgovor:'Nema na čemu!',slika:'',izvor:'Duka'};
+  return null;
+}
+// Modeli se čitaju iz Gemini API-ja umesto da se pretpostavlja naziv modela.
+// U Script Properties opciono: DUKA_GEMINI_MODEL = model koji API podržava.
+function dukaModeli_(key) {
+  const configured = String(PropertiesService.getScriptProperties().getProperty('DUKA_GEMINI_MODEL') || '').trim().replace(/^models\//, '');
+  const cache = CacheService.getScriptCache();
+  let models = [];
+  try {
+    const cached = cache.get('DUKA_MODELI_V3');
+    if (cached) models = JSON.parse(cached);
+    else {
+      let pageToken = '';
+      for (let page = 0; page < 3; page++) {
+        const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=100' + (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
+        const res = UrlFetchApp.fetch(endpoint, {headers:{'x-goog-api-key':key},muteHttpExceptions:true});
+        if (res.getResponseCode() !== 200) {
+          console.warn('DUKA LIST MODELS HTTP ' + res.getResponseCode() + ': ' + res.getContentText().slice(0,250));
+          break;
+        }
+        const data = JSON.parse(res.getContentText());
+        models.push(...(data.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace(/^models\//, '')));
+        pageToken = data.nextPageToken || '';
+        if (!pageToken) break;
+      }
+      if (models.length) cache.put('DUKA_MODELI_V3', JSON.stringify(models), 300);
+    }
+  } catch (err) { console.warn('DUKA LIST MODELS: ' + String(err)); }
+  const eligible = models.filter(m => /gemini/i.test(m) && !/embedding|image|tts|audio|live|robotics|computer-use/i.test(m));
+  eligible.sort((a,b) => {
+    const score = m => (/flash/i.test(m) ? 100 : 0) + (/lite/i.test(m) ? 10 : 0) - (/preview|exp/i.test(m) ? 20 : 0);
+    return score(b) - score(a);
+  });
+  const result = configured ? [configured, ...eligible.filter(m => m !== configured)] : eligible;
+  return result.slice(0,4);
+}
+
+function dukaGeminiZahtev_(key, model, question, withSearch) {
+  const payload = {
+    systemInstruction:{parts:[{text:'Ti si Duka, virtuelni asistent na srpskom jeziku. Odgovaraj jasno, precizno i kratko. Za logističke pojmove CMR, DDT, proforma i faktura prvo objasni opšte značenje, ne internu proceduru. Ne izmišljaj činjenice. Za broj paleta navedi pretpostavke. Ne traži lozinke ni interne poverljive podatke. Bez nabrajanja oblasti u kojima možeš pomoći.'}]},
+    contents:[{role:'user',parts:[{text:String(question).slice(0,500)}]}],
+    generationConfig:{temperature:0.2,maxOutputTokens:700}
+  };
+  if (withSearch) payload.tools = [{google_search:{}}];
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
+  const res = UrlFetchApp.fetch(url, {
+    method:'post',contentType:'application/json',headers:{'x-goog-api-key':key},
+    payload:JSON.stringify(payload),muteHttpExceptions:true
+  });
+  let data = {};
+  try { data = JSON.parse(res.getContentText()); } catch (e) {}
+  return {http:res.getResponseCode(), data:data, message:String(data.error && data.error.message || res.getContentText()).slice(0,400)};
+}
+
+function dukaOnline_(raw) {
+  const key = PropertiesService.getScriptProperties().getProperty('DUKA_GEMINI_API_KEY');
+  if (!key) return {status:'CONFIG',odgovor:'Online odgovori nisu aktivirani. Administrator treba da podesi Gemini API ključ.',slika:'',izvor:'Konfiguracija'};
+  const models = dukaModeli_(key);
+  if (!models.length) return {status:'ERR',odgovor:'Nema dostupnih Gemini modela za ovaj API ključ. Administrator može pokrenuti dukaTestGeminiVeze.',slika:''};
+  let lastHttp = 0;
+  for (const model of models) {
+    // Prvo pokušaj sa Google pretragom; ako nije podržana, koristi običan AI odgovor.
+    for (const search of [false, true]) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        let result;
+        try { result = dukaGeminiZahtev_(key, model, raw, search); }
+        catch (err) { console.warn('DUKA FETCH: ' + String(err)); break; }
+        lastHttp = result.http;
+        if (result.http === 200) {
+          const c = result.data.candidates && result.data.candidates[0];
+          const answer = (c && c.content && c.content.parts || []).filter(p => typeof p.text === 'string').map(p => p.text).join('\n').trim();
+          if (answer) {
+            const chunks = c && c.groundingMetadata && c.groundingMetadata.groundingChunks || [];
+            const links = [...new Set(chunks.filter(x => x.web && /^https:\/\//.test(x.web.uri || '')).map(x => x.web.uri))].slice(0,3);
+            return {status:'OK',odgovor:answer + (links.length ? '\n\nIzvori:\n' + links.join('\n') : ''),slika:'',izvor:links.length?'Gemini / Google Search':'Gemini',inactivityMinutes:DUKA_INACTIVITY_MINUTES};
+          }
+          console.warn('DUKA: HTTP 200 bez tekstualnog odgovora (' + model + ')');
+          break;
+        }
+        console.warn('DUKA HTTP ' + result.http + ' model=' + model + ' search=' + search + ' ' + result.message);
+        if (result.http === 503 || result.http === 429 || result.http === 500 || result.http === 502 || result.http === 504) {
+          if (attempt === 0) { Utilities.sleep(1500); continue; }
+          break;
+        }
+        if (result.http === 400 && search) break; // pokušaj bez Google Search
+        if (result.http === 404) break; // pokušaj sledeći model
+        if (result.http === 401 || result.http === 403) return {status:'ERR',odgovor:'Gemini pristup je odbijen. Administrator treba da proveri API ključ i dozvole.',slika:''};
+        break;
+      }
+      if (lastHttp === 404 || lastHttp === 429 || lastHttp === 503 || lastHttp === 500 || lastHttp === 502 || lastHttp === 504) break;
+    }
+  }
+  return {status:'ERR',odgovor:'Online asistent je trenutno zauzet ili nedostupan. Pokušaj ponovo za nekoliko minuta.',slika:'',inactivityMinutes:DUKA_INACTIVITY_MINUTES};
+}
+
+// Prvo proverava odobrenu internu bazu, bez obaveznog poziva Gemini servisa.
+// DUKA FIX 2026-10-31: sinonimi i padezi za zaprimanje/prijem materijala.
+// Normalizacija uklanja interpunkciju i dijakritike, ali ne menja originalni odgovor.
+const DUKA_STOP_RECI_ = new Set(['sta','je','to','su','se','za','na','u','i','ili','da','mi','li','kako','koji','koja','koje','koliko','mogu','moze','treba','objasni','znaci','znacenje','molim','te','jedan','jedna','o','od','do','sa','iz','po','gde','kada','zasto','ko','sve','preko','vezano','ako','sam','imam','radim']);
+// Sinonimi i osnovni oblici reci za interne procedure (ne menjaju odgovor u tabeli).
+// Npr. "zaprimanje materijala" i "prijem materijala" znace isto.
+function dukaKanonskaRec_(rec) {
+  const r = String(rec || '');
+  if (/^(zaprim|zaprimanj|zaprimljen|primanj|prijem|prijema|prijemu|prijemom|primi|primiti|primljen)/.test(r)) return 'prijem';
+  if (/^materijal/.test(r)) return 'materijal';
+  if (/^transakcij/.test(r)) return 'transakcija';
+  if (/^pregled/.test(r)) return 'pregled';
+  if (/^stanj/.test(r)) return 'stanje';
+  if (/^prepakivanj|^prepakuj|^prepakovan/.test(r)) return 'prepakivanje';
+  if (/^deklarisanj|^deklaris/.test(r)) return 'deklarisanje';
+  if (/^porudzbenic|^narudzbenic/.test(r)) return 'narudzbenica';
+  if (/^faktur/.test(r)) return 'faktura';
+  return r;
+}
+function dukaTokeni_(s) {
+  return botNormalizuj_(s).split(' ').filter(x => x && !DUKA_STOP_RECI_.has(x)).map(dukaKanonskaRec_);
+}
+function dukaOdgovorIzBaze_(raw) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ChatBot');
+  if (!sh || sh.getLastRow() < 2) return null;
+  const q = botNormalizuj_(raw);
+  const qt = [...new Set(dukaTokeni_(raw))];
+  const rows = sh.getRange(2,1,sh.getLastRow()-1,7).getDisplayValues();
+  let best = null, bestScore = 0, bestRow = -1;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const active = botNormalizuj_(r[5]);
+    if (!['da','yes','true','1','aktivno','aktivan'].includes(active)) continue;
+    const answer = String(r[4] || '').trim();
+    const title = botNormalizuj_(r[2]);
+    if (!answer || !title) continue;
+    const titleTokens = [...new Set(dukaTokeni_(r[2]))];
+    const keywords = String(r[3] || '').split(/[,;|\n]+/).map(x => botNormalizuj_(x)).filter(Boolean);
+    let score = 0;
+    // Potpuno isto pitanje uvek pobedjuje, cak i ako pocinje sa "sta je".
+    if (q === title) score = 100;
+    else {
+      // Poklapanje sustinskih reci, npr. "kako ide zaprimanje" / "koja je transakcija za zaprimanje".
+      const overlap = qt.filter(t => titleTokens.includes(t));
+      const coverageQ = qt.length ? overlap.length / qt.length : 0;
+      const coverageTitle = titleTokens.length ? overlap.length / titleTokens.length : 0;
+      if (overlap.length >= 2 && coverageQ >= .65 && coverageTitle >= .55) score = 75 + 15 * Math.min(coverageQ,coverageTitle);
+      else if (overlap.length === 1 && qt.length === 1 && titleTokens.length === 1 && qt[0].length >= 5) score = 78;
+      // Ključne reči iz kolone D mogu biti fraze odvojene zarezom/tačkom-zarezom.
+      for (const kw of keywords) {
+        const kt = [...new Set(dukaTokeni_(kw))];
+        if (!kt.length) continue;
+        if (q === kw && kt.length >= 2) score = Math.max(score, 92);
+        else if (kt.length >= 2 && kt.every(t => qt.includes(t))) score = Math.max(score, 84);
+        else if (kt.length === 1 && qt.includes(kt[0]) && kt[0].length >= 7 && titleTokens.includes(kt[0]) && titleTokens.length <= 4 && qt.length <= 3) score = Math.max(score, 77);
+      }
+    }
+    // Jedna kratka skracenica (DDT, CMR) nije dovoljan razlog da vratimo
+    // proizvoljnu internu proceduru za pitanje "sta je DDT".
+    const generic = /^(sta je|sta znaci|sta je to|objasni|definisi|ko je)\b/.test(q);
+    if (generic && q !== title && qt.length === 1 && qt[0].length <= 4) score = 0;
+    if (score > bestScore) {
+      bestScore = score;
+      bestRow = i + 2;
+      best = {status:'OK',odgovor:answer,kategorija:r[1],id:r[0],slika:'',izvor:'Interna baza',inactivityMinutes:DUKA_INACTIVITY_MINUTES};
+    }
+    if (score === 100) break;
+  }
+  if (bestScore < 75 || !best) return null;
+  // Sliku čitamo samo iz pobedničkog reda (brže od čitanja svih slika).
+  best.slika = dukaSlikaIzCelije_(sh, bestRow, rows[bestRow - 2][6]);
+  return best;
+}
+function botPitaj_(e) {
+  const params = e && e.parameter ? e.parameter : {};
+  if (!chatSifraVazi(params.sifra)) return chatJson({status:'ERR',odgovor:'Prijavite se na portal da biste koristili Duku.'});
+  const raw = String(params.pitanje || '').trim().slice(0,500);
+  if (!botNormalizuj_(raw)) return chatJson({status:'ERR',odgovor:'Unesite pitanje.'});
+  const pozdrav = dukaPozdrav_(botNormalizuj_(raw));
+  if (pozdrav) return chatJson(pozdrav);
+  try {
+    const interna = dukaOdgovorIzBaze_(raw);
+    if (interna) return chatJson(interna);
+  } catch(err) {
+    console.error('DUKA INTERNA BAZA: ' + String(err));
+    // Ne prikazivati korisniku online gresku kao da je baza proverena.
+    return chatJson({status:'ERR',odgovor:'Trenutno ne mogu da pročitam internu bazu znanja. Obratite se administratoru.',slika:'',izvor:'Interna baza'});
+  }
+  // Samo pitanja koja nisu prepoznata u internoj bazi idu na internet.
+  return chatJson(dukaOnline_(raw));
+}
+
+// Pokrenuti rucno za proveru poklapanja sa listom ChatBot.
+// Ne ispisuje sifre, korisnicke podatke ili sadrzaj odgovora.
+function dukaTestBaze() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('ChatBot');
+  console.log('DUKA BAZA: ' + (sh ? 'postoji, redova=' + sh.getLastRow() : 'list ChatBot NE POSTOJI'));
+  ['sta je DDT?', 'sta je CMR?', 'koja je transakcija za zaprimanje materijala?', 'koja je transakcija za prijem materijala?'].forEach(q => {
+    const r = dukaOdgovorIzBaze_(q);
+    console.log('DUKA BAZA TEST: ' + q + ' -> ' + (r ? 'PRONADJENO, ID=' + r.id : 'NEMA POUZDANOG POKLAPANJA'));
+  });
+}
+
+// Pokrenuti RUČNO u Apps Script editoru (Run) radi dijagnostike.
+// Ne ispisuje API ključ, niti ga šalje korisniku.
+function dukaTestGeminiVeze() {
+  const key = PropertiesService.getScriptProperties().getProperty('DUKA_GEMINI_API_KEY');
+  if (!key) { console.log('DUKA TEST: nedostaje DUKA_GEMINI_API_KEY'); return; }
+  const models = dukaModeli_(key);
+  console.log('DUKA DOSTUPNI MODELI: ' + (models.join(', ') || 'nijedan'));
+  if (!models.length) return;
+  for (const model of models) {
+    try {
+      const result = dukaGeminiZahtev_(key, model, 'Odgovori jednom rečju: zdravo', false);
+      console.log('DUKA TEST MODEL: ' + model + ' HTTP: ' + result.http);
+      if (result.http === 200) { console.log('DUKA TEST: Gemini veza radi.'); return; }
+      console.log('DUKA TEST GREŠKA: ' + result.message);
+    } catch (e) { console.error('DUKA TEST IZUZETAK: ' + String(e)); }
+  }
+}
+
+// Pokreni ovu funkciju ručno da proveriš autorizaciju za spoljne HTTP zahteve.
+function dukaAutorizujInternet() {
+  try {
+    const response = UrlFetchApp.fetch('https://www.google.com', {muteHttpExceptions:true});
+    console.log('DUKA INTERNET HTTP STATUS: ' + response.getResponseCode());
+  } catch (err) {
+    console.error('DUKA INTERNET GREŠKA: ' + String(err));
+    throw err;
+  }
+}
+
+
+// Provera statusa OAuth autorizacije bez prikazivanja URL-a u javnom portalu.
+// Pokrenuti ručno iz Apps Script editora.
+function dukaAutorizacijaProvera() {
+  const info = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL);
+  console.log('DUKA AUTORIZACIJA STATUS: ' + info.getAuthorizationStatus());
+  if (info.getAuthorizationStatus() === ScriptApp.AuthorizationStatus.REQUIRED) {
+    console.log('DUKA AUTORIZACIJA URL: ' + info.getAuthorizationUrl());
+  } else {
+    console.log('DUKA AUTORIZACIJA: Google smatra da su dozvole za ovaj kontekst odobrene.');
+  }
+}
+
+
+// Dijagnostika: izaberi ćeliju sa slikom u koloni G lista ChatBot,
+// pa pokreni dukaTestSlikeIzCelije iz Apps Script editora.
+function dukaTestSlikeIzCelije() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getActiveSheet();
+  const cell = sh.getActiveCell();
+  if (sh.getName() !== 'ChatBot' || cell.getColumn() !== 7 || cell.getRow() < 2) {
+    console.log('Izaberi ćeliju G2 (ili drugu G ćeliju sa slikom) na listu ChatBot.');
+    return;
+  }
+  const value = cell.getValue();
+  console.log('Red: ' + cell.getRow() + ', tip: ' + (value && value.valueType ? value.valueType : typeof value));
+  console.log('CellImage: ' + !!(value && typeof value.getContentUrl === 'function'));
+  const result = dukaSlikaIzCelije_(sh, cell.getRow(), cell.getDisplayValue());
+  console.log('Slika učitana: ' + !!result + ', format: ' + (result.startsWith('data:image/') ? 'base64' : result.startsWith('https://') ? 'https' : 'nema') + ', dužina: ' + result.length);
+  if (!result) console.log('Proveri prethodne DUKA slika poruke. Ako je HTTP 403 ili 401, Google nije dozvolio preuzimanje slike preko privremenog URL-a.');
+}
+
+
+
+// ===== TIME SCHEDULE: zajednicka baza =====
+// U doGet odmah posle const ss=... dodati:
+// if (e.parameter.akcija === 'timeUcitaj') return timeUcitaj_(e);
+// U doPost odmah posle JSON.parse, pre ostalih akcija dodati:
+// if (data.akcija === 'timeSacuvaj') return timeSacuvaj_(data);
+const TIME_SHEET_NAME_='TimeScheduleDB';
+function timeJson_(x){return ContentService.createTextOutput(JSON.stringify(x)).setMimeType(ContentService.MimeType.JSON);}
+function timeUser_(sifra){
+ const sh=SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Korisnici');
+ if(!sh)return '';
+ const rows=sh.getDataRange().getValues();
+ for(let i=1;i<rows.length;i++)if(String(rows[i][0]).trim()===String(sifra||'').trim()&&String(rows[i][2]).trim().toLowerCase()==='aktivan')return String(rows[i][1]).trim().toUpperCase().replace(/[ -]/g,'_');
+ return '';
+}
+function timeSheet_(){let ss=SpreadsheetApp.getActiveSpreadsheet(),sh=ss.getSheetByName(TIME_SHEET_NAME_);if(!sh){sh=ss.insertSheet(TIME_SHEET_NAME_);sh.getRange(1,1,1,3).setValues([['Revizija','Datum izmene','Korisnik']]);sh.getRange(2,1).setValue(0);sh.getRange(4,1,1,2).setValues([['Deo','JSON']]);}return sh;}
+function timeUcitaj_(e){
+ const role=timeUser_(e.parameter.sifra);if(!role)return timeJson_({status:'ERROR',poruka:'Neovlascen pristup'});
+ const sh=timeSheet_(),revision=Number(sh.getRange(2,1).getValue())||0,last=sh.getLastRow();
+ const chunks=last>=5?sh.getRange(5,2,last-4,1).getValues().map(r=>r[0]).join(''):'';
+ return timeJson_({status:'OK',revision,initialized:!!chunks,db:chunks?JSON.parse(chunks):null});
+}
+function timeSacuvaj_(d){
+ const role=timeUser_(d.user);if(!['MASTER','ADMIN','TEAM_LEADER'].includes(role))return timeJson_({status:'ERROR',poruka:'Nedozvoljen upis'});
+ const lock=LockService.getScriptLock();try{lock.waitLock(20000);}catch(e){return timeJson_({status:'ERROR',poruka:'Baza je zauzeta'});}
+ try{
+  const sh=timeSheet_(),current=Number(sh.getRange(2,1).getValue())||0;
+  if(Number(d.revision)!==current)return timeJson_({status:'CONFLICT',revision:current,poruka:'Drugi korisnik je izmenio podatke. Sacuvajte backup i osvezite bazu.'});
+  if(!d.db||!Array.isArray(d.db.people)||!d.db.legend)return timeJson_({status:'ERROR',poruka:'Neispravna struktura'});
+  const old=sh.getLastRow()>=5?sh.getRange(5,2,sh.getLastRow()-4,1).getValues().map(r=>r[0]).join(''):'';
+  if(role==='TEAM_LEADER'&&old){
+   const prev=JSON.parse(old);const now=d.db;
+   if(prev.people.length!==now.people.length)return timeJson_({status:'ERROR',poruka:'TEAM_LEADER ne moze menjati zaposlene'});
+   for(let i=0;i<prev.people.length;i++){
+    const a=prev.people[i],b=now.people.find(x=>String(x.id)===String(a.id));
+    if(!b)return timeJson_({status:'ERROR',poruka:'Nije dozvoljeno brisanje zaposlenih'});
+    for(const k of ['name','team','shift','role','carry2025','entitlement2026'])if(JSON.stringify(a[k])!==JSON.stringify(b[k]))return timeJson_({status:'ERROR',poruka:'Nije dozvoljena izmena zaposlenih'});
+   }
+   if(JSON.stringify(prev.legend)!==JSON.stringify(now.legend))return timeJson_({status:'ERROR',poruka:'Izmena legende nije dozvoljena'});
+  }
+  const raw=JSON.stringify(d.db);if(raw.length>3000000)return timeJson_({status:'ERROR',poruka:'Baza je prevelika'});
+  const chunks=raw.match(/[\s\S]{1,35000}/g)||[];
+  if(sh.getMaxRows()<chunks.length+4)sh.insertRowsAfter(sh.getMaxRows(),chunks.length+4-sh.getMaxRows());
+  const oldCount=Math.max(0,sh.getLastRow()-4);
+  if(oldCount)sh.getRange(5,1,oldCount,2).clearContent();
+  if(chunks.length)sh.getRange(5,1,chunks.length,2).setValues(chunks.map((x,i)=>[i+1,x]));
+  sh.getRange(2,1,1,3).setValues([[current+1,new Date(),String(d.user).slice(0,50)]]);
+  return timeJson_({status:'OK',revision:current+1});
+ }catch(e){return timeJson_({status:'ERROR',poruka:String(e)});}finally{lock.releaseLock();}
+}
+
     const sifra = e.parameter.sifra;
     const sheetKorisnici = ss.getSheetByName("Korisnici");
     if (!sheetKorisnici) return ContentService.createTextOutput(JSON.stringify({status: "ERROR"})).setMimeType(ContentService.MimeType.JSON);
