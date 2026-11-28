@@ -132,7 +132,7 @@ function syncShiftSelect(id,allText){
  el.innerHTML='<option value="">'+allText+'</option>'+shifts().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
  el.value=[...el.options].some(o=>o.value===old)?old:'';
 }
-function renderSchedule(){let ds=monthDays($('month').value),ps=db.people.filter(p=>(!$('teamFilter').value||p.team===$('teamFilter').value)&&p.name.toLowerCase().includes($('search').value.toLowerCase())&&(!$('shiftFilter').value||String(p.shift||'')===$('shiftFilter').value));const visibility=document.getElementById('employeeVisibility');if(visibility)visibility.textContent='Prikazano '+ps.length+' od '+db.people.length+' zaposlenih iz baze'+(ps.length<db.people.length?' — aktivan je filter Tim ili Pretraga.':' — svi učitani zaposleni su prikazani.');let counts={};ps.forEach(p=>ds.forEach(d=>{let c=code(p.statuses[d]);if(c)counts[c]=(counts[c]||0)+1}));$('kpis').innerHTML=[['Zaposlenih',ps.length,'ALL'],['Prisustva P',counts.P||0,'P'],['Kašnjenja K',counts.K||0,'K'],['Odmor V',counts.V||0,'V'],['Planirano PV',counts.PV||0,'PV'],['Bolovanja', sickCodes.reduce((n,c)=>n+(counts[c]||0),0),'65SL_GROUP']].map(([a,b,c])=>`<div class="kpi clickable-kpi" role="button" tabindex="0" onclick="openOverviewDialog('${c}')" onkeydown="if(event.key==='Enter')openOverviewDialog('${c}')">${a}<strong>${b}</strong></div>`).join('');let h='<table><thead><tr><th class="name">Zaposleni</th><th>Tim</th><th>Smena</th><th>GO saldo</th>'+ds.map(d=>{let n=new Date(d+'T12:00:00').getDay();return `<th class="${n===0||n===6?'weekend':''}">${d.slice(8)}<br>${['Ned','Pon','Uto','Sre','Čet','Pet','Sub'][n]}</th>`}).join('')+'</tr></thead><tbody>';for(let p of ps){h+=`<tr data-person="${p.id}" class="${String(selectedPersonId)===String(p.id)?'active-person':''}"><td class="name" onclick="selectPerson(${p.id})" title="Prikaži evidenciju zaposlenog">${esc(p.name)}</td><td>${esc(p.team)}</td><td><select class="shift-inline" aria-label="Smena ${esc(p.name)}" ${canManagePeople()?'':'disabled'} onchange="updatePersonShift(this,${p.id})">${shiftChoices(p.shift).map(v=>`<option value="${esc(v)}" ${String(p.shift||'')===v?'selected':''}>${esc(v||'—')}</option>`).join('')}</select></td><td>${balance(p)}</td>`;for(let d of ds){let v=code(p.statuses[d]),n=new Date(d+'T12:00:00').getDay();h+=`<td class="${v?'status-'+v:n===0||n===6?'weekend':''} ${p.comments?.[d]?'has-comment':''}" title="${esc(p.comments?.[d]||'Desni klik za komentar')}"><select aria-label="${esc(p.name)} ${d}" data-id="${p.id}" data-date="${d}" onfocus="selectPerson(this.dataset.id,false)" onclick="selectPerson(this.dataset.id,false)" onchange="updateStatus(this)" oncontextmenu="event.preventDefault();editCellComment(this.dataset.id,this.dataset.date)"><option value=""></option>${orderedLegend().map(([c,l])=>`<option value="${esc(c)}" ${v===c?'selected':''} title="${esc(l)}">${esc(c)}</option>`).join('')}</select>${v==='P'&&!wellbeingProtectedPerson(p)?`<button type="button" class="wellbeing-trigger ${p.wellbeing?.[d]?.score?'wb-'+p.wellbeing[d].score:''}" title="Dobrovoljna ocena za dan; klikni za unos ili izmenu" onclick="openWellbeingDialog('${p.id}','${d}')">${p.wellbeing?.[d]?.score||'♡'}</button>`:''}</td>`}h+='</tr>' } $('scheduleTable').innerHTML=h+'</tbody></table>';renderPersonDetails();if(ps.length===1){selectedPersonId=ps[0].id;renderPersonDetails();document.querySelectorAll('#scheduleTable tbody tr').forEach(tr=>tr.classList.toggle('active-person',tr.dataset.person===String(selectedPersonId)));}}function updateStatus(el){
+function renderSchedule(){let ds=monthDays($('month').value),ps=db.people.filter(p=>(!$('teamFilter').value||p.team===$('teamFilter').value)&&p.name.toLowerCase().includes($('search').value.toLowerCase())&&(!$('shiftFilter').value||String(p.shift||'')===$('shiftFilter').value));const visibility=document.getElementById('employeeVisibility');if(visibility)visibility.textContent='Prikazano '+ps.length+' od '+db.people.length+' zaposlenih iz baze'+(ps.length<db.people.length?' — aktivan je filter Tim ili Pretraga.':' — svi učitani zaposleni su prikazani.');let counts={};ps.forEach(p=>ds.forEach(d=>{let c=code(p.statuses[d]);if(c)counts[c]=(counts[c]||0)+1}));$('kpis').innerHTML=[['Zaposlenih',ps.length,'ALL'],['Prisustva P',counts.P||0,'P'],['Kašnjenja K',counts.K||0,'K'],['Odmor V',counts.V||0,'V'],['Planirano PV',counts.PV||0,'PV'],['Bolovanja', sickCodes.reduce((n,c)=>n+(counts[c]||0),0),'65SL_GROUP']].map(([a,b,c])=>`<div class="kpi clickable-kpi" role="button" tabindex="0" onclick="openOverviewDialog('${c}')" onkeydown="if(event.key==='Enter')openOverviewDialog('${c}')">${a}<strong>${b}</strong></div>`).join('');let h='<table><thead><tr><th class="name">Zaposleni</th><th>Tim</th><th>Smena</th><th>GO saldo</th>'+ds.map(d=>{let n=new Date(d+'T12:00:00').getDay();return `<th class="${n===0||n===6?'weekend':''}">${d.slice(8)}<br>${['Ned','Pon','Uto','Sre','Čet','Pet','Sub'][n]}</th>`}).join('')+'</tr></thead><tbody>';for(let p of ps){h+=`<tr data-person="${p.id}" class="${String(selectedPersonId)===String(p.id)?'active-person':''}"><td class="name" onclick="selectPerson(${p.id})" title="Prikaži evidenciju zaposlenog">${esc(p.name)}</td><td>${esc(p.team)}</td><td><select class="shift-inline" aria-label="Smena ${esc(p.name)}" ${canManagePeople()?'':'disabled'} onchange="updatePersonShift(this,${p.id})">${shiftChoices(p.shift).map(v=>`<option value="${esc(v)}" ${String(p.shift||'')===v?'selected':''}>${esc(v||'—')}</option>`).join('')}</select></td><td>${balance(p)}</td>`;for(let d of ds){let v=code(p.statuses[d]),n=new Date(d+'T12:00:00').getDay();h+=`<td class="${v?'status-'+v:n===0||n===6?'weekend':''} ${p.comments?.[d]?'has-comment':''}" title="${esc(p.comments?.[d]||'Desni klik za komentar')}"><select aria-label="${esc(p.name)} ${d}" data-id="${p.id}" data-date="${d}" onfocus="selectPerson(this.dataset.id,false)" onclick="selectPerson(this.dataset.id,false)" onchange="updateStatus(this)" oncontextmenu="event.preventDefault();editCellComment(this.dataset.id,this.dataset.date)"><option value=""></option>${orderedLegend().map(([c,l])=>`<option value="${esc(c)}" ${v===c?'selected':''} title="${esc(l)}">${esc(c)}</option>`).join('')}</select>${v==='P'&&!wellbeingProtectedPerson(p)?`<button type="button" class="wellbeing-trigger ${p.wellbeing?.[d]?.score?'wb-'+p.wellbeing[d].score:''}" title="Dobrovoljna ocena za dan" onclick="openWellbeingDialog('${p.id}','${d}')">${p.wellbeing?.[d]?.score||'♡'}</button>`:''}</td>`}h+='</tr>' } $('scheduleTable').innerHTML=h+'</tbody></table>';renderPersonDetails();if(ps.length===1){selectedPersonId=ps[0].id;renderPersonDetails();document.querySelectorAll('#scheduleTable tbody tr').forEach(tr=>tr.classList.toggle('active-person',tr.dataset.person===String(selectedPersonId)));}}function updateStatus(el){
  if(el.value==='K'){openLateDialog(el.dataset.id,el.dataset.date);renderSchedule();return}
  if(!canEditSchedule()){renderSchedule();return}
  let p=db.people.find(p=>String(p.id)===el.dataset.id);if(!p)return;
@@ -140,10 +140,10 @@ function renderSchedule(){let ds=monthDays($('month').value),ps=db.people.filter
  p.statuses??={};
  if(el.value)p.statuses[date]=el.value;else delete p.statuses[date];
  if(el.value!=='K'&&p.lateness)delete p.lateness[date];
- if(el.value!=='P'&&p.wellbeing)delete p.wellbeing[date];
+ if(el.value!=='P'&&p.wellbeing&&TIME_ROLE!=='TEAM_LEADER')delete p.wellbeing[date];
  if(el.value!=='P'&&el.value)addOptionalComment(p,date,el.value);else if(p.comments)delete p.comments[date];
  persist();selectedPersonId=p.id;renderSchedule();
- if(el.value==='P'&&old!=='P')openWellbeingDialog(p.id,date);
+ if(el.value==='P'&&old!=='P'&&TIME_ROLE!=='TEAM_LEADER')openWellbeingDialog(p.id,date);
 }
 let wellbeingEditing=null;
 
@@ -152,7 +152,7 @@ function wellbeingProtectedPerson(p){
  return TIME_ROLE==='TEAM_LEADER'&&(p?.protectWellbeing===true||/^(ADMIN|MASTER|MASTER ADMIN|ADMIN MASTER|MASTER ADMINISTRATOR)$/.test(role));
 }
 function openWellbeingDialog(id,date){
- if(!canEditSchedule())return;
+ if(!canEditSchedule()||TIME_ROLE==='TEAM_LEADER')return;
  const p=db.people.find(x=>String(x.id)===String(id));
  if(!p||wellbeingProtectedPerson(p)||code(p.statuses?.[date])!=='P')return;
  wellbeingEditing={id:p.id,date};
@@ -163,7 +163,7 @@ function openWellbeingDialog(id,date){
  document.getElementById('wellbeingDialog').showModal();
 }
 function saveWellbeing(event){
- event.preventDefault();if(!wellbeingEditing||!canEditSchedule())return;
+ event.preventDefault();if(!wellbeingEditing||!canEditSchedule()||TIME_ROLE==='TEAM_LEADER')return;
  const p=db.people.find(x=>String(x.id)===String(wellbeingEditing.id));
  if(!p||wellbeingProtectedPerson(p)||code(p.statuses?.[wellbeingEditing.date])!=='P')return;
  const score=Number(document.querySelector('input[name="wellbeingScore"]:checked')?.value);
@@ -172,13 +172,13 @@ function saveWellbeing(event){
  document.getElementById('wellbeingDialog').close();persist();renderSchedule();
 }
 function skipWellbeing(){
- if(!wellbeingEditing||!canEditSchedule())return;
+ if(!wellbeingEditing||!canEditSchedule()||TIME_ROLE==='TEAM_LEADER')return;
  const p=db.people.find(x=>String(x.id)===String(wellbeingEditing.id));
  if(p&&!wellbeingProtectedPerson(p)){p.wellbeing??={};delete p.wellbeing[wellbeingEditing.date];persist()}
  document.getElementById('wellbeingDialog').close();renderSchedule();
 }
 function removeWellbeing(){
- if(!wellbeingEditing||!canEditSchedule())return;
+ if(!wellbeingEditing||!canEditSchedule()||TIME_ROLE==='TEAM_LEADER')return;
  const p=db.people.find(x=>String(x.id)===String(wellbeingEditing.id));
  if(!p||wellbeingProtectedPerson(p)||!p.wellbeing?.[wellbeingEditing.date])return;
  if(!confirm('Ukloniti ocenu za '+p.name+' na datum '+wellbeingEditing.date+'? Status P ostaje nepromenjen.'))return;
